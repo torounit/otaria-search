@@ -23,51 +23,44 @@ use WP_MariaDB_Vector_Search\Model_Catalog;
 class Model_Catalog_Test extends \WP_UnitTestCase {
 
 	/**
-	 * Tear down registered filters.
-	 */
-	public function tear_down(): void {
-		remove_all_filters( 'wp_mariadb_vector_search_known_embedding_models' );
-		parent::tear_down();
-	}
-
-	/**
 	 * Build a ProviderRegistry mock whose capability search returns the given models.
 	 *
-	 * @param array<int, array{string, string}> $models [provider_id, model_id] pairs.
+	 * @param array<int, array{string, string, string}> $models [provider_id, model_id, model_name] triples.
 	 * @return ProviderRegistry&\PHPUnit\Framework\MockObject\MockObject
 	 */
 	private function make_registry( array $models = array() ): ProviderRegistry {
 		$by_provider = array();
-		foreach ( $models as [ $provider_id, $model_id ] ) {
-			$by_provider[ $provider_id ][] = $model_id;
+		foreach ( $models as [ $provider_id, $model_id, $model_name ] ) {
+			$by_provider[ $provider_id ][] = new ModelMetadata( $model_id, $model_name, array( CapabilityEnum::embeddingGeneration() ), array() );
 		}
 		$candidates = array();
-		foreach ( $by_provider as $provider_id => $model_ids ) {
+		foreach ( $by_provider as $provider_id => $model_metas ) {
 			$provider_meta = new ProviderMetadata( $provider_id, $provider_id, ProviderTypeEnum::cloud() );
-			$model_metas   = array_map(
-				static fn( $m ) => new ModelMetadata( $m, $m, array( CapabilityEnum::embeddingGeneration() ), array() ),
-				$model_ids
-			);
 			$candidates[]  = new ProviderModelsMetadata( $provider_meta, $model_metas );
 		}
 
 		$registry = $this->createMock( ProviderRegistry::class );
 		$registry->method( 'findModelsMetadataForSupport' )->willReturn( $candidates );
-		$registry->method( 'hasProvider' )->willReturn( true );
-		$registry->method( 'isProviderConfigured' )->willReturn( true );
 
 		return $registry;
 	}
 
-	/** Embedding-capable models from the registry appear in the result. */
+	/** Embedding-capable models from the registry are listed with their name as label. */
 	public function test_registry_models_are_returned(): void {
-		$catalog = new Model_Catalog( $this->make_registry( array( array( 'lm_studio', 'nomic-embed-text-v1.5' ) ) ) );
+		$catalog = new Model_Catalog(
+			$this->make_registry( array( array( 'openai', 'text-embedding-3-small', 'Text Embedding 3 Small' ) ) )
+		);
 
-		$models = $catalog->get_available_models();
-
-		$this->assertCount( 1, $models );
-		$this->assertSame( 'lm_studio', $models[0]['provider'] );
-		$this->assertSame( 'nomic-embed-text-v1.5', $models[0]['model'] );
+		$this->assertSame(
+			array(
+				array(
+					'provider' => 'openai',
+					'model'    => 'text-embedding-3-small',
+					'label'    => 'Text Embedding 3 Small',
+				),
+			),
+			$catalog->get_available_models()
+		);
 	}
 
 	/** Multiple providers/models all appear. */
@@ -75,79 +68,27 @@ class Model_Catalog_Test extends \WP_UnitTestCase {
 		$catalog = new Model_Catalog(
 			$this->make_registry(
 				array(
-					array( 'lm_studio', 'nomic-embed-text-v1.5' ),
-					array( 'openai', 'text-embedding-3-small' ),
+					array( 'lm_studio', 'text-embedding-nomic-embed-text-v1.5', 'text-embedding-nomic-embed-text-v1.5' ),
+					array( 'openai', 'text-embedding-3-small', 'Text Embedding 3 Small' ),
+					array( 'openai', 'text-embedding-3-large', 'Text Embedding 3 Large' ),
 				)
 			)
 		);
 
-		$this->assertCount( 2, $catalog->get_available_models() );
+		$this->assertCount( 3, $catalog->get_available_models() );
 	}
 
-	/**
-	 * Known-list entries are not listed unless the registry reports them as
-	 * embedding-capable: the core builder would reject them anyway.
-	 */
-	public function test_known_list_does_not_add_models(): void {
+	/** An empty model name falls back to the model id. */
+	public function test_label_falls_back_to_model_id(): void {
+		$catalog = new Model_Catalog( $this->make_registry( array( array( 'lm_studio', 'nomic', '' ) ) ) );
+
+		$this->assertSame( 'nomic', $catalog->get_available_models()[0]['label'] );
+	}
+
+	/** No embedding-capable provider → empty list. */
+	public function test_empty_when_no_models(): void {
 		$catalog = new Model_Catalog( $this->make_registry() );
 
 		$this->assertSame( array(), $catalog->get_available_models() );
-	}
-
-	/** Known dimensions are applied to registry models. */
-	public function test_known_dimensions_applied_to_registry_models(): void {
-		$catalog = new Model_Catalog( $this->make_registry( array( array( 'openai', 'text-embedding-3-small' ) ) ) );
-
-		$this->assertSame( 1536, $catalog->get_available_models()[0]['dimensions'] );
-	}
-
-	/** Unknown models report null dimensions. */
-	public function test_unknown_model_has_null_dimensions(): void {
-		$catalog = new Model_Catalog( $this->make_registry( array( array( 'lm_studio', 'nomic-embed-text-v1.5' ) ) ) );
-
-		$this->assertNull( $catalog->get_available_models()[0]['dimensions'] );
-	}
-
-	/** The filter can add dimension hints for additional models. */
-	public function test_filter_can_add_dimensions(): void {
-		add_filter(
-			'wp_mariadb_vector_search_known_embedding_models',
-			static fn( array $known ) => array_merge(
-				$known,
-				array(
-					array(
-						'provider'   => 'lm_studio',
-						'model'      => 'nomic-embed-text-v1.5',
-						'dimensions' => 768,
-					),
-				)
-			)
-		);
-		$catalog = new Model_Catalog( $this->make_registry( array( array( 'lm_studio', 'nomic-embed-text-v1.5' ) ) ) );
-
-		$this->assertSame( 768, $catalog->get_available_models()[0]['dimensions'] );
-	}
-
-	/** Invalid entries in the known list are silently ignored. */
-	public function test_invalid_known_list_entries_ignored(): void {
-		add_filter(
-			'wp_mariadb_vector_search_known_embedding_models',
-			static fn() => array(
-				'not-an-array',
-				array(),
-				array( 'provider' => '' ),
-				array(
-					'provider'   => 'openai',
-					'model'      => 'text-embedding-3-small',
-					'dimensions' => 'large',
-				),
-			)
-		);
-		$catalog = new Model_Catalog( $this->make_registry( array( array( 'openai', 'text-embedding-3-small' ) ) ) );
-
-		$models = $catalog->get_available_models();
-
-		$this->assertCount( 1, $models );
-		$this->assertNull( $models[0]['dimensions'] );
 	}
 }
