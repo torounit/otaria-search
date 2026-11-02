@@ -170,8 +170,10 @@ Other options:
 - `wp_mariadb_vector_search_known_embedding_models` (`array`) — known `{provider, model, dimensions}` entries. Only supplies dimensions; never adds models to the list.
 
 Embedding requests also honor core's AI Client filters, e.g.
-`wp_ai_client_default_request_timeout` (HTTP timeout; raise it for slow local
-models) and `wp_ai_client_prevent_embedding`.
+`wp_ai_client_default_request_timeout` (HTTP timeout, core default 30 s; it
+receives the builder class, so raise it only for `WP_AI_Client_Embedding_Builder`
+when slow local models need longer) and `wp_ai_client_prevent_embedding`. The
+plugin does not set its own timeout.
 
 ## `$wpdb` notes
 

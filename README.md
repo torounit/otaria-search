@@ -134,15 +134,19 @@ add_filter(
 
 ### Core AI Client filters
 
-Embedding requests go through the core AI Client, so its filters apply too —
-e.g. raise the HTTP timeout for slow local models:
+Embedding requests go through the core AI Client, so its filters apply too.
+The default HTTP timeout is core's (30 seconds). Local models that load on the
+first request (e.g. LM Studio) may need longer; the filter receives the builder
+class, so the timeout can be raised for embeddings only:
 
 ```php
 add_filter(
     'wp_ai_client_default_request_timeout',
-    function (): float {
-        return 120.0;
-    }
+    function ( float $timeout, string $builder_type ): float {
+        return 'WP_AI_Client_Embedding_Builder' === $builder_type ? 120.0 : $timeout;
+    },
+    10,
+    2
 );
 ```
 
