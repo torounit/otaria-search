@@ -27,7 +27,7 @@ Posts are indexed (or removed from the index) automatically whenever they are pu
 
 Displays MariaDB VECTOR support status, indexed post count, table dimensions, and backfill progress.
 
-**Embedding Model** — Select the AI provider and model to use for embedding generation. Saving a model probes the API to detect the native vector dimension and stores it in settings. The embeddings table is not changed at this point.
+**Embedding Model** — Select one of the models that configured providers report as embedding-capable. Saving runs the `wp-mariadb-vector-search/select-model` ability, which embeds a short probe text with the model to detect its native vector dimension, then stores provider, model and dimensions together. If the probe fails, the error is shown and the saved settings are left unchanged. The embeddings table is not changed at this point.
 
 **Reindex** — Schedules a background cron job to embed all existing posts. Behaviour depends on the current state:
 
@@ -108,26 +108,6 @@ add_filter(
     'wp_mariadb_vector_search_max_results',
     function (): int {
         return 50;
-    }
-);
-```
-
-### `wp_mariadb_vector_search_known_embedding_models`
-
-Known embedding dimensions shown in the model selector. The selector only lists
-models that a configured provider reports as embedding-capable; entries here
-never add models, they only supply each model's dimensions.
-
-```php
-add_filter(
-    'wp_mariadb_vector_search_known_embedding_models',
-    function ( array $models ): array {
-        $models[] = [
-            'provider'   => 'lm_studio',
-            'model'      => 'text-embedding-nomic-embed-text-v1.5',
-            'dimensions' => 768,
-        ];
-        return $models;
     }
 );
 ```

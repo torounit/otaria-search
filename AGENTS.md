@@ -106,7 +106,8 @@ to skip work when the post body has not changed.
 | `includes/Plugin.php`             | Composition root. Instantiates components and registers hooks.                                     |
 | `includes/Schema.php`             | Install/upgrade table. Verify MariaDB version. Admin notice on incompatibility.                    |
 | `includes/Repository.php`         | `$wpdb` wrapper. `replace_post_chunks()`, `delete_post()`, `search_similar()`. Vector text serialization. |
-| `includes/Model_Catalog.php`      | Enumerates models the AI Client registry reports as embedding-capable; known list supplies dimensions. Filterable. |
+| `includes/Model_Catalog.php`      | Enumerates models the AI Client registry reports as embedding-capable.                             |
+| `includes/Abilities.php`          | Abilities for the admin UI: `get-status`, `reindex`, `select-model` (probes the model's dimensions, then saves settings). |
 | `includes/Content_Hash.php`       | SHA-256 hash of post title + content.                                                              |
 | `includes/Chunker.php`            | Block strip + paragraph/sentence/char splitting with overlap. Title prepended to each chunk.       |
 | `includes/Indexer.php`            | `save_post`/`delete_post`/`trashed_post` hooks. Cron worker that embeds chunks and stores them via the repository. |
@@ -156,7 +157,7 @@ the result set and ensures the VECTOR INDEX is engaged.
 | ------------ | ------- | ----------------------------------------------------------- |
 | `provider`   | —       | AI provider id (e.g. `openai`, `lm_studio`).                |
 | `model`      | —       | Embedding model id (e.g. `text-embedding-3-small`).         |
-| `dimensions` | 1536    | Fixed at install. Schema's `VECTOR(N)`. Changing to a different dimension requires Reindex. |
+| `dimensions` | 1536    | Detected by probing the model in `select-model` (`EmbeddingResult::getDimensions()`); never entered manually. Schema's `VECTOR(N)`. Changing to a different dimension requires Reindex. |
 
 Other options:
 
@@ -167,7 +168,6 @@ Other options:
 - `wp_mariadb_vector_search_post_types` (`string[]`) — override indexed post types.
 - `wp_mariadb_vector_search_max_distance` (`float`, default `0.65`) — maximum cosine distance to include in results. `0` = identical, smaller = more similar. Optimal value is model-dependent.
 - `wp_mariadb_vector_search_max_results` (`int`, default `200`) — safety cap on returned posts; also the basis for the inner `LIMIT` so the VECTOR INDEX is used.
-- `wp_mariadb_vector_search_known_embedding_models` (`array`) — known `{provider, model, dimensions}` entries. Only supplies dimensions; never adds models to the list.
 
 Embedding requests also honor core's AI Client filters, e.g.
 `wp_ai_client_default_request_timeout` (HTTP timeout, core default 30 s; it
