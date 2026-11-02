@@ -9,12 +9,14 @@
 .editorconfig
 .gitattributes
 .gitignore
+.prettierignore
 .prettierrc.js
 .wp-env.json
 .wp-env.test.json
 AGENTS.md
 CLAUDE.md
 composer.lock
+eslint.config.mjs
 package-lock.json
 package.json
 phpcs.xml.dist

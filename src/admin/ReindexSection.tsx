@@ -1,5 +1,10 @@
 import apiFetch from '@wordpress/api-fetch';
-import { Button, CheckboxControl, Notice, Spinner } from '@wordpress/components';
+import {
+	Button,
+	CheckboxControl,
+	Notice,
+	Spinner,
+} from '@wordpress/components';
 import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { unwrapAbilityResponse } from './ability';
@@ -47,7 +52,8 @@ export function ReindexSection( {
 				},
 			} );
 			const rebuilt =
-				unwrapAbilityResponse< ReindexResponse >( result )?.rebuilt ?? false;
+				unwrapAbilityResponse< ReindexResponse >( result )?.rebuilt ??
+				false;
 			onReindexed( rebuilt );
 		} catch ( err ) {
 			const message =
@@ -64,10 +70,7 @@ export function ReindexSection( {
 		<>
 			<h2>{ __( 'Reindex', 'wp-mariadb-vector-search' ) }</h2>
 			{ error && (
-				<Notice
-					status="error"
-					onRemove={ () => setError( null ) }
-				>
+				<Notice status="error" onRemove={ () => setError( null ) }>
 					{ error }
 				</Notice>
 			) }
@@ -118,9 +121,7 @@ export function ReindexSection( {
 				variant={ dimChanged ? 'secondary' : 'primary' }
 				isDestructive={ dimChanged }
 				onClick={ () => void handleSubmit() }
-				disabled={
-					isSubmitting || ( dimChanged && ! confirmRebuild )
-				}
+				disabled={ isSubmitting || ( dimChanged && ! confirmRebuild ) }
 			>
 				{ isSubmitting ? (
 					<Spinner />

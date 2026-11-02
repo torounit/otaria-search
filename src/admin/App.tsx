@@ -45,12 +45,18 @@ export function VectorSearchApp() {
 			const data = await apiFetch( {
 				path: '/wp-abilities/v1/abilities/wp-mariadb-vector-search/get-status/run',
 			} );
-			setStatus( { phase: 'ready', data: normalizeStatusResponse( data ) } );
+			setStatus( {
+				phase: 'ready',
+				data: normalizeStatusResponse( data ),
+			} );
 		} catch ( err ) {
 			const message =
 				err instanceof Error
 					? err.message
-					: __( 'Failed to load status.', 'wp-mariadb-vector-search' );
+					: __(
+							'Failed to load status.',
+							'wp-mariadb-vector-search'
+						);
 			setStatus( { phase: 'error', message } );
 		}
 	}
@@ -62,7 +68,8 @@ export function VectorSearchApp() {
 	return (
 		<Page
 			hasPadding
-			title={ __( 'Vector Search', 'wp-mariadb-vector-search' ) }>
+			title={ __( 'Vector Search', 'wp-mariadb-vector-search' ) }
+		>
 			{ successMessage && (
 				<Notice
 					status="success"
@@ -91,10 +98,7 @@ export function VectorSearchApp() {
 					/>
 
 					<h2>
-						{ __(
-							'Embedding Model',
-							'wp-mariadb-vector-search'
-						) }
+						{ __( 'Embedding Model', 'wp-mariadb-vector-search' ) }
 					</h2>
 					<ModelSelector
 						availableModels={ status.data.available_models }
@@ -108,11 +112,11 @@ export function VectorSearchApp() {
 									? __(
 											'Model saved. The table dimension has changed — please run Reindex all posts to recreate the table.',
 											'wp-mariadb-vector-search'
-									  )
+										)
 									: __(
 											'Model saved. Please run Reindex all posts to apply the new model.',
 											'wp-mariadb-vector-search'
-									  )
+										)
 							);
 							void loadStatus();
 						} }
@@ -130,11 +134,11 @@ export function VectorSearchApp() {
 									? __(
 											'Table rebuilt. Reindex has been scheduled.',
 											'wp-mariadb-vector-search'
-									  )
+										)
 									: __(
 											'Backfill has been scheduled.',
 											'wp-mariadb-vector-search'
-									  )
+										)
 							);
 							void loadStatus();
 						} }
