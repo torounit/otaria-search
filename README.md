@@ -1,6 +1,6 @@
 # WP MariaDB Vector Search
 
-Replaces WordPress's default `LIKE`-based search with cosine similarity search powered by MariaDB's native `VECTOR` type.
+Replaces WordPress's default `LIKE`-based search with cosine similarity search powered by MariaDB's native `VECTOR` type, fused with the `LIKE` results so exact-term matches are still found.
 
 ## Requirements
 
@@ -22,6 +22,10 @@ Embeddings are generated via the **WordPress 7.2 core AI Client embedding API** 
 ### Automatic indexing
 
 Posts are indexed (or removed from the index) automatically whenever they are published, updated, or deleted.
+
+### Search
+
+Front-end searches embed the search term and look up the closest posts in the index. By default the results are combined with WordPress's standard `LIKE` search using Reciprocal Rank Fusion (RRF): posts found by both rank first, and posts that only contain the exact term (product codes, names) still appear. If nothing matches, the search shows no results.
 
 ### Admin page (Settings > Vector Search)
 
@@ -98,16 +102,55 @@ add_filter(
 );
 ```
 
+### `wp_mariadb_vector_search_max_relative_distance`
+
+Maximum distance a post may fall behind the closest post. Excludes weak matches
+that are within `max_distance` only because they are generic (e.g. the default
+"Hello world!" post). Default `0.25`. Return `INF` to disable.
+
+```php
+add_filter(
+    'wp_mariadb_vector_search_max_relative_distance',
+    function (): float {
+        return 0.15;
+    }
+);
+```
+
 ### `wp_mariadb_vector_search_max_results`
 
 Safety cap on the number of posts returned by a single search. Also controls the inner
-`LIMIT` passed to the database query so the VECTOR INDEX is used. Default `200`.
+`LIMIT` passed to the database query so the VECTOR INDEX is used, and the number of
+`LIKE` results fused in. Default `200`.
 
 ```php
 add_filter(
     'wp_mariadb_vector_search_max_results',
     function (): int {
         return 50;
+    }
+);
+```
+
+### `wp_mariadb_vector_search_hybrid`
+
+Whether to fuse the vector results with WordPress's `LIKE` search results. Default `true`.
+Return `false` for vector-only search.
+
+```php
+add_filter( 'wp_mariadb_vector_search_hybrid', '__return_false' );
+```
+
+### `wp_mariadb_vector_search_rrf_k`
+
+The RRF constant `k`: each post scores `1 / (k + rank)` per result list it appears in.
+Higher values flatten the weight of top ranks. Default `60`.
+
+```php
+add_filter(
+    'wp_mariadb_vector_search_rrf_k',
+    function (): int {
+        return 20;
     }
 );
 ```
