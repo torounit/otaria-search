@@ -31,21 +31,14 @@ class Model_Catalog_Test extends \WP_UnitTestCase {
 	}
 
 	/**
-	 * Build a ProviderRegistry mock.
+	 * Build a ProviderRegistry mock whose capability search returns the given models.
 	 *
-	 * @param array<int, array{string, string}> $auto_detect   [provider_id, model_id] pairs from capability detection.
-	 * @param string[]                          $has_providers Provider ids where hasProvider returns true.
-	 * @param string[]                          $configured    Provider ids where isProviderConfigured returns true.
+	 * @param array<int, array{string, string}> $models [provider_id, model_id] pairs.
 	 * @return ProviderRegistry&\PHPUnit\Framework\MockObject\MockObject
 	 */
-	private function make_registry(
-		array $auto_detect = array(),
-		array $has_providers = array(),
-		array $configured = array()
-	): ProviderRegistry {
-		// Build ProviderModelsMetadata candidates.
+	private function make_registry( array $models = array() ): ProviderRegistry {
 		$by_provider = array();
-		foreach ( $auto_detect as [ $provider_id, $model_id ] ) {
+		foreach ( $models as [ $provider_id, $model_id ] ) {
 			$by_provider[ $provider_id ][] = $model_id;
 		}
 		$candidates = array();
@@ -60,196 +53,101 @@ class Model_Catalog_Test extends \WP_UnitTestCase {
 
 		$registry = $this->createMock( ProviderRegistry::class );
 		$registry->method( 'findModelsMetadataForSupport' )->willReturn( $candidates );
-		$registry->method( 'hasProvider' )->willReturnCallback(
-			static fn( $p ) => in_array( $p, $has_providers, true )
-		);
-		$registry->method( 'isProviderConfigured' )->willReturnCallback(
-			static fn( $p ) => in_array( $p, $configured, true )
-		);
+		$registry->method( 'hasProvider' )->willReturn( true );
+		$registry->method( 'isProviderConfigured' )->willReturn( true );
 
 		return $registry;
 	}
 
-	// -----------------------------------------------------------------------
-	// Auto-detection
-	// -----------------------------------------------------------------------
-
-	/** Auto-detected models appear in the result. */
-	public function test_auto_detected_models_are_returned(): void {
-		$registry = $this->make_registry(
-			array( array( 'lmstudio', 'nomic-embed-text-v1.5' ) )
-		);
-		$catalog  = new Model_Catalog( $registry );
+	/** Embedding-capable models from the registry appear in the result. */
+	public function test_registry_models_are_returned(): void {
+		$catalog = new Model_Catalog( $this->make_registry( array( array( 'lm_studio', 'nomic-embed-text-v1.5' ) ) ) );
 
 		$models = $catalog->get_available_models();
 
 		$this->assertCount( 1, $models );
-		$this->assertSame( 'lmstudio', $models[0]['provider'] );
+		$this->assertSame( 'lm_studio', $models[0]['provider'] );
 		$this->assertSame( 'nomic-embed-text-v1.5', $models[0]['model'] );
 	}
 
-	/** Multiple auto-detected providers/models all appear. */
-	public function test_multiple_auto_detected_models(): void {
-		$registry = $this->make_registry(
-			array(
-				array( 'lmstudio', 'nomic-embed-text-v1.5' ),
-				array( 'lmstudio', 'all-minilm-l6-v2' ),
-			)
-		);
-		$catalog  = new Model_Catalog( $registry );
-
-		$models = $catalog->get_available_models();
-		$this->assertCount( 2, $models );
-	}
-
-	// -----------------------------------------------------------------------
-	// Known list + provider configuration check
-	// -----------------------------------------------------------------------
-
-	/** Known list entries are included when provider is registered and configured. */
-	public function test_known_list_included_when_provider_configured(): void {
-		$registry = $this->make_registry(
-			array(),                 // No auto-detect.
-			array( 'openai' ),       // hasProvider.
-			array( 'openai' )        // isProviderConfigured.
-		);
-		$catalog  = new Model_Catalog( $registry );
-
-		// Override known list to just one entry for test simplicity.
-		add_filter(
-			'wp_mariadb_vector_search_known_embedding_models',
-			static fn() => array(
+	/** Multiple providers/models all appear. */
+	public function test_multiple_registry_models_are_returned(): void {
+		$catalog = new Model_Catalog(
+			$this->make_registry(
 				array(
-					'provider' => 'openai',
-					'model'    => 'text-embedding-3-small',
-				),
-			)
-		);
-
-		$models = $catalog->get_available_models();
-
-		$this->assertCount( 1, $models );
-		$this->assertSame( 'openai', $models[0]['provider'] );
-		$this->assertSame( 'text-embedding-3-small', $models[0]['model'] );
-	}
-
-	/** Known list entries are excluded when provider is not registered. */
-	public function test_known_list_excluded_when_provider_not_registered(): void {
-		$registry = $this->make_registry();  // hasProvider always false.
-		$catalog  = new Model_Catalog( $registry );
-
-		add_filter(
-			'wp_mariadb_vector_search_known_embedding_models',
-			static fn() => array(
-				array(
-					'provider' => 'openai',
-					'model'    => 'text-embedding-3-small',
-				),
-			)
-		);
-
-		$models = $catalog->get_available_models();
-		$this->assertCount( 0, $models );
-	}
-
-	/** Known list entries are excluded when provider is registered but not configured. */
-	public function test_known_list_excluded_when_provider_not_configured(): void {
-		$registry = $this->make_registry(
-			array(),
-			array( 'openai' ),  // registered.
-			array()             // NOT configured.
-		);
-		$catalog  = new Model_Catalog( $registry );
-
-		add_filter(
-			'wp_mariadb_vector_search_known_embedding_models',
-			static fn() => array(
-				array(
-					'provider' => 'openai',
-					'model'    => 'text-embedding-3-small',
-				),
-			)
-		);
-
-		$models = $catalog->get_available_models();
-		$this->assertCount( 0, $models );
-	}
-
-	// -----------------------------------------------------------------------
-	// Deduplication
-	// -----------------------------------------------------------------------
-
-	/** A model returned by both auto-detect and known list appears only once. */
-	public function test_deduplication_of_auto_detected_and_known(): void {
-		$registry = $this->make_registry(
-			array( array( 'openai', 'text-embedding-3-small' ) ),  // auto-detect.
-			array( 'openai' ),                                       // registered.
-			array( 'openai' )                                        // configured.
-		);
-		$catalog  = new Model_Catalog( $registry );
-
-		add_filter(
-			'wp_mariadb_vector_search_known_embedding_models',
-			static fn() => array(
-				array(
-					'provider' => 'openai',
-					'model'    => 'text-embedding-3-small',
-				),
-			)
-		);
-
-		$models = $catalog->get_available_models();
-		$this->assertCount( 1, $models );
-	}
-
-	// -----------------------------------------------------------------------
-	// wp_mariadb_vector_search_known_embedding_models filter
-	// -----------------------------------------------------------------------
-
-	/** Filter can add a custom model entry. */
-	public function test_filter_can_add_custom_model(): void {
-		$registry = $this->make_registry(
-			array(),
-			array( 'my-provider' ),
-			array( 'my-provider' )
-		);
-		$catalog  = new Model_Catalog( $registry );
-
-		add_filter(
-			'wp_mariadb_vector_search_known_embedding_models',
-			static fn( array $known_models ) => array_merge(
-				$known_models,
-				array(
-					array(
-						'provider' => 'my-provider',
-						'model'    => 'my-model',
-					),
+					array( 'lm_studio', 'nomic-embed-text-v1.5' ),
+					array( 'openai', 'text-embedding-3-small' ),
 				)
 			)
 		);
 
-		$models = $catalog->get_available_models();
+		$this->assertCount( 2, $catalog->get_available_models() );
+	}
 
-		$found = array_filter( $models, static fn( $m ) => 'my-model' === $m['model'] );
-		$this->assertCount( 1, $found );
+	/**
+	 * Known-list entries are not listed unless the registry reports them as
+	 * embedding-capable: the core builder would reject them anyway.
+	 */
+	public function test_known_list_does_not_add_models(): void {
+		$catalog = new Model_Catalog( $this->make_registry() );
+
+		$this->assertSame( array(), $catalog->get_available_models() );
+	}
+
+	/** Known dimensions are applied to registry models. */
+	public function test_known_dimensions_applied_to_registry_models(): void {
+		$catalog = new Model_Catalog( $this->make_registry( array( array( 'openai', 'text-embedding-3-small' ) ) ) );
+
+		$this->assertSame( 1536, $catalog->get_available_models()[0]['dimensions'] );
+	}
+
+	/** Unknown models report null dimensions. */
+	public function test_unknown_model_has_null_dimensions(): void {
+		$catalog = new Model_Catalog( $this->make_registry( array( array( 'lm_studio', 'nomic-embed-text-v1.5' ) ) ) );
+
+		$this->assertNull( $catalog->get_available_models()[0]['dimensions'] );
+	}
+
+	/** The filter can add dimension hints for additional models. */
+	public function test_filter_can_add_dimensions(): void {
+		add_filter(
+			'wp_mariadb_vector_search_known_embedding_models',
+			static fn( array $known ) => array_merge(
+				$known,
+				array(
+					array(
+						'provider'   => 'lm_studio',
+						'model'      => 'nomic-embed-text-v1.5',
+						'dimensions' => 768,
+					),
+				)
+			)
+		);
+		$catalog = new Model_Catalog( $this->make_registry( array( array( 'lm_studio', 'nomic-embed-text-v1.5' ) ) ) );
+
+		$this->assertSame( 768, $catalog->get_available_models()[0]['dimensions'] );
 	}
 
 	/** Invalid entries in the known list are silently ignored. */
 	public function test_invalid_known_list_entries_ignored(): void {
-		$registry = $this->make_registry();
-		$catalog  = new Model_Catalog( $registry );
-
 		add_filter(
 			'wp_mariadb_vector_search_known_embedding_models',
 			static fn() => array(
 				'not-an-array',
 				array(),
 				array( 'provider' => '' ),
-				array( 'model' => '' ),
+				array(
+					'provider'   => 'openai',
+					'model'      => 'text-embedding-3-small',
+					'dimensions' => 'large',
+				),
 			)
 		);
+		$catalog = new Model_Catalog( $this->make_registry( array( array( 'openai', 'text-embedding-3-small' ) ) ) );
 
 		$models = $catalog->get_available_models();
-		$this->assertCount( 0, $models );
+
+		$this->assertCount( 1, $models );
+		$this->assertNull( $models[0]['dimensions'] );
 	}
 }

@@ -17,9 +17,9 @@ use WordPress\AiClient\Providers\ProviderRegistry;
 /**
  * Enumerates embedding models available for selection in the admin UI.
  *
- * Merges capability-auto-detected models with a filterable known list,
- * restricting the known list to providers that are registered and configured.
- * The combined list is deduplicated by provider:model key.
+ * Lists the models that registered, configured providers report as
+ * embedding-capable. A filterable known list supplies their dimensions,
+ * since providers do not expose them in model metadata.
  */
 class Model_Catalog {
 
@@ -55,7 +55,6 @@ class Model_Catalog {
 	public function get_available_models(): array {
 		$models = array(); // Keyed by "provider:model" for deduplication.
 
-		// 1. Auto-detect capability-tagged models from the registry.
 		$requirements = new ModelRequirements(
 			array( CapabilityEnum::embeddingGeneration() ),
 			array()
@@ -74,9 +73,7 @@ class Model_Catalog {
 			}
 		}
 
-		// 2. Known list, filterable via wp_mariadb_vector_search_known_embedding_models.
-		// Entries are restricted to providers that are registered AND configured.
-		// Each entry may include 'dimensions' (int) so the UI can update settings on model change.
+		// Known dimensions, filterable via wp_mariadb_vector_search_known_embedding_models.
 		$default_known = array(
 			array(
 				'provider'   => 'openai',
@@ -101,18 +98,17 @@ class Model_Catalog {
 		);
 
 		/**
-		 * Filter the list of known embedding models shown in the admin UI.
+		 * Filter the known embedding model dimensions.
 		 *
-		 * Each element must have 'provider' (string) and 'model' (string) keys.
-		 * An optional 'dimensions' (int) key specifies the model's output dimensions.
-		 * Entries for providers that are not registered or not configured are
-		 * silently ignored.
+		 * Each element has 'provider' (string), 'model' (string) and
+		 * 'dimensions' (int) keys. Entries only supply dimensions for models
+		 * the registry reports; they never add models to the list.
 		 *
 		 * @param array<int, array{provider: string, model: string, dimensions?: int}> $known_list Default known models.
 		 */
 		$known_list = apply_filters( 'wp_mariadb_vector_search_known_embedding_models', $default_known );
 
-		// Build a dimensions lookup from the known list so auto-detected models also get dimensions.
+		// Build a provider:model => dimensions lookup.
 		$known_dims = array();
 		foreach ( (array) $known_list as $item ) {
 			if ( is_array( $item ) && isset( $item['provider'], $item['model'], $item['dimensions'] )
@@ -121,37 +117,6 @@ class Model_Catalog {
 			}
 		}
 
-		foreach ( (array) $known_list as $item ) {
-			if ( ! is_array( $item ) ) {
-				continue;
-			}
-
-			$provider_id = (string) ( $item['provider'] ?? '' );
-			$model_id    = (string) ( $item['model'] ?? '' );
-			if ( '' === $provider_id || '' === $model_id ) {
-				continue;
-			}
-
-			try {
-				if ( ! $this->registry->hasProvider( $provider_id ) ) {
-					continue;
-				}
-				if ( ! $this->registry->isProviderConfigured( $provider_id ) ) {
-					continue;
-				}
-			} catch ( \Throwable ) {
-				continue;
-			}
-
-			$key              = $provider_id . ':' . $model_id;
-			$models[ $key ] ??= array(
-				'provider' => $provider_id,
-				'model'    => $model_id,
-				'label'    => $model_id,
-			);
-		}
-
-		// Apply known dimensions to all entries (including auto-detected models).
 		$result = array();
 		foreach ( $models as $key => $m ) {
 			$result[] = array(
