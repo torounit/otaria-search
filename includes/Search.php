@@ -17,11 +17,19 @@ namespace WP_MariaDB_Vector_Search;
  * - is_search() is true, AND
  * - the 's' parameter is non-empty.
  *
- * On embedding or similarity search failure the query falls through to default WP search.
- * Results are filtered by cosine distance threshold (wp_mariadb_vector_search_max_distance,
- * default 0.65) — posts that are too dissimilar to the query are excluded.
+ * On embedding failure the query falls through to default WP search.
+ * Vector results are filtered by cosine distance (wp_mariadb_vector_search_max_distance,
+ * default 0.65) and by distance behind the best match
+ * (wp_mariadb_vector_search_max_relative_distance, default 0.25), then fused with
+ * WordPress's LIKE search results via Reciprocal Rank Fusion
+ * (opt out with wp_mariadb_vector_search_hybrid).
  */
 class Search {
+
+	/**
+	 * Query var that marks a query rewritten to post__in.
+	 */
+	const QUERY_VAR = 'wp_mariadb_vector_search';
 
 	/**
 	 * Constructor.
@@ -33,12 +41,13 @@ class Search {
 	) {}
 
 	/**
-	 * Attach the pre_get_posts hook.
+	 * Attach the query hooks.
 	 *
 	 * @return void
 	 */
 	public function register_hooks(): void {
 		add_action( 'pre_get_posts', array( $this, 'rewrite_search_query' ) );
+		add_filter( 'posts_search', array( $this, 'remove_like_clause' ), 99, 2 );
 	}
 
 	/**
@@ -66,30 +75,62 @@ class Search {
 
 		$max_distance = (float) apply_filters( 'wp_mariadb_vector_search_max_distance', 0.65 );
 		$max_results  = (int) apply_filters( 'wp_mariadb_vector_search_max_results', 200 );
-		$ids          = $this->repository->search_similar( $result[0]->getValues(), $post_types, $max_distance, $max_results );
+		$max_relative = (float) apply_filters( 'wp_mariadb_vector_search_max_relative_distance', 0.25 );
+		$ids          = $this->repository->search_similar( $result[0]->getValues(), $post_types, $max_distance, $max_results, $max_relative );
+
+		if ( apply_filters( 'wp_mariadb_vector_search_hybrid', true ) ) {
+			$rrf_k = (int) apply_filters( 'wp_mariadb_vector_search_rrf_k', 60 );
+			$ids   = Rank_Fusion::fuse( array( $ids, $this->search_like( $search_term, $post_types, $max_results ) ), $rrf_k );
+		}
 
 		if ( empty( $ids ) ) {
-			return;
+			// Match nothing rather than fall through to the LIKE search.
+			$ids = array( 0 );
 		}
 
 		$query->set( 'post__in', $ids );
 		$query->set( 'orderby', 'post__in' );
-
-		// Suppress the default LIKE-based search clause.
-		add_filter( 'posts_search', '__return_empty_string', 99 );
-		add_action( 'the_posts', array( $this, 'remove_search_override' ) );
+		$query->set( self::QUERY_VAR, true );
 	}
 
 	/**
-	 * Clean up the one-shot posts_search suppression after the query runs.
+	 * Drop the LIKE search clause from queries rewritten to post__in.
 	 *
-	 * @param array $posts Posts returned by the query.
-	 * @return array Unchanged posts.
+	 * Scoped by query var rather than added and removed around the query:
+	 * fields=ids queries return before the_posts, so a one-shot filter would
+	 * leak into later searches.
+	 *
+	 * @param string    $search Search SQL for the WHERE clause.
+	 * @param \WP_Query $query  The query.
+	 * @return string Empty for rewritten queries; otherwise unchanged.
 	 */
-	public function remove_search_override( array $posts ): array {
-		remove_filter( 'posts_search', '__return_empty_string', 99 );
-		remove_action( 'the_posts', array( $this, 'remove_search_override' ) );
-		return $posts;
+	public function remove_like_clause( string $search, \WP_Query $query ): string {
+		return $query->get( self::QUERY_VAR ) ? '' : $search;
+	}
+
+	/**
+	 * Run WordPress's default LIKE search.
+	 *
+	 * This is not the main query, so it does not re-enter rewrite_search_query().
+	 *
+	 * @param string   $search_term Search term.
+	 * @param string[] $post_types  Post types to include.
+	 * @param int      $limit       Maximum number of results.
+	 * @return int[] Post IDs ordered by WordPress's search relevance.
+	 */
+	private function search_like( string $search_term, array $post_types, int $limit ): array {
+		$like_query = new \WP_Query(
+			array(
+				's'              => $search_term,
+				'post_type'      => $post_types,
+				'posts_per_page' => $limit,
+				'fields'         => 'ids',
+				'orderby'        => 'relevance',
+				'no_found_rows'  => true,
+			)
+		);
+
+		return array_map( 'intval', $like_query->posts );
 	}
 
 	/**
