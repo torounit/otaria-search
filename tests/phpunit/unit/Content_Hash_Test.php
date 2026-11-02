@@ -56,4 +56,18 @@ class Content_Hash_Test extends \WP_UnitTestCase {
 		$hash2 = Content_Hash::compute( 'A', 'B' );
 		$this->assertNotSame( $hash1, $hash2 );
 	}
+
+	/** A different embedding model changes the hash, so switching models forces a re-embed. */
+	public function test_different_model_changes_hash(): void {
+		$hash1 = Content_Hash::compute( 'Title', 'Body', 'openai:text-embedding-3-small' );
+		$hash2 = Content_Hash::compute( 'Title', 'Body', 'openai:text-embedding-ada-002' );
+		$this->assertNotSame( $hash1, $hash2 );
+	}
+
+	/** Model and title values are not interchangeable (collision-safe concatenation). */
+	public function test_model_and_title_not_interchangeable(): void {
+		$hash1 = Content_Hash::compute( 'AB', '', '' );
+		$hash2 = Content_Hash::compute( 'B', '', 'A' );
+		$this->assertNotSame( $hash1, $hash2 );
+	}
 }

@@ -2,6 +2,7 @@ import apiFetch from '@wordpress/api-fetch';
 import { Button, CheckboxControl, Notice, Spinner } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
+import { unwrapAbilityResponse } from './ability';
 import type { ReindexResponse } from './types';
 
 interface Props {
@@ -35,7 +36,7 @@ export function ReindexSection( {
 		setError( null );
 
 		try {
-			const result = await apiFetch< ReindexResponse >( {
+			const result = await apiFetch( {
 				path: '/wp-abilities/v1/abilities/wp-mariadb-vector-search/reindex/run',
 				method: 'POST',
 				data: {
@@ -46,11 +47,7 @@ export function ReindexSection( {
 				},
 			} );
 			const rebuilt =
-				( result as { rebuilt?: boolean } )?.rebuilt ??
-				( result as { result?: ReindexResponse } )?.result?.rebuilt ??
-				( result as { output?: ReindexResponse } )?.output?.rebuilt ??
-				( result as { data?: ReindexResponse } )?.data?.rebuilt ??
-				false;
+				unwrapAbilityResponse< ReindexResponse >( result )?.rebuilt ?? false;
 			onReindexed( rebuilt );
 		} catch ( err ) {
 			const message =

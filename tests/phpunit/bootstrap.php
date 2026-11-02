@@ -50,3 +50,5 @@ tests_add_filter(
 );
 
 require $_tests_dir . '/includes/bootstrap.php';
+
+WP_MariaDB_Vector_Search\Tests\Integration\Fake_Embedding_Provider::register();

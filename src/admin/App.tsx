@@ -6,6 +6,7 @@ import { Page } from '@wordpress/admin-ui';
 import { ModelSelector } from './ModelSelector';
 import { ReindexSection } from './ReindexSection';
 import { StatusSection } from './StatusSection';
+import { unwrapAbilityResponse } from './ability';
 import type { StatusResponse } from './types';
 
 type AppStatus =
@@ -13,20 +14,8 @@ type AppStatus =
 	| { phase: 'error'; message: string }
 	| { phase: 'ready'; data: StatusResponse };
 
-type StatusRunResponse =
-	| StatusResponse
-	| {
-			result?: StatusResponse;
-			output?: StatusResponse;
-			data?: StatusResponse;
-	  };
-
-function normalizeStatusResponse( raw: StatusRunResponse ): StatusResponse {
-	const resolved =
-		( raw as { result?: StatusResponse } )?.result ??
-		( raw as { output?: StatusResponse } )?.output ??
-		( raw as { data?: StatusResponse } )?.data ??
-		( raw as StatusResponse );
+function normalizeStatusResponse( raw: unknown ): StatusResponse {
+	const resolved = unwrapAbilityResponse< StatusResponse | undefined >( raw );
 
 	return {
 		is_supported: resolved?.is_supported ?? false,
@@ -53,7 +42,7 @@ export function VectorSearchApp() {
 	async function loadStatus() {
 		setStatus( { phase: 'loading' } );
 		try {
-			const data = await apiFetch< StatusRunResponse >( {
+			const data = await apiFetch( {
 				path: '/wp-abilities/v1/abilities/wp-mariadb-vector-search/get-status/run',
 			} );
 			setStatus( { phase: 'ready', data: normalizeStatusResponse( data ) } );
@@ -112,6 +101,7 @@ export function VectorSearchApp() {
 						currentProvider={ status.data.settings.provider }
 						currentModel={ status.data.settings.model }
 						currentDims={ status.data.settings.dimensions }
+						tableDims={ status.data.table_dims }
 						onSaved={ ( _dims, needRebuild ) => {
 							setSuccessMessage(
 								needRebuild

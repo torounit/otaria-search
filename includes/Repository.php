@@ -138,11 +138,10 @@ class Repository {
 			wp_mariadb_vector_search_log(
 				sprintf(
 					'replace_post_chunks(%d): dimension mismatch — embedding is %d-dim but table column is VECTOR(%d). ' .
-					'Set dimensions to %d in Settings and reinstall the schema (delete the wp_mariadb_vector_search_db_version option).',
+					'Save the model again on Tools > Vector Search to detect its dimensions, then run Reindex to recreate the table.',
 					$post_id,
 					$dims,
-					$declared,
-					$dims
+					$declared
 				)
 			);
 			return;

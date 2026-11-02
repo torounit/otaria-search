@@ -12,7 +12,6 @@ declare(strict_types=1);
 namespace WP_MariaDB_Vector_Search\Tests\Integration;
 
 use WP_MariaDB_Vector_Search\Cron_Backfill;
-use WP_MariaDB_Vector_Search\Embedding_Client;
 use WP_MariaDB_Vector_Search\Indexer;
 use WP_MariaDB_Vector_Search\Repository;
 use WP_MariaDB_Vector_Search\Schema;
@@ -41,24 +40,6 @@ class Cron_Backfill_Test extends \WP_UnitTestCase {
 	 */
 	private const DIMS = 4;
 
-	/**
-	 * Build a stub Embedding_Client that returns fixed 4-dim vectors without HTTP calls.
-	 *
-	 * @return Embedding_Client
-	 */
-	private function make_stub_client(): Embedding_Client {
-		return new class() extends Embedding_Client {
-			/**
-			 * Return fixed 4-dimensional vectors.
-			 *
-			 * @param string[] $texts Texts to embed.
-			 * @return float[][]|\WP_Error
-			 */
-			public function embed( array $texts ): array|\WP_Error {
-				return array_map( static fn() => array( 0.5, 0.5, 0.5, 0.5 ), $texts );
-			}
-		};
-	}
 
 	/**
 	 * Set up test fixtures.
@@ -76,9 +57,10 @@ class Cron_Backfill_Test extends \WP_UnitTestCase {
 		Schema::drop();
 		delete_option( 'wp_mariadb_vector_search_db_version' );
 		Schema::install( self::DIMS );
+		Fake_Embedding_Provider::select();
 
 		$this->repository = new Repository();
-		$indexer          = new Indexer( $this->make_stub_client(), $this->repository );
+		$indexer          = new Indexer( $this->repository );
 		$this->backfill   = new Cron_Backfill( $indexer, 2 );
 	}
 
@@ -86,6 +68,7 @@ class Cron_Backfill_Test extends \WP_UnitTestCase {
 	 * Tear down test fixtures.
 	 */
 	public function tear_down(): void {
+		Fake_Embedding_Provider::reset();
 		delete_transient( Cron_Backfill::PROGRESS_KEY );
 		Schema::drop();
 		delete_option( 'wp_mariadb_vector_search_db_version' );

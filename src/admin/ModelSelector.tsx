@@ -1,20 +1,17 @@
 import apiFetch from '@wordpress/api-fetch';
-import {
-	Button,
-	Notice,
-	SelectControl,
-	Spinner,
-	TextControl,
-} from '@wordpress/components';
+import { Button, Notice, SelectControl, Spinner } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
-import type { AvailableModel, SettingsApiResponse } from './types';
+import { unwrapAbilityResponse } from './ability';
+import type { AvailableModel, Settings } from './types';
 
 interface Props {
 	availableModels: AvailableModel[];
 	currentProvider: string;
 	currentModel: string;
 	currentDims: number | null;
+	// Dimensions of the existing embeddings table, or null when not installed.
+	tableDims: number | null;
 	onSaved: ( dims: number, needRebuild: boolean ) => void;
 }
 
@@ -23,6 +20,7 @@ export function ModelSelector( {
 	currentProvider,
 	currentModel,
 	currentDims,
+	tableDims,
 	onSaved,
 }: Props ) {
 	const currentValue =
@@ -33,15 +31,12 @@ export function ModelSelector( {
 	const [ selected, setSelected ] = useState( currentValue );
 	const [ isSaving, setIsSaving ] = useState( false );
 	const [ error, setError ] = useState< string | null >( null );
-	const [ dimsInput, setDimsInput ] = useState(
-		String( currentDims ?? '' )
-	);
 
 	if ( availableModels.length === 0 ) {
 		return (
 			<p>
 				{ __(
-					'No embedding models available. Configure an AI provider in Settings › AI Connector.',
+					'No embedding models available. Configure an embedding-capable AI provider in Settings › Connectors.',
 					'wp-mariadb-vector-search'
 				) }
 			</p>
@@ -50,54 +45,22 @@ export function ModelSelector( {
 
 	const options = availableModels.map( ( m ) => ( {
 		value: `${ m.provider }:${ m.model }`,
-		label: m.dimensions
-			? `[${ m.provider }] ${ m.label } (${ m.dimensions }-dim)`
-			: `[${ m.provider }] ${ m.label }`,
+		label: `[${ m.provider }] ${ m.label }`,
 	} ) );
 
-	// Resolve the currently selected model's known dimensions for preview.
-	const selectedColon = selected.indexOf( ':' );
-	const selectedProvider =
-		selectedColon >= 0 ? selected.slice( 0, selectedColon ) : '';
-	const selectedModelId =
-		selectedColon >= 0 ? selected.slice( selectedColon + 1 ) : '';
-	const selectedModel = availableModels.find(
-		( m ) => m.provider === selectedProvider && m.model === selectedModelId
-	);
-	const selectedDims = selectedModel?.dimensions ?? null;
-	const isModelChanged = selected !== currentValue;
-
-	// Effective dimensions: catalog value (authoritative) > user input > current saved.
-	const effectiveDims = selectedDims ?? ( parseInt( dimsInput, 10 ) || null );
-	const dimWillChange =
-		effectiveDims !== null && effectiveDims !== currentDims;
-	const dimUnknown = selectedDims === null;
-
-	function handleModelChange( value: string ) {
-		setSelected( value );
-		// Pre-fill dimensions from catalog when the new model has known dims.
-		const colon = value.indexOf( ':' );
-		const prov = colon >= 0 ? value.slice( 0, colon ) : '';
-		const mod = colon >= 0 ? value.slice( colon + 1 ) : '';
-		const m = availableModels.find(
-			( am ) => am.provider === prov && am.model === mod
-		);
-		if ( m?.dimensions ) {
-			setDimsInput( String( m.dimensions ) );
-		}
+	// Without a placeholder, a <select> with value="" displays the first
+	// option by default, making it look selected even though `selected`
+	// is still "" — which keeps the Save button disabled.
+	if ( currentValue === '' ) {
+		options.unshift( {
+			value: '',
+			label: __( 'Select a model…', 'wp-mariadb-vector-search' ),
+		} );
 	}
 
 	async function handleSave() {
-		if ( selectedColon < 0 ) {
-			return;
-		}
-		if ( ! effectiveDims ) {
-			setError(
-				__(
-					'Please enter the embedding dimensions for this model.',
-					'wp-mariadb-vector-search'
-				)
-			);
+		const colon = selected.indexOf( ':' );
+		if ( colon < 0 ) {
 			return;
 		}
 
@@ -105,28 +68,27 @@ export function ModelSelector( {
 		setError( null );
 
 		try {
-			const result = await apiFetch< SettingsApiResponse >( {
-				path: '/wp/v2/settings',
+			// The ability probes the model to detect its dimensions and saves
+			// provider, model and dimensions together.
+			const raw = await apiFetch( {
+				path: '/wp-abilities/v1/abilities/wp-mariadb-vector-search/select-model/run',
 				method: 'POST',
 				data: {
-					wp_mariadb_vector_search_settings: {
-						provider: selectedProvider,
-						model: selectedModelId,
-						dimensions: effectiveDims,
+					input: {
+						provider: selected.slice( 0, colon ),
+						model: selected.slice( colon + 1 ),
 					},
 				},
 			} );
-			// The Settings API returns the updated option.
-			// We need to determine if dimensions changed to trigger a rebuild.
-			const newDims = result.wp_mariadb_vector_search_settings.dimensions ?? null;
-			const needRebuild = newDims !== null && newDims !== currentDims;
+			const dims = unwrapAbilityResponse< Settings >( raw ).dimensions ?? 0;
 
-			onSaved( newDims ?? effectiveDims ?? currentDims ?? 0, needRebuild );
+			// A rebuild is needed only when an existing table has other
+			// dimensions; a missing table is created at the saved dimensions.
+			onSaved( dims, tableDims !== null && dims !== tableDims );
 		} catch ( err ) {
 			const message =
-				err instanceof Error
-					? err.message
-					: __( 'Unknown error.', 'wp-mariadb-vector-search' );
+				( err as { message?: string } )?.message ??
+				__( 'Unknown error.', 'wp-mariadb-vector-search' );
 			setError( message );
 		} finally {
 			setIsSaving( false );
@@ -136,46 +98,26 @@ export function ModelSelector( {
 	return (
 		<>
 			{ error && (
-				<Notice
-					status="error"
-					onRemove={ () => setError( null ) }
-				>
+				<Notice status="error" onRemove={ () => setError( null ) }>
 					{ error }
-				</Notice>
-			) }
-			{ dimWillChange && (
-				<Notice status="warning" isDismissible={ false }>
-					{ __(
-						'This model uses different dimensions than the current table. Saving will require a table rebuild.',
-						'wp-mariadb-vector-search'
-					) }{ ' ' }
-					{ `(${ currentDims } → ${ effectiveDims })` }
 				</Notice>
 			) }
 			<SelectControl
 				label={ __( 'Model', 'wp-mariadb-vector-search' ) }
 				value={ selected }
 				options={ options }
-				onChange={ handleModelChange }
-			/>
-			<TextControl
-				label={ __( 'Embedding dimensions', 'wp-mariadb-vector-search' ) }
-				type="number"
-				value={ selectedDims !== null ? String( selectedDims ) : dimsInput }
-				onChange={ ( v ) => {
-					if ( selectedDims === null ) {
-						setDimsInput( v );
-					}
-				} }
-				readOnly={ selectedDims !== null }
+				onChange={ setSelected }
 				help={
-					selectedDims !== null
-						? __(
-								'Dimensions are set by the selected model.',
+					currentDims
+						? `${ __(
+								'Current embedding dimensions:',
 								'wp-mariadb-vector-search'
-						  )
+						  ) } ${ currentDims }. ${ __(
+								'Saving sends a short probe request to the model to detect its dimensions.',
+								'wp-mariadb-vector-search'
+						  ) }`
 						: __(
-								'Enter the embedding dimensions for this model (check model documentation).',
+								'Saving sends a short probe request to the model to detect its dimensions.',
 								'wp-mariadb-vector-search'
 						  )
 				}

@@ -17,6 +17,7 @@ class Abilities {
 	const CATEGORY_SLUG      = 'wp-mariadb-vector-search';
 	const ABILITY_GET_STATUS = 'wp-mariadb-vector-search/get-status';
 	const ABILITY_REINDEX    = 'wp-mariadb-vector-search/reindex';
+	const ABILITY_SELECT     = 'wp-mariadb-vector-search/select-model';
 
 	/**
 	 * Register abilities and categories.
@@ -99,6 +100,35 @@ class Abilities {
 				},
 			)
 		);
+
+		// Register select-model ability.
+		wp_register_ability(
+			self::ABILITY_SELECT,
+			array(
+				'label'               => __( 'Select Model', 'wp-mariadb-vector-search' ),
+				'description'         => __( 'Selects the embedding model, detecting its dimensions with a probe request.', 'wp-mariadb-vector-search' ),
+				'category'            => self::CATEGORY_SLUG,
+				'meta'                => array( 'show_in_rest' => true ),
+				'input_schema'        => array(
+					'type'       => 'object',
+					'required'   => array( 'provider', 'model' ),
+					'properties' => array(
+						'provider' => array(
+							'type'        => 'string',
+							'description' => __( 'AI provider id.', 'wp-mariadb-vector-search' ),
+						),
+						'model'    => array(
+							'type'        => 'string',
+							'description' => __( 'Embedding model id.', 'wp-mariadb-vector-search' ),
+						),
+					),
+				),
+				'execute_callback'    => array( __CLASS__, 'execute_select_model' ),
+				'permission_callback' => function () {
+					return current_user_can( 'manage_options' );
+				},
+			)
+		);
 	}
 
 	/**
@@ -165,7 +195,7 @@ class Abilities {
 		$table_dims  = $installed ? $repository->get_column_dimensions() : null;
 		$dim_changed = $installed && null !== $table_dims && null !== $cur_dims && $table_dims !== $cur_dims;
 
-		$indexer  = new Indexer( new Embedding_Client(), $repository );
+		$indexer  = new Indexer( $repository );
 		$backfill = new Cron_Backfill( $indexer );
 
 		if ( $dim_changed ) {
@@ -193,5 +223,39 @@ class Abilities {
 		}
 
 		return array( 'rebuilt' => false );
+	}
+
+	/**
+	 * Callback for select-model ability.
+	 *
+	 * Embeds a probe text with the requested model to detect its native
+	 * dimensions, then saves provider, model and dimensions together. When the
+	 * probe fails the error is returned and the saved settings are untouched.
+	 *
+	 * @param array|null $input Ability input with 'provider' and 'model'.
+	 * @return array|\WP_Error The stored settings, or the probe error.
+	 */
+	public static function execute_select_model( ?array $input = null ): array|\WP_Error {
+		$provider = sanitize_text_field( (string) ( $input['provider'] ?? '' ) );
+		$model    = sanitize_text_field( (string) ( $input['model'] ?? '' ) );
+
+		$result = wp_ai_client_embedding( 'dimension probe' )
+			->using_provider_model( $provider, $model )
+			->generate_embedding_result();
+
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		update_option(
+			Settings::OPTION_NAME,
+			array(
+				'provider'   => $provider,
+				'model'      => $model,
+				'dimensions' => $result->getDimensions(),
+			)
+		);
+
+		return get_option( Settings::OPTION_NAME );
 	}
 }

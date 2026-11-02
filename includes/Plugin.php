@@ -45,10 +45,9 @@ class Plugin {
 		wp_mariadb_vector_search_log( 'register_hooks: schema installed=' . ( Schema::is_installed() ? 'yes' : 'no' ) . '.' );
 
 		$repository = new Repository();
-		$client     = new Embedding_Client();
-		$indexer    = new Indexer( $client, $repository );
+		$indexer    = new Indexer( $repository );
 		$backfill   = new Cron_Backfill( $indexer );
-		$search     = new Search( $client, $repository );
+		$search     = new Search( $repository );
 		$admin      = new Admin();
 
 		// Register Abilities.
