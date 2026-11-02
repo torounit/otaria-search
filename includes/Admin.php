@@ -47,19 +47,17 @@ class Admin {
 	/**
 	 * Render the admin page mount point.
 	 *
-	 * The React app is initialized by the boot module loaded via
+	 * The React app is initialized by Core's boot module, enqueued by
 	 * build/pages/wp-mariadb-vector-search/page-wp-admin.php.
-	 * If the boot module asset is missing, a notice is shown instead.
+	 * If the build is missing, a notice is shown instead.
 	 *
 	 * @return void
 	 */
 	public function render_page(): void {
-		$boot_asset = WP_MARIADB_VECTOR_SEARCH_PLUGIN_DIR . 'build/modules/boot/index.min.asset.php';
-
-		if ( ! file_exists( $boot_asset ) ) {
+		if ( ! function_exists( 'wp_mariadb_vector_search_wp_mariadb_vector_search_wp_admin_render_page' ) ) {
 			echo '<div class="wrap"><div class="notice notice-warning inline"><p>';
 			echo esc_html__(
-				'WP MariaDB Vector Search: boot module not found. Run `npm run build` or ensure WordPress is up to date.',
+				'WP MariaDB Vector Search: build not found. Run `npm run build`.',
 				'wp-mariadb-vector-search'
 			);
 			echo '</p></div></div>';

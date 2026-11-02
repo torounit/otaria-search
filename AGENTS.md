@@ -198,7 +198,7 @@ Rules:
    right reason.
 2. **Green**: write the minimum code in `includes/...` to make it pass — no
    more. Resist designing for hypothetical needs.
-3. **Refactor**: clean up under the safety of green tests. Run `composer lint`.
+3. **Refactor**: clean up under the safety of green tests. Run `npm run lint:php` and `npm run lint:js`.
 4. Commit after each green-and-clean cycle.
 
 Test commands:
@@ -206,7 +206,9 @@ Test commands:
 ```bash
 npm run test:php:base  # fast (recommended; requires wp-env running)
 npm run test:php       # full suite
-composer lint          # PHPCS
+npm run lint:php       # PHPCS (lint:php:fix to apply PHPCBF; requires wp-env running)
+npm run lint:js        # ESLint + Prettier (lint:js:fix to apply fixes)
+npm run typecheck      # tsc --noEmit
 ```
 
 Layering:
@@ -238,5 +240,5 @@ Test file naming convention: `*_Test.php`.
    (e.g. "猫" matching posts that only say "ねこ" / "feline");
    compare ordering vs. default search.
 7. Disable the provider → search → confirm fallback to default behavior + WP_Error in log.
-8. `npm run test:php:base` and `composer lint`.
+8. `npm run test:php:base`, `npm run lint:php` and `npm run lint:js`.
 9. Delete the plugin → `SHOW TABLES LIKE 'wp_mariadb_vector_embeddings'` returns empty.

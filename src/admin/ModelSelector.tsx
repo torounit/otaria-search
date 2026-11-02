@@ -80,7 +80,8 @@ export function ModelSelector( {
 					},
 				},
 			} );
-			const dims = unwrapAbilityResponse< Settings >( raw ).dimensions ?? 0;
+			const dims =
+				unwrapAbilityResponse< Settings >( raw ).dimensions ?? 0;
 
 			// A rebuild is needed only when an existing table has other
 			// dimensions; a missing table is created at the saved dimensions.
@@ -112,14 +113,14 @@ export function ModelSelector( {
 						? `${ __(
 								'Current embedding dimensions:',
 								'wp-mariadb-vector-search'
-						  ) } ${ currentDims }. ${ __(
+							) } ${ currentDims }. ${ __(
 								'Saving sends a short probe request to the model to detect its dimensions.',
 								'wp-mariadb-vector-search'
-						  ) }`
+							) }`
 						: __(
 								'Saving sends a short probe request to the model to detect its dimensions.',
 								'wp-mariadb-vector-search'
-						  )
+							)
 				}
 			/>
 			<Button

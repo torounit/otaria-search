@@ -23,13 +23,19 @@ export function StatusSection( {
 				<tbody>
 					<tr>
 						<td>
-							{ __( 'MariaDB VECTOR support', 'wp-mariadb-vector-search' ) }
+							{ __(
+								'MariaDB VECTOR support',
+								'wp-mariadb-vector-search'
+							) }
 						</td>
 						<td>
 							{ isSupported ? (
 								<span style={ { color: 'green' } }>
 									{ '✓ ' }
-									{ __( 'Available', 'wp-mariadb-vector-search' ) }
+									{ __(
+										'Available',
+										'wp-mariadb-vector-search'
+									) }
 								</span>
 							) : (
 								<span style={ { color: 'red' } }>
@@ -43,15 +49,30 @@ export function StatusSection( {
 						</td>
 					</tr>
 					<tr>
-						<td>{ __( 'Indexed posts', 'wp-mariadb-vector-search' ) }</td>
+						<td>
+							{ __(
+								'Indexed posts',
+								'wp-mariadb-vector-search'
+							) }
+						</td>
 						<td>{ installed ? indexed : '—' }</td>
 					</tr>
 					<tr>
-						<td>{ __( 'Table dimensions', 'wp-mariadb-vector-search' ) }</td>
+						<td>
+							{ __(
+								'Table dimensions',
+								'wp-mariadb-vector-search'
+							) }
+						</td>
 						<td>{ tableDims ?? '—' }</td>
 					</tr>
 					<tr>
-						<td>{ __( 'Backfill status', 'wp-mariadb-vector-search' ) }</td>
+						<td>
+							{ __(
+								'Backfill status',
+								'wp-mariadb-vector-search'
+							) }
+						</td>
 						<td>
 							{ progress
 								? `${ progress.done } / ${ progress.total } posts`

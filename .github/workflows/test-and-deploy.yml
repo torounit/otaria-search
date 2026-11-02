@@ -14,12 +14,12 @@ jobs:
         name: PHPUnit
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v7
 
             - name: Setup Node.js
-              uses: actions/setup-node@v4
+              uses: actions/setup-node@v7
               with:
-                  node-version: 24.15
+                  node-version-file: .node-version
                   cache: npm
 
             - name: Setup PHP
@@ -27,8 +27,8 @@ jobs:
               with:
                   php-version: "8.2"
 
-            - name: Install Node dependencies
-              run: npm ci
+            - name: Install Node dependencies and build
+              run: npm ci && npm run build
 
             - name: Install Composer dependencies
               run: composer install --no-progress --no-interaction
@@ -47,16 +47,16 @@ jobs:
             contents: write
         steps:
             - name: Checkout code
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
 
             - name: Get tag
               id: tag
               run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
             - name: Setup Node.js
-              uses: actions/setup-node@v4
+              uses: actions/setup-node@v7
               with:
-                  node-version: lts/*
+                  node-version-file: .node-version
                   cache: npm
 
             - name: Setup PHP
@@ -80,7 +80,7 @@ jobs:
                   SLUG: wp-mariadb-vector-search
 
             - name: Upload release asset
-              uses: softprops/action-gh-release@v2
+              uses: softprops/action-gh-release@v3
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
