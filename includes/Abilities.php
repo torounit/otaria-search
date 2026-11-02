@@ -233,11 +233,11 @@ class Abilities {
 	 * probe fails the error is returned and the saved settings are untouched.
 	 *
 	 * @param array|null $input Ability input with 'provider' and 'model'.
-	 * @return array|\WP_Error The saved settings, or the probe error.
+	 * @return array|\WP_Error The stored settings, or the probe error.
 	 */
 	public static function execute_select_model( ?array $input = null ): array|\WP_Error {
-		$provider = (string) ( $input['provider'] ?? '' );
-		$model    = (string) ( $input['model'] ?? '' );
+		$provider = sanitize_text_field( (string) ( $input['provider'] ?? '' ) );
+		$model    = sanitize_text_field( (string) ( $input['model'] ?? '' ) );
 
 		$result = wp_ai_client_embedding( 'dimension probe' )
 			->using_provider_model( $provider, $model )
@@ -247,13 +247,15 @@ class Abilities {
 			return $result;
 		}
 
-		$settings = array(
-			'provider'   => $provider,
-			'model'      => $model,
-			'dimensions' => $result->getDimensions(),
+		update_option(
+			Settings::OPTION_NAME,
+			array(
+				'provider'   => $provider,
+				'model'      => $model,
+				'dimensions' => $result->getDimensions(),
+			)
 		);
-		update_option( Settings::OPTION_NAME, $settings );
 
-		return $settings;
+		return get_option( Settings::OPTION_NAME );
 	}
 }

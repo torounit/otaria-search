@@ -116,6 +116,21 @@ class Abilities_Test extends WP_UnitTestCase {
 		$this->assertSame( $expected, get_option( Settings::OPTION_NAME ) );
 	}
 
+	/** Input is sanitized before probing, and the stored settings are returned. */
+	public function test_select_model_returns_sanitized_saved_settings(): void {
+		$result = $this->select_model(
+			array(
+				'provider' => ' ' . Fake_Embedding_Provider::ID . ' ',
+				'model'    => Fake_Embedding_Provider::MODEL . "\n",
+			)
+		);
+
+		$this->assertIsArray( $result );
+		$this->assertSame( Fake_Embedding_Provider::ID, $result['provider'] );
+		$this->assertSame( Fake_Embedding_Provider::MODEL, $result['model'] );
+		$this->assertSame( get_option( Settings::OPTION_NAME ), $result );
+	}
+
 	/** A failed probe returns the error and leaves the saved settings untouched. */
 	public function test_select_model_keeps_settings_when_probe_fails(): void {
 		$saved = array(
