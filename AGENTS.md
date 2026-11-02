@@ -95,8 +95,10 @@ CREATE TABLE {$prefix}mariadb_vector_embeddings (
 Changing the model to one with a different dimension requires dropping and
 re-creating the table; the Admin page handles this automatically.
 
-`content_hash` is `sha256(title + "\n\n" + raw_content)` — used by the indexer
-to skip work when the post body has not changed.
+`content_hash` is a SHA-256 of the selected model (`provider:model`), title and
+raw content (length-prefixed) — used by the indexer to skip work when neither
+the post body nor the embedding model has changed. Including the model means a
+model switch at the same dimension is re-embedded by a normal (non-force) Reindex.
 
 ## Components
 

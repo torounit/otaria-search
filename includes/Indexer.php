@@ -56,7 +56,7 @@ class Indexer {
 			return;
 		}
 
-		$hash = Content_Hash::compute( $post->post_title, $post->post_content );
+		$hash = Content_Hash::compute( $post->post_title, $post->post_content, $this->get_model_key() );
 		if ( $this->repository->get_content_hash( $post_id ) === $hash ) {
 			wp_mariadb_vector_search_log( "index_post({$post_id}): content hash unchanged, skipping." );
 			return;
@@ -112,6 +112,20 @@ class Indexer {
 	 */
 	public function delete_post( int $post_id ): void {
 		$this->repository->delete_post( $post_id );
+	}
+
+	/**
+	 * Identify the embedding model selected in settings, as "provider:model".
+	 *
+	 * @return string
+	 */
+	private function get_model_key(): string {
+		$settings = get_option( Settings::OPTION_NAME, array() );
+		if ( ! is_array( $settings ) ) {
+			return '';
+		}
+
+		return ( $settings['provider'] ?? '' ) . ':' . ( $settings['model'] ?? '' );
 	}
 
 	/**

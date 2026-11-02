@@ -16,6 +16,7 @@ namespace WP_MariaDB_Vector_Search\Tests\Integration;
 use WP_MariaDB_Vector_Search\Indexer;
 use WP_MariaDB_Vector_Search\Repository;
 use WP_MariaDB_Vector_Search\Schema;
+use WP_MariaDB_Vector_Search\Settings;
 
 /**
  * Class Indexer_Test
@@ -131,6 +132,30 @@ class Indexer_Test extends \WP_UnitTestCase {
 		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 
 		$this->assertSame( $first_updated, $second_updated );
+	}
+
+	/** Switching the embedding model re-indexes an unchanged post, even at the same dimensions. */
+	public function test_index_post_reindexes_after_model_change(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_title'   => 'Stable',
+				'post_content' => 'Content that does not change.',
+				'post_status'  => 'publish',
+			)
+		);
+		$this->indexer->index_post( $post_id );
+		$old_hash = $this->repository->get_content_hash( $post_id );
+
+		update_option(
+			Settings::OPTION_NAME,
+			array(
+				'provider' => Fake_Embedding_Provider::ID,
+				'model'    => 'another-fake-embedding',
+			)
+		);
+		$this->indexer->index_post( $post_id );
+
+		$this->assertNotSame( $old_hash, $this->repository->get_content_hash( $post_id ) );
 	}
 
 	/** A post with changed content is re-indexed with a new hash. */
