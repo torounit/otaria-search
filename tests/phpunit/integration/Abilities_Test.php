@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace WP_MariaDB_Vector_Search\Tests\Integration;
 
+use WP_MariaDB_Vector_Search\Settings;
 use WP_UnitTestCase;
 
 /**
@@ -72,5 +73,82 @@ class Abilities_Test extends WP_UnitTestCase {
 		// Verify the result.
 		$this->assertIsArray( $result );
 		$this->assertArrayHasKey( 'rebuilt', $result );
+	}
+
+	/**
+	 * Run the 'select-model' ability as an administrator.
+	 *
+	 * @param array $input Ability input.
+	 * @return mixed Ability result.
+	 */
+	private function select_model( array $input ): mixed {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		return wp_get_ability( 'wp-mariadb-vector-search/select-model' )->execute( $input );
+	}
+
+	/**
+	 * Clean up settings and the fake provider.
+	 */
+	public function tear_down(): void {
+		Fake_Embedding_Provider::reset();
+		delete_option( Settings::OPTION_NAME );
+		parent::tear_down();
+	}
+
+	/** Selecting a model probes it and saves the detected dimensions. */
+	public function test_select_model_saves_probed_dimensions(): void {
+		Fake_Embedding_Provider::$vector = array( 0.1, 0.2, 0.3 );
+
+		$result = $this->select_model(
+			array(
+				'provider' => Fake_Embedding_Provider::ID,
+				'model'    => Fake_Embedding_Provider::MODEL,
+			)
+		);
+
+		$expected = array(
+			'provider'   => Fake_Embedding_Provider::ID,
+			'model'      => Fake_Embedding_Provider::MODEL,
+			'dimensions' => 3,
+		);
+		$this->assertSame( $expected, $result );
+		$this->assertSame( $expected, get_option( Settings::OPTION_NAME ) );
+	}
+
+	/** A failed probe returns the error and leaves the saved settings untouched. */
+	public function test_select_model_keeps_settings_when_probe_fails(): void {
+		$saved = array(
+			'provider'   => 'openai',
+			'model'      => 'text-embedding-3-small',
+			'dimensions' => 1536,
+		);
+		update_option( Settings::OPTION_NAME, $saved );
+		add_filter( 'wp_ai_client_prevent_embedding', '__return_true' );
+
+		$result = $this->select_model(
+			array(
+				'provider' => Fake_Embedding_Provider::ID,
+				'model'    => Fake_Embedding_Provider::MODEL,
+			)
+		);
+
+		$this->assertWPError( $result );
+		$this->assertSame( $saved, get_option( Settings::OPTION_NAME ) );
+	}
+
+	/** Only administrators may select a model. */
+	public function test_select_model_requires_manage_options(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'editor' ) ) );
+
+		$result = wp_get_ability( 'wp-mariadb-vector-search/select-model' )->execute(
+			array(
+				'provider' => Fake_Embedding_Provider::ID,
+				'model'    => Fake_Embedding_Provider::MODEL,
+			)
+		);
+
+		$this->assertWPError( $result );
+		$this->assertSame( array(), get_option( Settings::OPTION_NAME ) );
 	}
 }
