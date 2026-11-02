@@ -2,6 +2,7 @@ import apiFetch from '@wordpress/api-fetch';
 import { Button, Notice, SelectControl, Spinner } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
+import { unwrapAbilityResponse } from './ability';
 import type { AvailableModel, Settings } from './types';
 
 interface Props {
@@ -9,18 +10,17 @@ interface Props {
 	currentProvider: string;
 	currentModel: string;
 	currentDims: number | null;
+	// Dimensions of the existing embeddings table, or null when not installed.
+	tableDims: number | null;
 	onSaved: ( dims: number, needRebuild: boolean ) => void;
 }
-
-type SelectModelRunResponse =
-	| Settings
-	| { result?: Settings; output?: Settings; data?: Settings };
 
 export function ModelSelector( {
 	availableModels,
 	currentProvider,
 	currentModel,
 	currentDims,
+	tableDims,
 	onSaved,
 }: Props ) {
 	const currentValue =
@@ -70,7 +70,7 @@ export function ModelSelector( {
 		try {
 			// The ability probes the model to detect its dimensions and saves
 			// provider, model and dimensions together.
-			const raw = await apiFetch< SelectModelRunResponse >( {
+			const raw = await apiFetch( {
 				path: '/wp-abilities/v1/abilities/wp-mariadb-vector-search/select-model/run',
 				method: 'POST',
 				data: {
@@ -80,14 +80,11 @@ export function ModelSelector( {
 					},
 				},
 			} );
-			const saved =
-				( raw as { result?: Settings } )?.result ??
-				( raw as { output?: Settings } )?.output ??
-				( raw as { data?: Settings } )?.data ??
-				( raw as Settings );
-			const dims = saved.dimensions ?? 0;
+			const dims = unwrapAbilityResponse< Settings >( raw ).dimensions ?? 0;
 
-			onSaved( dims, dims !== currentDims );
+			// A rebuild is needed only when an existing table has other
+			// dimensions; a missing table is created at the saved dimensions.
+			onSaved( dims, tableDims !== null && dims !== tableDims );
 		} catch ( err ) {
 			const message =
 				( err as { message?: string } )?.message ??
