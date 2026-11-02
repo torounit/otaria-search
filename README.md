@@ -6,11 +6,11 @@ Replaces WordPress's default `LIKE`-based search with cosine similarity search p
 
 | Dependency | Minimum version |
 |------------|----------------|
-| WordPress  | 7.0+           |
+| WordPress  | 7.2+           |
 | PHP        | 8.2+           |
 | MariaDB    | 11.7+          |
 
-Embeddings are generated via the **WordPress 7.0 core AI Connector**. If no AI provider is configured, indexing is skipped and search falls back to the standard WordPress LIKE search.
+Embeddings are generated via the **WordPress 7.2 core AI Client embedding API** (`wp_ai_client_embedding()`). Install and configure (Settings > Connectors) an AI provider plugin that supports embedding generation, e.g. AI Provider for OpenAI 1.1+, then select its model on Tools > Vector Search. If no model is selected or the provider fails, indexing is skipped and search falls back to the standard WordPress LIKE search.
 
 ## Installation
 
@@ -57,7 +57,7 @@ Stored in the `wp_mariadb_vector_search_settings` option (array). Values are wri
 
 | Key          | Description |
 |--------------|-------------|
-| `provider`   | AI provider id (e.g. `openai`, `lmstudio`). |
+| `provider`   | AI provider id (e.g. `openai`, `lm_studio`). |
 | `model`      | Embedding model id (e.g. `text-embedding-3-small`). |
 | `dimensions` | Vector dimensions — auto-detected by probing the API when a model is saved. Fixed at table creation; changing to a different dimension requires a Reindex (which recreates the table). |
 
@@ -112,35 +112,36 @@ add_filter(
 );
 ```
 
-### `wp_mariadb_vector_search_embedding_timeout`
-
-HTTP timeout in seconds for embedding API requests. Increase for local models
-(e.g. LM Studio) that need time to load. Default `60.0`.
-
-```php
-add_filter(
-    'wp_mariadb_vector_search_embedding_timeout',
-    function (): float {
-        return 120.0;
-    }
-);
-```
-
 ### `wp_mariadb_vector_search_known_embedding_models`
 
-Extend or replace the built-in list of known embedding models shown in the
-model selector. Entries are only displayed when the provider is registered
-**and** configured in the AI Connector settings.
+Known embedding dimensions shown in the model selector. The selector only lists
+models that a configured provider reports as embedding-capable; entries here
+never add models, they only supply each model's dimensions.
 
 ```php
 add_filter(
     'wp_mariadb_vector_search_known_embedding_models',
     function ( array $models ): array {
         $models[] = [
-            'provider' => 'my-provider',
-            'model'    => 'my-embed-model',
+            'provider'   => 'lm_studio',
+            'model'      => 'text-embedding-nomic-embed-text-v1.5',
+            'dimensions' => 768,
         ];
         return $models;
+    }
+);
+```
+
+### Core AI Client filters
+
+Embedding requests go through the core AI Client, so its filters apply too —
+e.g. raise the HTTP timeout for slow local models:
+
+```php
+add_filter(
+    'wp_ai_client_default_request_timeout',
+    function (): float {
+        return 120.0;
     }
 );
 ```
@@ -170,10 +171,8 @@ includes/
   CLI.php                    — WP-CLI reindex command
   Content_Hash.php           — SHA-256 hash of post title + content
   Cron_Backfill.php          — Batched cron-driven backfill for existing posts
-  Embedding_Client.php       — Thin wrapper: delegates to Embedding_Prompt_Builder
-  Embedding_Prompt_Builder.php — Resolves provider/model from settings, builds HTTP requests
   Indexer.php                — chunk → embed → store pipeline
-  Model_Catalog.php          — Enumerates available embedding models (auto-detect + known list)
+  Model_Catalog.php          — Lists embedding-capable models from the AI Client registry
   Plugin.php                 — Plugin lifecycle and hook registration
   Repository.php             — $wpdb wrapper: vector CRUD and similarity search
   Schema.php                 — DDL management (CREATE / DROP / version check)

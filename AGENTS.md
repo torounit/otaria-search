@@ -6,21 +6,24 @@ Specification for AI agents (and humans) implementing this plugin.
 
 Replace WordPress's default `LIKE`-based search with **semantic similarity search**
 backed by MariaDB's native `VECTOR` column type. Embeddings are produced through
-the **WordPress core AI Connector (WP 7.0+)**, which standardizes access to
-embedding / completion providers without locking the plugin to a single vendor.
+the **WordPress core AI Client embedding API (WP 7.2+, `wp_ai_client_embedding()`)**,
+which standardizes access to embedding providers without locking the plugin to a
+single vendor.
 
 ## Environment
 
 | Requirement       | Version                                                    |
 | ----------------- | ---------------------------------------------------------- |
-| WordPress         | **7.0+** (required — core AI Connector API)                |
+| WordPress         | **7.2+** (required — core AI Client embedding API)         |
 | PHP               | 8.2+                                                       |
 | MariaDB           | **11.7+ (11.8 LTS recommended)** — required for `VECTOR`   |
 | MySQL             | Not supported (no `VECTOR` type). Fail fast with admin notice. |
 
-A provider must be configured for the AI Connector (e.g. an OpenAI- or
-Google-backed provider). Without an embedding-capable provider the plugin
-gracefully falls through to the default WordPress search.
+An AI provider plugin that implements embedding generation must be installed
+and configured (e.g. AI Provider for OpenAI 1.1+, or AI Provider for LM Studio
+0.2+), and its model selected on the admin page. Without a selected,
+embedding-capable model the plugin gracefully falls through to the default
+WordPress search.
 
 `dbDelta()` does **not** understand `VECTOR(N)` / `VECTOR INDEX`. Use raw
 `$wpdb->query()` for DDL, gated by a versioned option
@@ -35,23 +38,26 @@ save_post ──► Indexer::enqueue (wp_schedule_single_event)
         Indexer::run_job
                 │  Chunker → string[]
                 ▼
-        Embedding_Client::embed (batched)  ──► WP AI Connector
-                │  float[][]
+        wp_mariadb_vector_search_embedding(texts)->generate_embeddings()  ──► core AI Client → provider plugin
+                │  Embedding[] → float[][]
                 ▼
         Repository::replace_post_chunks(post_id, chunks)
 
 is_search() ──► Search::pre_get_posts
-                │  query string → Embedding_Client::embed (1 chunk)
+                │  query string → wp_mariadb_vector_search_embedding(s)->generate_embeddings()
                 ▼
         Repository::search_similar(query_vec, post_types, max_distance, max_results) → post__in (ordered)
 ```
 
 ### Design decisions
 
-- **All AI calls go through one wrapper.** `Embedding_Client` is a thin wrapper;
-  it delegates to `Embedding_Prompt_Builder` for provider/model resolution and
-  HTTP requests. Indexer and Search depend on this wrapper, not on the connector
-  directly, so provider/API shifts are isolated.
+- **All AI calls go through core.** `wp_mariadb_vector_search_embedding()`
+  returns core's `WP_AI_Client_Embedding_Builder` (from `wp_ai_client_embedding()`)
+  bound via `using_provider_model()` to the model selected in settings. Provider
+  resolution, authentication, HTTP and response parsing belong to core and the
+  provider plugins; the plugin never talks to an AI API directly. Core never
+  picks a model implicitly (vectors from different models are not comparable),
+  so an unselected model yields a core `WP_Error`.
 - **Chunking, one post → N vectors.** Long posts lose information when
   truncated to a model's token limit, so we split them. Storage is per-chunk;
   search aggregates back to posts via `MIN(distance)`.
@@ -85,7 +91,7 @@ CREATE TABLE {$prefix}mariadb_vector_embeddings (
 ```
 
 `:N` is fixed at install time from the chosen model
-(e.g. OpenAI `text-embedding-3-small` = 1536, Google `text-embedding-004` = 768).
+(e.g. OpenAI `text-embedding-3-small` = 1536, `text-embedding-3-large` = 3072).
 Changing the model to one with a different dimension requires dropping and
 re-creating the table; the Admin page handles this automatically.
 
@@ -96,16 +102,14 @@ to skip work when the post body has not changed.
 
 | File                              | Responsibility                                                                                     |
 | --------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `wp-mariadb-vector-search.php`    | Bootstrap. Defines `WP_MARIADB_VECTOR_SEARCH_VERSION`, registers activation hooks.                 |
+| `wp-mariadb-vector-search.php`    | Bootstrap. Defines `WP_MARIADB_VECTOR_SEARCH_VERSION`, registers activation hooks. `wp_mariadb_vector_search_embedding()` (core builder bound to the selected model). |
 | `includes/Plugin.php`             | Composition root. Instantiates components and registers hooks.                                     |
 | `includes/Schema.php`             | Install/upgrade table. Verify MariaDB version. Admin notice on incompatibility.                    |
 | `includes/Repository.php`         | `$wpdb` wrapper. `replace_post_chunks()`, `delete_post()`, `search_similar()`. Vector text serialization. |
-| `includes/Embedding_Client.php`   | Thin wrapper over the WP 7.0 AI Connector. Delegates to `Embedding_Prompt_Builder`. Batched `texts[] → vectors[][]`. |
-| `includes/Embedding_Prompt_Builder.php` | Resolves provider/model from settings, builds HTTP requests, applies timeout filter.         |
-| `includes/Model_Catalog.php`      | Enumerates available embedding models (auto-detect from registered providers + known list). Filterable. |
+| `includes/Model_Catalog.php`      | Enumerates models the AI Client registry reports as embedding-capable; known list supplies dimensions. Filterable. |
 | `includes/Content_Hash.php`       | SHA-256 hash of post title + content.                                                              |
 | `includes/Chunker.php`            | Block strip + paragraph/sentence/char splitting with overlap. Title prepended to each chunk.       |
-| `includes/Indexer.php`            | `save_post`/`delete_post`/`trashed_post` hooks. Cron worker that calls embedding client and repository. |
+| `includes/Indexer.php`            | `save_post`/`delete_post`/`trashed_post` hooks. Cron worker that embeds chunks and stores them via the repository. |
 | `includes/Search.php`             | `pre_get_posts` rewrite to `post__in` + `orderby=post__in`. Safe fallback to default search.       |
 | `includes/CLI.php`                | `wp mariadb-vector reindex [--post-type=] [--force] [--batch=]`. Loaded only if `WP_CLI`.          |
 | `includes/Cron_Backfill.php`      | Batched cron-driven reindex of all posts. Progress in transient.                                   |
@@ -150,7 +154,7 @@ the result set and ensures the VECTOR INDEX is engaged.
 
 | Key          | Default | Purpose                                                     |
 | ------------ | ------- | ----------------------------------------------------------- |
-| `provider`   | —       | AI provider id (e.g. `openai`, `lmstudio`).                 |
+| `provider`   | —       | AI provider id (e.g. `openai`, `lm_studio`).                |
 | `model`      | —       | Embedding model id (e.g. `text-embedding-3-small`).         |
 | `dimensions` | 1536    | Fixed at install. Schema's `VECTOR(N)`. Changing to a different dimension requires Reindex. |
 
@@ -163,8 +167,11 @@ Other options:
 - `wp_mariadb_vector_search_post_types` (`string[]`) — override indexed post types.
 - `wp_mariadb_vector_search_max_distance` (`float`, default `0.65`) — maximum cosine distance to include in results. `0` = identical, smaller = more similar. Optimal value is model-dependent.
 - `wp_mariadb_vector_search_max_results` (`int`, default `200`) — safety cap on returned posts; also the basis for the inner `LIMIT` so the VECTOR INDEX is used.
-- `wp_mariadb_vector_search_embedding_timeout` (`float`, default `60.0`) — HTTP timeout in seconds for embedding API requests. Increase for local models (e.g. LM Studio).
-- `wp_mariadb_vector_search_known_embedding_models` (`array`) — extend or replace the built-in list of known embedding models shown in the model selector.
+- `wp_mariadb_vector_search_known_embedding_models` (`array`) — known `{provider, model, dimensions}` entries. Only supplies dimensions; never adds models to the list.
+
+Embedding requests also honor core's AI Client filters, e.g.
+`wp_ai_client_default_request_timeout` (HTTP timeout; raise it for slow local
+models) and `wp_ai_client_prevent_embedding`.
 
 ## `$wpdb` notes
 
@@ -204,11 +211,12 @@ Layering:
   Examples: vector serialization, chunker, text normalization, hashing, model catalog.
   These must run without `wp-env`.
 - **Integration tests** (`tests/phpunit/integration/`): exercise `$wpdb`,
-  hooks, and the AI Connector wrapper. Run inside `wp-env` against MariaDB
-  11.7+. The AI Connector is **stubbed** via dependency injection — an anonymous
-  class implementing the `Embedding_Client` interface is passed directly to
-  `Indexer`/`Search`, returning deterministic vectors without any network calls.
-  Never call a real LLM in CI.
+  hooks, and the core AI Client. Run inside `wp-env` (WordPress 7.2+) against
+  MariaDB 11.7+. The bootstrap registers `Fake_Embedding_Provider` in the AI
+  Client default registry; tests select it with `Fake_Embedding_Provider::select()`
+  and control output via `Fake_Embedding_Provider::$vector`, so the real core
+  builder runs end-to-end without any network calls. Simulate provider failure
+  with core's `wp_ai_client_prevent_embedding` filter. Never call a real LLM in CI.
 
 Test file naming convention: `*_Test.php`.
 
@@ -216,8 +224,8 @@ Test file naming convention: `*_Test.php`.
 
 1. `wp-env start` (ensure the image is MariaDB 11.7+; check with
    `wp-env run cli wp db query "SELECT VERSION();"`).
-2. Configure an embedding-capable provider for the WP 7.0 AI Connector
-   (admin UI or `wp option update`).
+2. Configure an embedding-capable provider plugin (Settings > Connectors) and
+   select its model on Tools > Vector Search.
 3. Activate this plugin; check `SHOW CREATE TABLE wp_mariadb_vector_embeddings`.
 4. Create posts → `wp cron event run --due-now` → inspect:
    `wp db query "SELECT post_id, chunk_index, VEC_ToText(embedding) FROM wp_mariadb_vector_embeddings WHERE post_id=N;"`

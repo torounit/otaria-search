@@ -41,7 +41,7 @@ export function ModelSelector( {
 		return (
 			<p>
 				{ __(
-					'No embedding models available. Configure an AI provider in Settings › AI Connector.',
+					'No embedding models available. Configure an embedding-capable AI provider in Settings › Connectors.',
 					'wp-mariadb-vector-search'
 				) }
 			</p>
