@@ -3,7 +3,8 @@
  * Integration tests for the Search class.
  *
  * Requires MariaDB 11.7+ with VECTOR support.
- * Embedding_Client is stubbed via anonymous subclass (no real HTTP calls).
+ * Embeddings come from Fake_Embedding_Provider through the core AI Client
+ * (no real HTTP calls).
  *
  * @package WP_MariaDB_Vector_Search
  */
@@ -12,7 +13,6 @@ declare(strict_types=1);
 
 namespace WP_MariaDB_Vector_Search\Tests\Integration;
 
-use WP_MariaDB_Vector_Search\Embedding_Client;
 use WP_MariaDB_Vector_Search\Indexer;
 use WP_MariaDB_Vector_Search\Repository;
 use WP_MariaDB_Vector_Search\Schema;
@@ -63,43 +63,7 @@ class Search_Test extends \WP_UnitTestCase {
 	 */
 	private $original_main_query;
 
-	/**
-	 * Build a stub Embedding_Client that returns fixed 4-dim vectors without HTTP calls.
-	 *
-	 * @return Embedding_Client
-	 */
-	private function make_stub_client(): Embedding_Client {
-		return new class() extends Embedding_Client {
-			/**
-			 * Return fixed 4-dimensional vectors.
-			 *
-			 * @param string[] $texts Texts to embed.
-			 * @return float[][]|\WP_Error
-			 */
-			public function embed( array $texts ): array|\WP_Error {
-				return array_map( static fn() => array( 1.0, 0.0, 0.0, 0.0 ), $texts );
-			}
-		};
-	}
 
-	/**
-	 * Build an Embedding_Client stub that always returns WP_Error.
-	 *
-	 * @return Embedding_Client
-	 */
-	private function make_error_client(): Embedding_Client {
-		return new class() extends Embedding_Client {
-			/**
-			 * Always return WP_Error.
-			 *
-			 * @param string[] $texts Texts to embed.
-			 * @return float[][]|\WP_Error
-			 */
-			public function embed( array $texts ): array|\WP_Error {
-				return new \WP_Error( 'api_error', 'Offline.' );
-			}
-		};
-	}
 
 	/**
 	 * Set up test fixtures.
@@ -117,12 +81,12 @@ class Search_Test extends \WP_UnitTestCase {
 		Schema::drop();
 		delete_option( 'wp_mariadb_vector_search_db_version' );
 		Schema::install( self::DIMS );
+		Fake_Embedding_Provider::select();
 
 		$this->repository = new Repository();
 
-		// Create and index two posts with the stub client.
-		$stub_client = $this->make_stub_client();
-		$indexer     = new Indexer( $stub_client, $this->repository );
+		// Create and index two posts with the default fake vector (1,0,0,0).
+		$indexer = new Indexer( $this->repository );
 
 		$this->post_a = $this->factory->post->create(
 			array(
@@ -142,7 +106,7 @@ class Search_Test extends \WP_UnitTestCase {
 		$indexer->index_post( $this->post_a );
 		$indexer->index_post( $this->post_b );
 
-		$this->search = new Search( $this->make_stub_client(), $this->repository );
+		$this->search = new Search( $this->repository );
 		$this->search->register_hooks();
 	}
 
@@ -150,6 +114,7 @@ class Search_Test extends \WP_UnitTestCase {
 	 * Tear down test fixtures.
 	 */
 	public function tear_down(): void {
+		Fake_Embedding_Provider::reset();
 		remove_all_filters( 'pre_get_posts' );
 		remove_all_filters( 'posts_search' );
 		remove_all_actions( 'the_posts' );
@@ -248,12 +213,13 @@ class Search_Test extends \WP_UnitTestCase {
 
 	/** Search falls back gracefully when the embedding provider returns an error. */
 	public function test_search_falls_back_on_provider_error(): void {
-		// Replace the registered search hooks with an error-returning client.
+		// Make every embedding request fail via core's prevent filter.
 		remove_all_filters( 'pre_get_posts' );
 		remove_all_filters( 'posts_search' );
 		remove_all_actions( 'the_posts' );
 
-		$error_search = new Search( $this->make_error_client(), $this->repository );
+		add_filter( 'wp_ai_client_prevent_embedding', '__return_true' );
+		$error_search = new Search( $this->repository );
 		$error_search->register_hooks();
 
 		$query = new \WP_Query(

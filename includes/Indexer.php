@@ -12,21 +12,20 @@ namespace WP_MariaDB_Vector_Search;
 /**
  * Orchestrates the embed → store pipeline for a single post.
  *
- * The actual embedding is delegated to Embedding_Client; storage to
- * Repository. This class is also responsible for deciding WHEN to
- * (re-)index (published posts only, skip on unchanged content hash).
+ * The actual embedding is delegated to the core AI Client via
+ * wp_mariadb_vector_search_embedding(); storage to Repository. This class
+ * is also responsible for deciding WHEN to (re-)index (published posts
+ * only, skip on unchanged content hash).
  */
 class Indexer {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param Embedding_Client $client     Embedding provider wrapper.
-	 * @param Repository       $repository Embeddings table wrapper.
-	 * @param Chunker          $chunker    Text splitter.
+	 * @param Repository $repository Embeddings table wrapper.
+	 * @param Chunker    $chunker    Text splitter.
 	 */
 	public function __construct(
-		private Embedding_Client $client,
 		private Repository $repository,
 		private Chunker $chunker = new Chunker(),
 	) {}
@@ -64,7 +63,7 @@ class Indexer {
 		}
 
 		$texts  = $this->chunker->chunk( $post->post_content, $post->post_title );
-		$result = $this->client->embed( $texts );
+		$result = wp_mariadb_vector_search_embedding( $texts )->generate_embeddings();
 
 		if ( is_wp_error( $result ) ) {
 			wp_mariadb_vector_search_log(
@@ -89,11 +88,11 @@ class Indexer {
 		);
 
 		$chunks = array();
-		foreach ( $result as $i => $vector ) {
+		foreach ( $result as $i => $embedding ) {
 			$chunks[] = array(
 				'chunk_index' => $i,
 				'chunk_text'  => $texts[ $i ],
-				'vector'      => $vector,
+				'vector'      => $embedding->getValues(),
 			);
 		}
 

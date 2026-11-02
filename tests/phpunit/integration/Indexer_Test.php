@@ -3,8 +3,8 @@
  * Integration tests for the Indexer class.
  *
  * Requires MariaDB 11.7+ with VECTOR support.
- * The Embedding_Client is stubbed via an anonymous subclass that returns
- * fixed vectors without needing a real AI provider.
+ * Embeddings come from Fake_Embedding_Provider through the core AI Client,
+ * so no real AI provider is needed.
  *
  * @package WP_MariaDB_Vector_Search
  */
@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace WP_MariaDB_Vector_Search\Tests\Integration;
 
-use WP_MariaDB_Vector_Search\Embedding_Client;
 use WP_MariaDB_Vector_Search\Indexer;
 use WP_MariaDB_Vector_Search\Repository;
 use WP_MariaDB_Vector_Search\Schema;
@@ -42,24 +41,6 @@ class Indexer_Test extends \WP_UnitTestCase {
 	 */
 	private const DIMS = 4;
 
-	/**
-	 * Build a stub Embedding_Client that returns fixed 4-dim vectors without HTTP calls.
-	 *
-	 * @return Embedding_Client
-	 */
-	private function make_stub_client(): Embedding_Client {
-		return new class() extends Embedding_Client {
-			/**
-			 * Return fixed 4-dimensional vectors for every input text.
-			 *
-			 * @param string[] $texts Texts to embed.
-			 * @return float[][]|\WP_Error
-			 */
-			public function embed( array $texts ): array|\WP_Error {
-				return array_map( static fn() => array( 0.5, 0.5, 0.5, 0.5 ), $texts );
-			}
-		};
-	}
 
 	/**
 	 * Set up test fixtures.
@@ -77,15 +58,17 @@ class Indexer_Test extends \WP_UnitTestCase {
 		Schema::drop();
 		delete_option( 'wp_mariadb_vector_search_db_version' );
 		Schema::install( self::DIMS );
+		Fake_Embedding_Provider::select();
 
 		$this->repository = new Repository();
-		$this->indexer    = new Indexer( $this->make_stub_client(), $this->repository );
+		$this->indexer    = new Indexer( $this->repository );
 	}
 
 	/**
 	 * Tear down test fixtures.
 	 */
 	public function tear_down(): void {
+		Fake_Embedding_Provider::reset();
 		Schema::drop();
 		delete_option( 'wp_mariadb_vector_search_db_version' );
 		add_filter( 'query', array( $this, '_create_temporary_tables' ) );

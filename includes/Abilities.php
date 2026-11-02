@@ -165,7 +165,7 @@ class Abilities {
 		$table_dims  = $installed ? $repository->get_column_dimensions() : null;
 		$dim_changed = $installed && null !== $table_dims && null !== $cur_dims && $table_dims !== $cur_dims;
 
-		$indexer  = new Indexer( new Embedding_Client(), $repository );
+		$indexer  = new Indexer( $repository );
 		$backfill = new Cron_Backfill( $indexer );
 
 		if ( $dim_changed ) {

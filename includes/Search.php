@@ -26,11 +26,9 @@ class Search {
 	/**
 	 * Constructor.
 	 *
-	 * @param Embedding_Client $client     Embedding provider wrapper.
-	 * @param Repository       $repository Embeddings table wrapper.
+	 * @param Repository $repository Embeddings table wrapper.
 	 */
 	public function __construct(
-		private Embedding_Client $client,
 		private Repository $repository,
 	) {}
 
@@ -60,7 +58,7 @@ class Search {
 		}
 
 		$post_types = $this->get_post_types( $query );
-		$result     = $this->client->embed( array( $search_term ) );
+		$result     = wp_mariadb_vector_search_embedding( $search_term )->generate_embeddings();
 
 		if ( is_wp_error( $result ) || empty( $result[0] ) ) {
 			return;
@@ -68,7 +66,7 @@ class Search {
 
 		$max_distance = (float) apply_filters( 'wp_mariadb_vector_search_max_distance', 0.65 );
 		$max_results  = (int) apply_filters( 'wp_mariadb_vector_search_max_results', 200 );
-		$ids          = $this->repository->search_similar( $result[0], $post_types, $max_distance, $max_results );
+		$ids          = $this->repository->search_similar( $result[0]->getValues(), $post_types, $max_distance, $max_results );
 
 		if ( empty( $ids ) ) {
 			return;

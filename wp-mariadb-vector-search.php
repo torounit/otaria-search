@@ -33,13 +33,25 @@ if ( file_exists( __DIR__ . '/build/build.php' ) ) {
 }
 
 /**
- * Create an Embedding_Prompt_Builder for building embedding requests.
+ * Create a core embedding builder bound to the model selected in plugin settings.
  *
- * @param string|null $prompt Optional initial prompt text.
- * @return WP_MariaDB_Vector_Search\Embedding_Prompt_Builder
+ * Thin layer over wp_ai_client_embedding(). When no model is selected the
+ * builder is returned without one, so generating returns a core WP_Error.
+ *
+ * @param string|string[] ...$input Text(s) to embed, or a single list of texts.
+ * @return WP_AI_Client_Embedding_Builder
  */
-function wp_mariadb_vector_search_prompt( ?string $prompt = null ): WP_MariaDB_Vector_Search\Embedding_Prompt_Builder {
-	return new WP_MariaDB_Vector_Search\Embedding_Prompt_Builder( $prompt );
+function wp_mariadb_vector_search_embedding( ...$input ): WP_AI_Client_Embedding_Builder {
+	$settings = get_option( WP_MariaDB_Vector_Search\Settings::OPTION_NAME, array() );
+	$provider = is_array( $settings ) ? (string) ( $settings['provider'] ?? '' ) : '';
+	$model    = is_array( $settings ) ? (string) ( $settings['model'] ?? '' ) : '';
+	$builder  = wp_ai_client_embedding( ...$input );
+
+	if ( '' !== $provider && '' !== $model ) {
+		$builder = $builder->using_provider_model( $provider, $model );
+	}
+
+	return $builder;
 }
 
 /**
