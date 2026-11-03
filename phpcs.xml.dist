@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<ruleset name="Squirrel Search">
+<ruleset name="Otaria Search">
 	<description>Slug Automator coding standards.</description>
 
 	<!-- What to scan -->

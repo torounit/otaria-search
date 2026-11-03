@@ -65,7 +65,7 @@ export function VectorSearchApp() {
 		setStatus( { phase: 'loading' } );
 		try {
 			const data = await apiFetch( {
-				path: '/wp-abilities/v1/abilities/squirrel-search/get-status/run',
+				path: '/wp-abilities/v1/abilities/otaria-search/get-status/run',
 			} );
 			setStatus( {
 				phase: 'ready',
@@ -75,7 +75,7 @@ export function VectorSearchApp() {
 			const message =
 				err instanceof Error
 					? err.message
-					: __( 'Failed to load status.', 'squirrel-search' );
+					: __( 'Failed to load status.', 'otaria-search' );
 			setStatus( { phase: 'error', message } );
 		}
 	}
@@ -85,7 +85,7 @@ export function VectorSearchApp() {
 	}, [] );
 
 	return (
-		<Page hasPadding title={ __( 'Squirrel Search', 'squirrel-search' ) }>
+		<Page hasPadding title={ __( 'Otaria Search', 'otaria-search' ) }>
 			<Stack direction="column" gap="xl">
 				{ successMessage && (
 					<Notice
@@ -125,11 +125,11 @@ export function VectorSearchApp() {
 									needRebuild
 										? __(
 												'Model saved. The table dimension has changed — please run Reindex all posts to recreate the table.',
-												'squirrel-search'
+												'otaria-search'
 											)
 										: __(
 												'Model saved. Please run Reindex all posts to apply the new model.',
-												'squirrel-search'
+												'otaria-search'
 											)
 								);
 								void loadStatus();
@@ -146,11 +146,11 @@ export function VectorSearchApp() {
 										reindexRequired
 											? __(
 													'Prefixes saved. Please run Reindex all posts to re-embed posts with the new document prefix.',
-													'squirrel-search'
+													'otaria-search'
 												)
 											: __(
 													'Prefixes saved.',
-													'squirrel-search'
+													'otaria-search'
 												)
 									)
 								}
@@ -170,7 +170,7 @@ export function VectorSearchApp() {
 									setSuccessMessage(
 										__(
 											'Search settings saved.',
-											'squirrel-search'
+											'otaria-search'
 										)
 									)
 								}
@@ -187,11 +187,11 @@ export function VectorSearchApp() {
 									reindexRequired
 										? __(
 												'Post types saved. Please run Reindex all posts to index the added post types.',
-												'squirrel-search'
+												'otaria-search'
 											)
 										: __(
 												'Post types saved.',
-												'squirrel-search'
+												'otaria-search'
 											)
 								);
 								void loadStatus();
@@ -206,7 +206,7 @@ export function VectorSearchApp() {
 								setSuccessMessage(
 									__(
 										'Index settings saved. Run Reindex all posts to apply them to existing posts.',
-										'squirrel-search'
+										'otaria-search'
 									)
 								)
 							}
@@ -223,11 +223,11 @@ export function VectorSearchApp() {
 									rebuilt
 										? __(
 												'Table rebuilt. Reindex has been scheduled.',
-												'squirrel-search'
+												'otaria-search'
 											)
 										: __(
 												'Backfill has been scheduled.',
-												'squirrel-search'
+												'otaria-search'
 											)
 								);
 								void loadStatus();

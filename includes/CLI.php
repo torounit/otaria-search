@@ -2,17 +2,17 @@
 /**
  * WP-CLI command for manual reindexing.
  *
- * @package Squirrel_Search
+ * @package Otaria_Search
  */
 
 declare(strict_types=1);
 
-namespace Squirrel_Search;
+namespace Otaria_Search;
 
 /**
- * WP-CLI commands for Squirrel Search.
+ * WP-CLI commands for Otaria Search.
  *
- * @package Squirrel_Search
+ * @package Otaria_Search
  */
 class CLI {
 
@@ -39,8 +39,8 @@ class CLI {
 	 *
 	 * ## EXAMPLES
 	 *
-	 *     wp squirrel-search reindex
-	 *     wp squirrel-search reindex --post-type=post --force
+	 *     wp otaria-search reindex
+	 *     wp otaria-search reindex --post-type=post --force
 	 *
 	 * @param array $args       Positional arguments.
 	 * @param array $assoc_args Associative arguments.

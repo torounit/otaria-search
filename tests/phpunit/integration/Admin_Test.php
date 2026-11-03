@@ -2,18 +2,18 @@
 /**
  * Integration tests for the admin page.
  *
- * @package Squirrel_Search
+ * @package Otaria_Search
  */
 
 declare(strict_types=1);
 
-namespace Squirrel_Search\Tests\Integration;
+namespace Otaria_Search\Tests\Integration;
 
-use Squirrel_Search\Admin;
+use Otaria_Search\Admin;
 use WP_UnitTestCase;
 
 /**
- * Tests for the Settings > Squirrel Search page.
+ * Tests for the Settings > Otaria Search page.
  */
 class Admin_Test extends WP_UnitTestCase {
 
@@ -34,16 +34,16 @@ class Admin_Test extends WP_UnitTestCase {
 	 * The page mounts the app with Core's boot module, without a plugin-local copy.
 	 */
 	public function test_render_page_mounts_app_without_local_boot_asset(): void {
-		$this->assertFileDoesNotExist( SQUIRREL_SEARCH_PLUGIN_DIR . 'build/modules/boot/index.min.asset.php' );
+		$this->assertFileDoesNotExist( OTARIA_SEARCH_PLUGIN_DIR . 'build/modules/boot/index.min.asset.php' );
 
 		// admin-header.php sets the page title before the page renders.
-		$GLOBALS['title'] = 'Squirrel Search'; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$GLOBALS['title'] = 'Otaria Search'; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 
 		ob_start();
 		( new Admin() )->render_page();
 		$output = (string) ob_get_clean();
 
-		$this->assertStringContainsString( 'id="squirrel-search-wp-admin-app"', $output );
+		$this->assertStringContainsString( 'id="otaria-search-wp-admin-app"', $output );
 	}
 
 	/**

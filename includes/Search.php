@@ -2,12 +2,12 @@
 /**
  * Search hook — replaces the default WP search with vector similarity.
  *
- * @package Squirrel_Search
+ * @package Otaria_Search
  */
 
 declare(strict_types=1);
 
-namespace Squirrel_Search;
+namespace Otaria_Search;
 
 /**
  * Hooks into pre_get_posts to rewrite the main search query with vector similarity.
@@ -30,7 +30,7 @@ class Search {
 	 *
 	 * @since 0.2.0
 	 */
-	const QUERY_VAR = 'squirrel_search';
+	const QUERY_VAR = 'otaria_search';
 
 	/**
 	 * Safety cap on the posts returned by the vector search.
@@ -85,7 +85,7 @@ class Search {
 		}
 
 		$post_types = $this->get_post_types( $query );
-		$result     = squirrel_search_embedding( Settings::get_prefixes()['query_prefix'] . $search_term )->generate_embeddings();
+		$result     = otaria_search_embedding( Settings::get_prefixes()['query_prefix'] . $search_term )->generate_embeddings();
 
 		if ( is_wp_error( $result ) || empty( $result[0] ) ) {
 			return;

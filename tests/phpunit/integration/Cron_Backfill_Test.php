@@ -4,17 +4,17 @@
  *
  * Requires MariaDB 11.7+ with VECTOR support.
  *
- * @package Squirrel_Search
+ * @package Otaria_Search
  */
 
 declare(strict_types=1);
 
-namespace Squirrel_Search\Tests\Integration;
+namespace Otaria_Search\Tests\Integration;
 
-use Squirrel_Search\Cron_Backfill;
-use Squirrel_Search\Indexer;
-use Squirrel_Search\Repository;
-use Squirrel_Search\Schema;
+use Otaria_Search\Cron_Backfill;
+use Otaria_Search\Indexer;
+use Otaria_Search\Repository;
+use Otaria_Search\Schema;
 
 /**
  * Class Cron_Backfill_Test

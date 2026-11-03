@@ -1,5 +1,5 @@
 {
-	"name": "squirrel-search",
+	"name": "otaria-search",
 	"version": "0.2.0",
 	"description": "Semantic and hybrid search for WordPress, backed by MariaDB's VECTOR type.",
 	"author": "Toro_Unit",
@@ -11,18 +11,18 @@
 		"vector-search",
 		"mariadb"
 	],
-	"homepage": "https://github.com/torounit/squirrel-search",
+	"homepage": "https://github.com/torounit/otaria-search",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/torounit/squirrel-search.git"
+		"url": "https://github.com/torounit/otaria-search.git"
 	},
-	"bugs": "https://github.com/torounit/squirrel-search/issues",
+	"bugs": "https://github.com/torounit/otaria-search/issues",
 	"private": true,
 	"wpPlugin": {
-		"name": "squirrel_search",
-		"handlePrefix": "squirrel_search",
+		"name": "otaria_search",
+		"handlePrefix": "otaria_search",
 		"pages": [
-			"squirrel-search"
+			"otaria-search"
 		]
 	},
 	"engines": {
@@ -58,16 +58,16 @@
 		"lint:js:fix": "wp-scripts lint-js --fix",
 		"lint:js": "wp-scripts lint-js",
 		"lint:pkg-json": "wp-scripts lint-pkg-json ./package.json",
-		"lint:php:fix": "wp-env --config=.wp-env.test.json run cli --env-cwd=wp-content/plugins/squirrel-search composer run-script format",
-		"lint:php": "wp-env --config=.wp-env.test.json run cli --env-cwd=wp-content/plugins/squirrel-search composer run-script lint",
+		"lint:php:fix": "wp-env --config=.wp-env.test.json run cli --env-cwd=wp-content/plugins/otaria-search composer run-script format",
+		"lint:php": "wp-env --config=.wp-env.test.json run cli --env-cwd=wp-content/plugins/otaria-search composer run-script lint",
 		"start:routes": "wp-build --watch",
 		"start": "npm run start:routes",
 		"test:php": "npm-run-all test:php:setup test:php:base",
 		"test:php:setup": "wp-env --config=.wp-env.test.json start",
-		"test:php:base": "wp-env --config=.wp-env.test.json run --env-cwd='wp-content/plugins/squirrel-search' wordpress vendor/bin/phpunit -c phpunit.xml.dist",
+		"test:php:base": "wp-env --config=.wp-env.test.json run --env-cwd='wp-content/plugins/otaria-search' wordpress vendor/bin/phpunit -c phpunit.xml.dist",
 		"typecheck": "tsc --noEmit",
 		"wp-env": "wp-env",
-		"wp-env:cli": "wp-env run cli --env-cwd=wp-content/plugins/squirrel-search",
+		"wp-env:cli": "wp-env run cli --env-cwd=wp-content/plugins/otaria-search",
 		"wp-env:test": "wp-env --config=.wp-env.test.json",
 		"prepare": "husky"
 	},

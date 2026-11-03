@@ -1,4 +1,4 @@
-# AGENTS.md — Squirrel Search
+# AGENTS.md — Otaria Search
 
 Specification for AI agents (and humans) working on this plugin.
 
@@ -29,12 +29,12 @@ save_post ──► Indexer::enqueue (wp_schedule_single_event)
                 │
                 ▼
         Indexer::run_job ── Chunker → string[]
-                │           squirrel_search_embedding(texts)->generate_embeddings()
+                │           otaria_search_embedding(texts)->generate_embeddings()
                 ▼
         Repository::replace_post_chunks(post_id, chunks)
 
 is_search() ──► Search::pre_get_posts
-                │  query → squirrel_search_embedding(s)->generate_embeddings()
+                │  query → otaria_search_embedding(s)->generate_embeddings()
                 ▼
         Repository::search_similar(...)        WP_Query (LIKE, orderby=relevance)
                 │  vector ranking                 │  lexical ranking
@@ -47,14 +47,14 @@ is_search() ──► Search::pre_get_posts
 
 ### Design decisions
 
-- **All AI calls go through core.** `squirrel_search_embedding()` returns core's
+- **All AI calls go through core.** `otaria_search_embedding()` returns core's
   `WP_AI_Client_Embedding_Builder`, bound with `using_provider_model()` to the
   selected model. The plugin never calls an AI API directly. Core never picks a
   model implicitly (vectors from different models are not comparable), so no
   selected model means a core `WP_Error`.
 - **One post → N chunks.** Long posts are split rather than truncated. Rows
   are per chunk; search aggregates to posts by `MIN(distance)`.
-- **Separate table** `{$prefix}squirrel_search_embeddings`, not post meta: no
+- **Separate table** `{$prefix}otaria_search_embeddings`, not post meta: no
   autoload, simple uninstall.
 - **Async indexing.** `save_post` only schedules; embedding runs on cron, so
   saving stays fast and provider failures don't break the editor.
@@ -69,7 +69,7 @@ is_search() ──► Search::pre_get_posts
   Reciprocal Rank Fusion, which needs only ranks (cosine distance and LIKE
   relevance are not comparable).
 - **LIKE removal is scoped to the query.** The rewritten query carries the
-  `squirrel_search` query var, and a permanent `posts_search` filter empties
+  `otaria_search` query var, and a permanent `posts_search` filter empties
   the clause only for it (a filter added/removed around the query leaks:
   `fields=ids` queries return before `the_posts`). Core hides
   password-protected posts from logged-out visitors inside that clause, so the
@@ -78,7 +78,7 @@ is_search() ──► Search::pre_get_posts
 ## Storage
 
 `Schema.php` creates the table with raw `$wpdb->query()` (`dbDelta()` does not
-understand `VECTOR(N)` / `VECTOR INDEX`), gated by `squirrel_search_db_version`.
+understand `VECTOR(N)` / `VECTOR INDEX`), gated by `otaria_search_db_version`.
 One row per chunk: `post_id`, `chunk_index`, `post_type`, `dimensions`,
 `embedding VECTOR(N)` with a cosine `VECTOR INDEX`, `chunk_text`,
 `content_hash`, `updated_at`.
@@ -97,7 +97,7 @@ One row per chunk: `post_id`, `chunk_index`, `post_type`, `dimensions`,
 
 | File                         | Responsibility                                                                 |
 | ---------------------------- | ------------------------------------------------------------------------------ |
-| `squirrel-search.php`        | Bootstrap, activation hooks, `squirrel_search_embedding()`.                    |
+| `otaria-search.php`        | Bootstrap, activation hooks, `otaria_search_embedding()`.                    |
 | `includes/Plugin.php`        | Composition root: instantiates components and registers hooks.                |
 | `includes/Schema.php`        | Table install/upgrade, MariaDB version check and notice. `table_name()` is the only place the table name is spelled out. |
 | `includes/Settings.php`      | The settings option: getters with defaults, `get_embedding_key()`, `update()`, `sanitize_settings()`. |
@@ -109,10 +109,10 @@ One row per chunk: `post_id`, `chunk_index`, `post_type`, `dimensions`,
 | `includes/Indexer.php`       | Post hooks, cron worker, password-protected exclusion, `remove_deselected_post_types()`. |
 | `includes/Search.php`        | `pre_get_posts` rewrite, hybrid fusion, fallback.                              |
 | `includes/Rank_Fusion.php`   | Reciprocal Rank Fusion. Pure PHP.                                              |
-| `includes/CLI.php`           | `wp squirrel-search reindex [--post-type=] [--force] [--batch=]` (only under WP-CLI). |
+| `includes/CLI.php`           | `wp otaria-search reindex [--post-type=] [--force] [--batch=]` (only under WP-CLI). |
 | `includes/Cron_Backfill.php` | Batched cron reindex of all posts; progress in a transient.                    |
 | `includes/Admin.php`, `src/admin/` | Settings page (React): status, model, prefixes, search, post types, indexing, Reindex. |
-| `uninstall.php`              | Drop the table, delete all `squirrel_search_*` options.                        |
+| `uninstall.php`              | Drop the table, delete all `otaria_search_*` options.                        |
 
 ## Search
 
@@ -139,8 +139,8 @@ by both rank first; ties keep vector order.
 
 ## Settings
 
-Single option `squirrel_search_settings` (array). Other option:
-`squirrel_search_db_version`.
+Single option `otaria_search_settings` (array). Other option:
+`otaria_search_db_version`.
 
 | Key | Default | Notes |
 | --- | ------- | ----- |
@@ -229,10 +229,10 @@ npm run typecheck      # tsc --noEmit
 
 1. `wp-env start`; confirm MariaDB 11.7+ (`wp db query "SELECT VERSION();"`).
 2. Configure a provider (Settings > Connectors) and select its model on
-   Settings > Squirrel Search.
+   Settings > Otaria Search.
 3. Create posts → `wp cron event run --due-now` → check rows with
-   `SELECT post_id, chunk_index, VEC_ToText(embedding) FROM wp_squirrel_search_embeddings`.
-4. `wp squirrel-search reindex`.
+   `SELECT post_id, chunk_index, VEC_ToText(embedding) FROM wp_otaria_search_embeddings`.
+4. `wp otaria-search reindex`.
 5. Search with semantically related but lexically different terms
    (e.g. "猫" vs. "ねこ" / "feline").
 6. Disable the provider → search falls back to default, `WP_Error` logged.

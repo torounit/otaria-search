@@ -2,12 +2,12 @@
 /**
  * Reciprocal rank fusion of ranked post ID lists.
  *
- * @package Squirrel_Search
+ * @package Otaria_Search
  */
 
 declare(strict_types=1);
 
-namespace Squirrel_Search;
+namespace Otaria_Search;
 
 /**
  * Merges ranked ID lists without needing comparable scores from each source.

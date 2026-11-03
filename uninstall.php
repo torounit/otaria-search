@@ -1,8 +1,8 @@
 <?php
 /**
- * Uninstall Squirrel Search.
+ * Uninstall Otaria Search.
  *
- * @package Squirrel_Search
+ * @package Otaria_Search
  */
 
 declare(strict_types=1);
@@ -13,13 +13,13 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 
 require_once __DIR__ . '/vendor/autoload.php';
 
-Squirrel_Search\Schema::drop();
+Otaria_Search\Schema::drop();
 
-delete_option( Squirrel_Search\Schema::DB_VERSION_OPTION );
-delete_option( Squirrel_Search\Settings::OPTION_NAME );
-delete_transient( Squirrel_Search\Cron_Backfill::PROGRESS_KEY );
+delete_option( Otaria_Search\Schema::DB_VERSION_OPTION );
+delete_option( Otaria_Search\Settings::OPTION_NAME );
+delete_transient( Otaria_Search\Cron_Backfill::PROGRESS_KEY );
 
-$timestamp = wp_next_scheduled( Squirrel_Search\Cron_Backfill::CRON_HOOK );
+$timestamp = wp_next_scheduled( Otaria_Search\Cron_Backfill::CRON_HOOK );
 if ( $timestamp ) {
-	wp_unschedule_event( $timestamp, Squirrel_Search\Cron_Backfill::CRON_HOOK );
+	wp_unschedule_event( $timestamp, Otaria_Search\Cron_Backfill::CRON_HOOK );
 }

@@ -36,7 +36,7 @@ export function PostTypesSection( {
 		setError( null );
 		try {
 			const raw = await apiFetch( {
-				path: '/wp-abilities/v1/abilities/squirrel-search/update-settings/run',
+				path: '/wp-abilities/v1/abilities/otaria-search/update-settings/run',
 				method: 'POST',
 				data: { input: { post_types: selected } },
 			} );
@@ -47,7 +47,7 @@ export function PostTypesSection( {
 		} catch ( err ) {
 			setError(
 				( err as { message?: string } )?.message ??
-					__( 'Unknown error.', 'squirrel-search' )
+					__( 'Unknown error.', 'otaria-search' )
 			);
 		} finally {
 			setIsSaving( false );
@@ -55,11 +55,11 @@ export function PostTypesSection( {
 	}
 
 	return (
-		<Section title={ __( 'Post Types', 'squirrel-search' ) }>
+		<Section title={ __( 'Post Types', 'otaria-search' ) }>
 			<Text render={ <p /> }>
 				{ __(
 					'Post types that are indexed and searched. Unchecking a post type removes its posts from the index; checking one requires a Reindex.',
-					'squirrel-search'
+					'otaria-search'
 				) }
 			</Text>
 
@@ -87,7 +87,7 @@ export function PostTypesSection( {
 					disabled={ isSaving || selected.length === 0 }
 					accessibleWhenDisabled
 				>
-					{ __( 'Save post types', 'squirrel-search' ) }
+					{ __( 'Save post types', 'otaria-search' ) }
 				</Button>
 			</Stack>
 		</Section>

@@ -2,14 +2,14 @@
 /**
  * Integration tests for Abilities API.
  *
- * @package Squirrel_Search
+ * @package Otaria_Search
  */
 
 declare(strict_types=1);
 
-namespace Squirrel_Search\Tests\Integration;
+namespace Otaria_Search\Tests\Integration;
 
-use Squirrel_Search\Settings;
+use Otaria_Search\Settings;
 use WP_UnitTestCase;
 
 /**
@@ -23,14 +23,14 @@ class Abilities_Test extends WP_UnitTestCase {
 	public function test_get_status_ability(): void {
 		// Check if the ability is registered.
 		$this->assertTrue( function_exists( 'wp_has_ability' ) );
-		$this->assertTrue( wp_has_ability( 'squirrel-search/get-status' ) );
+		$this->assertTrue( wp_has_ability( 'otaria-search/get-status' ) );
 
 		// Set up a user with manage_options capability.
 		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $user_id );
 
 		// Simulate a REST API request to the ability endpoint.
-		$ability = wp_get_ability( 'squirrel-search/get-status' );
+		$ability = wp_get_ability( 'otaria-search/get-status' );
 		$this->assertNotNull( $ability );
 
 		// Execute the ability.
@@ -53,13 +53,13 @@ class Abilities_Test extends WP_UnitTestCase {
 	 */
 	public function test_reindex_ability(): void {
 		// Check if the ability is registered.
-		$this->assertTrue( wp_has_ability( 'squirrel-search/reindex' ) );
+		$this->assertTrue( wp_has_ability( 'otaria-search/reindex' ) );
 
 		// Set up a user with manage_options capability.
 		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $user_id );
 
-		$ability = wp_get_ability( 'squirrel-search/reindex' );
+		$ability = wp_get_ability( 'otaria-search/reindex' );
 		$this->assertNotNull( $ability );
 
 		// Execute the ability with some input.
@@ -84,7 +84,7 @@ class Abilities_Test extends WP_UnitTestCase {
 	private function select_model( array $input ): mixed {
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
-		return wp_get_ability( 'squirrel-search/select-model' )->execute( $input );
+		return wp_get_ability( 'otaria-search/select-model' )->execute( $input );
 	}
 
 	/**
@@ -222,7 +222,7 @@ class Abilities_Test extends WP_UnitTestCase {
 	public function test_select_model_requires_manage_options(): void {
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'editor' ) ) );
 
-		$result = wp_get_ability( 'squirrel-search/select-model' )->execute(
+		$result = wp_get_ability( 'otaria-search/select-model' )->execute(
 			array(
 				'provider' => Fake_Embedding_Provider::ID,
 				'model'    => Fake_Embedding_Provider::MODEL,

@@ -2,7 +2,7 @@
 /**
  * PHPUnit bootstrap file.
  *
- * @package Squirrel_Search
+ * @package Otaria_Search
  */
 
 declare(strict_types=1);
@@ -45,10 +45,10 @@ require_once $_tests_dir . '/includes/functions.php';
 tests_add_filter(
 	'muplugins_loaded',
 	static function (): void {
-		require dirname( __DIR__, 2 ) . '/squirrel-search.php';
+		require dirname( __DIR__, 2 ) . '/otaria-search.php';
 	}
 );
 
 require $_tests_dir . '/includes/bootstrap.php';
 
-Squirrel_Search\Tests\Integration\Fake_Embedding_Provider::register();
+Otaria_Search\Tests\Integration\Fake_Embedding_Provider::register();

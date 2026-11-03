@@ -9,7 +9,7 @@ Use this skill when the user wants to bump the plugin version (e.g. "bump versio
 
 Version bumps go through a pull request, because `main` only accepts changes via PRs.
 
-- `bin/bump-version.sh <version>` updates `squirrel-search.php`, `README.md`, `package.json`, and
+- `bin/bump-version.sh <version>` updates `otaria-search.php`, `README.md`, `package.json`, and
   `package-lock.json`.
 - When a PR from a `release/*` branch is merged, CI (`.github/workflows/draft-release.yml`) creates a
   draft GitHub release targeting the merge commit, with the changelog section as its notes.
@@ -27,7 +27,7 @@ Version bumps go through a pull request, because `main` only accepts changes via
    creating the `### Unreleased` heading above the latest version if it doesn't exist:
 
    ```bash
-   gh pr list --state merged --limit 10 --repo torounit/squirrel-search
+   gh pr list --state merged --limit 10 --repo torounit/otaria-search
    ```
 
    Entry format:
@@ -55,7 +55,7 @@ Version bumps go through a pull request, because `main` only accepts changes via
    ```
 
    This updates:
-   - `squirrel-search.php`: the `Version:` header
+   - `otaria-search.php`: the `Version:` header
    - `README.md`: `Stable tag:`, and the `### Unreleased` heading becomes
      `### <version>`. No empty `### Unreleased` heading is left behind, since it would ship to
      WordPress.org.
@@ -74,7 +74,7 @@ Version bumps go through a pull request, because `main` only accepts changes via
 5. **Publish the draft release**
 
    After the PR is merged, CI creates a draft release `<version>`. Ask the user to review and publish
-   it in the GitHub web UI (https://github.com/torounit/squirrel-search/releases). Publishing it tags
+   it in the GitHub web UI (https://github.com/torounit/otaria-search/releases). Publishing it tags
    the merge commit on `main` and attaches the plugin zip (and deploys to WordPress.org once
    `WPORG_DEPLOY` is set).
 
@@ -88,5 +88,5 @@ Version bumps go through a pull request, because `main` only accepts changes via
   changelog are ready, and that no `### Unreleased` heading is left. CI runs it on the release PR
   ("Check Release Version") and when drafting with `--untagged`, which also refuses a version
   whose tag already exists, and when publishing. Run it locally after bumping.
-- Do not edit version numbers in `squirrel-search.php`, `package.json`, or the `Stable tag:` field
+- Do not edit version numbers in `otaria-search.php`, `package.json`, or the `Stable tag:` field
   by hand — use `bin/bump-version.sh`, so the files don't drift apart.

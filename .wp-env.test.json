@@ -13,7 +13,7 @@
 		"WP_DEBUG": true
 	},
 	"mappings": {
-		"/wp-content/plugins/squirrel-search": "."
+		"/wp-content/plugins/otaria-search": "."
 	},
 	"phpVersion": "8.4",
 	"lifecycleScripts": {

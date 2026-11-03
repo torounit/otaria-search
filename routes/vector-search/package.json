@@ -1,11 +1,11 @@
 {
-	"name": "@squirrel-search/vector-search-route",
+	"name": "@otaria-search/vector-search-route",
 	"version": "1.0.0",
 	"private": true,
 	"route": {
 		"path": "/",
 		"page": [
-			"squirrel-search"
+			"otaria-search"
 		]
 	},
 	"dependencies": {

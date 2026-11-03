@@ -2,12 +2,12 @@
 /**
  * Batched cron-driven backfill for existing posts.
  *
- * @package Squirrel_Search
+ * @package Otaria_Search
  */
 
 declare(strict_types=1);
 
-namespace Squirrel_Search;
+namespace Otaria_Search;
 
 /**
  * Re-indexes posts that have not yet been embedded (or whose hash changed).
@@ -16,8 +16,8 @@ namespace Squirrel_Search;
  */
 class Cron_Backfill {
 
-	const CRON_HOOK     = 'squirrel_search_backfill';
-	const PROGRESS_KEY  = 'squirrel_search_backfill_progress';
+	const CRON_HOOK     = 'otaria_search_backfill';
+	const PROGRESS_KEY  = 'otaria_search_backfill_progress';
 	const DEFAULT_BATCH = 10;
 
 	/**

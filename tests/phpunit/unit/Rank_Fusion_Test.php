@@ -2,14 +2,14 @@
 /**
  * Unit tests for reciprocal rank fusion.
  *
- * @package Squirrel_Search
+ * @package Otaria_Search
  */
 
 declare(strict_types=1);
 
-namespace Squirrel_Search\Tests\Unit;
+namespace Otaria_Search\Tests\Unit;
 
-use Squirrel_Search\Rank_Fusion;
+use Otaria_Search\Rank_Fusion;
 
 /**
  * Class Rank_Fusion_Test
