@@ -26,25 +26,20 @@ class Abilities {
 	const ABILITY_SELECT = 'wp-mariadb-vector-search/select-model';
 
 	/**
-	 * Ability that saves the search settings: distance thresholds and hybrid search.
+	 * Ability that changes any settings except the model: search thresholds,
+	 * hybrid search, post types, prefixes and the password-protected exclusion.
 	 *
 	 * @since 0.3.0
 	 */
-	const ABILITY_SEARCH_SETTINGS = 'wp-mariadb-vector-search/save-search-settings';
+	const ABILITY_UPDATE_SETTINGS = 'wp-mariadb-vector-search/update-settings';
 
 	/**
-	 * Ability that saves the indexed post types.
+	 * Settings keys update-settings accepts. The model is changed by
+	 * select-model, which probes it first.
 	 *
 	 * @since 0.3.0
 	 */
-	const ABILITY_POST_TYPES = 'wp-mariadb-vector-search/save-post-types';
-
-	/**
-	 * Ability that saves the embedding prefixes.
-	 *
-	 * @since 0.3.0
-	 */
-	const ABILITY_PREFIXES = 'wp-mariadb-vector-search/save-prefixes';
+	const UPDATABLE_KEYS = array( 'max_distance', 'max_relative_distance', 'hybrid', 'post_types', 'query_prefix', 'document_prefix', 'exclude_password_protected' );
 
 	/**
 	 * Ability that lists the posts nearest to a query with their distances.
@@ -52,13 +47,6 @@ class Abilities {
 	 * @since 0.2.0
 	 */
 	const ABILITY_PREVIEW = 'wp-mariadb-vector-search/preview-search';
-
-	/**
-	 * Ability that saves which posts are indexed.
-	 *
-	 * @since 0.3.0
-	 */
-	const ABILITY_INDEX_SETTINGS = 'wp-mariadb-vector-search/save-index-settings';
 
 	/**
 	 * Number of posts listed by the search preview.
@@ -184,85 +172,49 @@ class Abilities {
 			'maximum' => 2,
 		);
 
-		// Register save-search-settings ability.
+		// Register update-settings ability.
 		wp_register_ability(
-			self::ABILITY_SEARCH_SETTINGS,
+			self::ABILITY_UPDATE_SETTINGS,
 			array(
-				'label'               => __( 'Save Search Settings', 'wp-mariadb-vector-search' ),
-				'description'         => __( 'Saves the cosine distance thresholds for search results and whether hybrid search is on. Null resets a threshold to its default.', 'wp-mariadb-vector-search' ),
+				'label'               => __( 'Update Settings', 'wp-mariadb-vector-search' ),
+				'description'         => __( 'Changes the given settings and keeps the others: search thresholds, hybrid search, indexed post types, embedding prefixes and whether password-protected posts are indexed. Null resets a setting to its default. Deselected post types are removed from the index; reindex_required tells whether a Reindex is needed.', 'wp-mariadb-vector-search' ),
 				'category'            => self::CATEGORY_SLUG,
 				'meta'                => array( 'show_in_rest' => true ),
 				'input_schema'        => array(
-					'type'       => 'object',
-					'properties' => array(
-						'max_distance'          => $distance_schema + array(
+					'type'                 => 'object',
+					'additionalProperties' => false,
+					'properties'           => array(
+						'max_distance'               => $distance_schema + array(
 							'description' => __( 'Maximum cosine distance from the query.', 'wp-mariadb-vector-search' ),
 						),
-						'max_relative_distance' => $distance_schema + array(
+						'max_relative_distance'      => $distance_schema + array(
 							'description' => __( 'Maximum distance behind the best match.', 'wp-mariadb-vector-search' ),
 						),
-						'hybrid'                => array(
+						'hybrid'                     => array(
 							'type'        => 'boolean',
 							'description' => __( 'Fuse vector results with the LIKE search results.', 'wp-mariadb-vector-search' ),
 						),
-					),
-				),
-				'execute_callback'    => array( __CLASS__, 'execute_save_search_settings' ),
-				'permission_callback' => function () {
-					return current_user_can( 'manage_options' );
-				},
-			)
-		);
-
-		// Register save-post-types ability.
-		wp_register_ability(
-			self::ABILITY_POST_TYPES,
-			array(
-				'label'               => __( 'Save Post Types', 'wp-mariadb-vector-search' ),
-				'description'         => __( 'Saves the post types that are indexed and searched, and removes the indexed posts of the other post types.', 'wp-mariadb-vector-search' ),
-				'category'            => self::CATEGORY_SLUG,
-				'meta'                => array( 'show_in_rest' => true ),
-				'input_schema'        => array(
-					'type'       => 'object',
-					'required'   => array( 'post_types' ),
-					'properties' => array(
-						'post_types' => array(
+						'post_types'                 => array(
 							'type'        => 'array',
 							'minItems'    => 1,
 							'items'       => array( 'type' => 'string' ),
 							'description' => __( 'Public, searchable post types to index.', 'wp-mariadb-vector-search' ),
 						),
-					),
-				),
-				'execute_callback'    => array( __CLASS__, 'execute_save_post_types' ),
-				'permission_callback' => function () {
-					return current_user_can( 'manage_options' );
-				},
-			)
-		);
-
-		// Register save-prefixes ability.
-		wp_register_ability(
-			self::ABILITY_PREFIXES,
-			array(
-				'label'               => __( 'Save Prefixes', 'wp-mariadb-vector-search' ),
-				'description'         => __( 'Saves the texts prepended to search terms and to post chunks before embedding, as the embedding model requires. An empty string or null clears a prefix.', 'wp-mariadb-vector-search' ),
-				'category'            => self::CATEGORY_SLUG,
-				'meta'                => array( 'show_in_rest' => true ),
-				'input_schema'        => array(
-					'type'       => 'object',
-					'properties' => array(
-						'query_prefix'    => array(
+						'query_prefix'               => array(
 							'type'        => array( 'string', 'null' ),
-							'description' => __( 'Prepended to search terms.', 'wp-mariadb-vector-search' ),
+							'description' => __( 'Prepended to search terms before embedding.', 'wp-mariadb-vector-search' ),
 						),
-						'document_prefix' => array(
+						'document_prefix'            => array(
 							'type'        => array( 'string', 'null' ),
-							'description' => __( 'Prepended to post chunks. Changing it requires a Reindex.', 'wp-mariadb-vector-search' ),
+							'description' => __( 'Prepended to post chunks before embedding. Changing it requires a Reindex.', 'wp-mariadb-vector-search' ),
+						),
+						'exclude_password_protected' => array(
+							'type'        => 'boolean',
+							'description' => __( 'Leave password-protected posts out of the index. Changing it requires a Reindex.', 'wp-mariadb-vector-search' ),
 						),
 					),
 				),
-				'execute_callback'    => array( __CLASS__, 'execute_save_prefixes' ),
+				'execute_callback'    => array( __CLASS__, 'execute_update_settings' ),
 				'permission_callback' => function () {
 					return current_user_can( 'manage_options' );
 				},
@@ -301,31 +253,6 @@ class Abilities {
 					),
 				),
 				'execute_callback'    => array( __CLASS__, 'execute_preview_search' ),
-				'permission_callback' => function () {
-					return current_user_can( 'manage_options' );
-				},
-			)
-		);
-
-		// Register save-index-settings ability.
-		wp_register_ability(
-			self::ABILITY_INDEX_SETTINGS,
-			array(
-				'label'               => __( 'Save Index Settings', 'wp-mariadb-vector-search' ),
-				'description'         => __( 'Saves which posts are indexed. Run Reindex to apply it to existing posts.', 'wp-mariadb-vector-search' ),
-				'category'            => self::CATEGORY_SLUG,
-				'meta'                => array( 'show_in_rest' => true ),
-				'input_schema'        => array(
-					'type'       => 'object',
-					'required'   => array( 'exclude_password_protected' ),
-					'properties' => array(
-						'exclude_password_protected' => array(
-							'type'        => 'boolean',
-							'description' => __( 'Leave password-protected posts out of the index.', 'wp-mariadb-vector-search' ),
-						),
-					),
-				),
-				'execute_callback'    => array( __CLASS__, 'execute_save_index_settings' ),
 				'permission_callback' => function () {
 					return current_user_can( 'manage_options' );
 				},
@@ -387,86 +314,56 @@ class Abilities {
 	}
 
 	/**
-	 * Callback for save-prefixes ability.
+	 * Callback for update-settings ability.
+	 *
+	 * Deselected post types are removed from the index. Added post types, a
+	 * changed document prefix and a changed password-protected exclusion need
+	 * a Reindex, reported as reindex_required.
 	 *
 	 * @since 0.3.0
 	 *
-	 * @param array|null $input Ability input with optional 'query_prefix' and 'document_prefix'.
-	 * @return array The prefixes now in effect, and whether the document prefix changed,
-	 *               which requires a Reindex.
+	 * @param array|null $input Settings to change; see UPDATABLE_KEYS.
+	 * @return array|\WP_Error The settings now in effect plus reindex_required, or an error for unavailable post types.
 	 */
-	public static function execute_save_prefixes( ?array $input = null ): array {
-		$before = Settings::get_prefixes()['document_prefix'];
+	public static function execute_update_settings( ?array $input = null ): array|\WP_Error {
+		$changes = array_intersect_key( (array) $input, array_flip( self::UPDATABLE_KEYS ) );
 
-		Settings::update( array_intersect_key( (array) $input, array_flip( Settings::PREFIX_KEYS ) ) );
-
-		$prefixes = Settings::get_prefixes();
-
-		return $prefixes + array( 'document_changed' => $prefixes['document_prefix'] !== $before );
-	}
-
-	/**
-	 * Callback for save-post-types ability.
-	 *
-	 * Rows of post types left out are deleted; post types added need a
-	 * Reindex, so they are returned for the admin page to say so.
-	 *
-	 * @since 0.3.0
-	 *
-	 * @param array|null $input Ability input with 'post_types'.
-	 * @return array|\WP_Error The post types now indexed and the ones added, or an error for unavailable post types.
-	 */
-	public static function execute_save_post_types( ?array $input = null ): array|\WP_Error {
-		$post_types = array_values( array_unique( array_map( 'sanitize_key', (array) ( $input['post_types'] ?? array() ) ) ) );
-		$invalid    = array_diff( $post_types, Settings::available_post_types() );
-		if ( empty( $post_types ) || ! empty( $invalid ) ) {
-			return new \WP_Error(
-				'invalid_post_types',
-				/* translators: %s: Comma-separated post type names. */
-				sprintf( __( 'These post types cannot be indexed: %s', 'wp-mariadb-vector-search' ), implode( ', ', $invalid ) ),
-				array( 'status' => 400 )
-			);
+		if ( isset( $changes['post_types'] ) ) {
+			$changes['post_types'] = array_values( array_unique( array_map( 'sanitize_key', (array) $changes['post_types'] ) ) );
+			$invalid               = array_diff( $changes['post_types'], Settings::available_post_types() );
+			if ( empty( $changes['post_types'] ) || ! empty( $invalid ) ) {
+				return new \WP_Error(
+					'invalid_post_types',
+					/* translators: %s: Comma-separated post type names. */
+					sprintf( __( 'These post types cannot be indexed: %s', 'wp-mariadb-vector-search' ), implode( ', ', $invalid ) ),
+					array( 'status' => 400 )
+				);
+			}
 		}
 
-		$before = Settings::get_post_types();
-		Settings::update( array( 'post_types' => $post_types ) );
+		$post_types_before = Settings::get_post_types();
+		$prefix_before     = Settings::get_prefixes()['document_prefix'];
+		$exclude_before    = Settings::excludes_password_protected();
 
-		if ( Schema::is_installed() ) {
+		Settings::update( $changes );
+
+		$post_types = Settings::get_post_types();
+		$prefixes   = Settings::get_prefixes();
+
+		if ( isset( $changes['post_types'] ) && Schema::is_installed() ) {
 			( new Repository() )->delete_other_post_types( $post_types );
 		}
 
-		return array(
-			'post_types' => Settings::get_post_types(),
-			'added'      => array_values( array_diff( $post_types, $before ) ),
+		$exclude = Settings::excludes_password_protected();
+
+		return Settings::get_thresholds() + $prefixes + array(
+			'hybrid'                     => Settings::is_hybrid(),
+			'post_types'                 => $post_types,
+			'exclude_password_protected' => $exclude,
+			'reindex_required'           => array() !== array_diff( $post_types, $post_types_before )
+				|| $prefixes['document_prefix'] !== $prefix_before
+				|| $exclude !== $exclude_before,
 		);
-	}
-
-	/**
-	 * Callback for save-index-settings ability.
-	 *
-	 * @since 0.3.0
-	 *
-	 * @param array|null $input Ability input with 'exclude_password_protected'.
-	 * @return array The index settings now in effect.
-	 */
-	public static function execute_save_index_settings( ?array $input = null ): array {
-		Settings::update( array( 'exclude_password_protected' => (bool) ( $input['exclude_password_protected'] ?? true ) ) );
-
-		return array( 'exclude_password_protected' => Settings::excludes_password_protected() );
-	}
-
-	/**
-	 * Callback for save-search-settings ability.
-	 *
-	 * @since 0.3.0
-	 *
-	 * @param array|null $input Ability input with optional 'max_distance', 'max_relative_distance' and 'hybrid'.
-	 * @return array The thresholds and hybrid setting now in effect.
-	 */
-	public static function execute_save_search_settings( ?array $input = null ): array {
-		Settings::update( array_intersect_key( (array) $input, array_flip( array( ...Settings::THRESHOLD_KEYS, 'hybrid' ) ) ) );
-
-		return Settings::get_thresholds() + array( 'hybrid' => Settings::is_hybrid() );
 	}
 
 	/**

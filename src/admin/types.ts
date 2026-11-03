@@ -33,27 +33,14 @@ export interface StatusResponse {
 	exclude_password_protected: boolean;
 }
 
-export interface IndexSettings {
-	exclude_password_protected: boolean;
-}
-
 export interface Prefixes {
 	query_prefix: string;
 	document_prefix: string;
 }
 
-export interface SavePrefixesResponse extends Prefixes {
-	document_changed: boolean;
-}
-
 export interface AvailablePostType {
 	name: string;
 	label: string;
-}
-
-export interface SavePostTypesResponse {
-	post_types: string[];
-	added: string[];
 }
 
 export interface Thresholds {
@@ -63,6 +50,13 @@ export interface Thresholds {
 
 export interface SearchSettings extends Thresholds {
 	hybrid: boolean;
+}
+
+// Response of the update-settings ability: the settings now in effect.
+export interface UpdateSettingsResponse extends SearchSettings, Prefixes {
+	post_types: string[];
+	exclude_password_protected: boolean;
+	reindex_required: boolean;
 }
 
 export interface PreviewResult {

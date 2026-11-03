@@ -5,13 +5,13 @@ import { __ } from '@wordpress/i18n';
 import { Stack, Text } from '@wordpress/ui';
 import { Section } from './Section';
 import { unwrapAbilityResponse } from './ability';
-import type { AvailablePostType, SavePostTypesResponse } from './types';
+import type { AvailablePostType, UpdateSettingsResponse } from './types';
 
 interface Props {
 	availablePostTypes: AvailablePostType[];
 	postTypes: string[];
-	// Receives the post types that were not indexed before and need a Reindex.
-	onSaved: ( added: string[] ) => void;
+	// Receives whether post types were added, which requires a Reindex.
+	onSaved: ( reindexRequired: boolean ) => void;
 }
 
 export function PostTypesSection( {
@@ -36,12 +36,13 @@ export function PostTypesSection( {
 		setError( null );
 		try {
 			const raw = await apiFetch( {
-				path: '/wp-abilities/v1/abilities/wp-mariadb-vector-search/save-post-types/run',
+				path: '/wp-abilities/v1/abilities/wp-mariadb-vector-search/update-settings/run',
 				method: 'POST',
 				data: { input: { post_types: selected } },
 			} );
 			onSaved(
-				unwrapAbilityResponse< SavePostTypesResponse >( raw ).added
+				unwrapAbilityResponse< UpdateSettingsResponse >( raw )
+					.reindex_required
 			);
 		} catch ( err ) {
 			setError(

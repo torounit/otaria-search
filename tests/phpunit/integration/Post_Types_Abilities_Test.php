@@ -108,45 +108,40 @@ class Post_Types_Abilities_Test extends \WP_UnitTestCase {
 		$post = $this->create_indexed_post( 'post' );
 		$page = $this->create_indexed_post( 'page' );
 
-		$result = $this->run_ability( 'save-post-types', array( 'post_types' => array( 'post' ) ) );
+		$result = $this->run_ability( 'update-settings', array( 'post_types' => array( 'post' ) ) );
 
-		$this->assertSame(
-			array(
-				'post_types' => array( 'post' ),
-				'added'      => array(),
-			),
-			$result
-		);
+		$this->assertSame( array( 'post' ), $result['post_types'] );
+		$this->assertFalse( $result['reindex_required'] );
 		$this->assertSame( array( 'post' ), Settings::get_post_types() );
 		$repository = new Repository();
 		$this->assertNotNull( $repository->get_content_hash( $post ) );
 		$this->assertNull( $repository->get_content_hash( $page ) );
 	}
 
-	/** Post types that were not indexed before are reported, since they need a Reindex. */
-	public function test_save_post_types_reports_added_types(): void {
+	/** Adding post types that were not indexed before requires a Reindex. */
+	public function test_save_post_types_requires_reindex_for_added_types(): void {
 		Settings::update( array( 'post_types' => array( 'post' ) ) );
 
-		$result = $this->run_ability( 'save-post-types', array( 'post_types' => array( 'post', 'page' ) ) );
+		$result = $this->run_ability( 'update-settings', array( 'post_types' => array( 'post', 'page' ) ) );
 
-		$this->assertSame( array( 'page' ), $result['added'] );
+		$this->assertTrue( $result['reindex_required'] );
 	}
 
 	/** Post types that are not public and searchable are rejected. */
 	public function test_save_post_types_rejects_unavailable_type(): void {
-		$this->assertWPError( $this->run_ability( 'save-post-types', array( 'post_types' => array( 'nav_menu_item' ) ) ) );
+		$this->assertWPError( $this->run_ability( 'update-settings', array( 'post_types' => array( 'nav_menu_item' ) ) ) );
 		$this->assertSame( Settings::available_post_types(), Settings::get_post_types() );
 	}
 
 	/** At least one post type is required. */
 	public function test_save_post_types_rejects_empty_list(): void {
-		$this->assertWPError( $this->run_ability( 'save-post-types', array( 'post_types' => array() ) ) );
+		$this->assertWPError( $this->run_ability( 'update-settings', array( 'post_types' => array() ) ) );
 	}
 
 	/** Editors cannot change the post types. */
 	public function test_save_post_types_requires_manage_options(): void {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
 
-		$this->assertWPError( $this->run_ability( 'save-post-types', array( 'post_types' => array( 'post' ) ) ) );
+		$this->assertWPError( $this->run_ability( 'update-settings', array( 'post_types' => array( 'post' ) ) ) );
 	}
 }

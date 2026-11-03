@@ -60,7 +60,7 @@ export function SearchSection( { settings, defaults, onSaved }: Props ) {
 		setError( null );
 		try {
 			const raw = await apiFetch( {
-				path: '/wp-abilities/v1/abilities/wp-mariadb-vector-search/save-search-settings/run',
+				path: '/wp-abilities/v1/abilities/wp-mariadb-vector-search/update-settings/run',
 				method: 'POST',
 				data: { input },
 			} );

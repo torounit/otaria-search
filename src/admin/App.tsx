@@ -147,9 +147,9 @@ export function VectorSearchApp() {
 								// Remount after a model change clears the prefixes.
 								key={ `${ status.data.settings.provider }:${ status.data.settings.model }` }
 								prefixes={ status.data.prefixes }
-								onSaved={ ( documentChanged ) =>
+								onSaved={ ( reindexRequired ) =>
 									setSuccessMessage(
-										documentChanged
+										reindexRequired
 											? __(
 													'Prefixes saved. Please run Reindex all posts to re-embed posts with the new document prefix.',
 													'wp-mariadb-vector-search'
@@ -188,9 +188,9 @@ export function VectorSearchApp() {
 								status.data.available_post_types
 							}
 							postTypes={ status.data.post_types }
-							onSaved={ ( added ) => {
+							onSaved={ ( reindexRequired ) => {
 								setSuccessMessage(
-									added.length > 0
+									reindexRequired
 										? __(
 												'Post types saved. Please run Reindex all posts to index the added post types.',
 												'wp-mariadb-vector-search'

@@ -83,7 +83,7 @@ class Prefix_Abilities_Test extends \WP_UnitTestCase {
 	/** Saving prefixes stores them and keeps the model settings. */
 	public function test_save_prefixes_stores_values(): void {
 		$result = $this->run_ability(
-			'save-prefixes',
+			'update-settings',
 			array(
 				'query_prefix'    => 'query: ',
 				'document_prefix' => 'passage: ',
@@ -96,17 +96,17 @@ class Prefix_Abilities_Test extends \WP_UnitTestCase {
 		$this->assertSame( Fake_Embedding_Provider::MODEL, get_option( Settings::OPTION_NAME )['model'] );
 	}
 
-	/** A changed document prefix is reported, since posts must be re-embedded. */
-	public function test_save_prefixes_reports_document_prefix_change(): void {
-		$this->assertTrue( $this->run_ability( 'save-prefixes', array( 'document_prefix' => 'passage: ' ) )['document_changed'] );
-		$this->assertFalse( $this->run_ability( 'save-prefixes', array( 'query_prefix' => 'query: ' ) )['document_changed'] );
+	/** A changed document prefix requires a Reindex; a changed query prefix does not. */
+	public function test_save_prefixes_requires_reindex_for_document_prefix(): void {
+		$this->assertTrue( $this->run_ability( 'update-settings', array( 'document_prefix' => 'passage: ' ) )['reindex_required'] );
+		$this->assertFalse( $this->run_ability( 'update-settings', array( 'query_prefix' => 'query: ' ) )['reindex_required'] );
 	}
 
 	/** Editors cannot change the prefixes. */
 	public function test_save_prefixes_requires_manage_options(): void {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
 
-		$this->assertWPError( $this->run_ability( 'save-prefixes', array( 'query_prefix' => 'query: ' ) ) );
+		$this->assertWPError( $this->run_ability( 'update-settings', array( 'query_prefix' => 'query: ' ) ) );
 	}
 
 	/** The search preview embeds the query with the query prefix. */

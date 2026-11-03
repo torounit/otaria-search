@@ -5,12 +5,12 @@ import { __ } from '@wordpress/i18n';
 import { Stack, Text } from '@wordpress/ui';
 import { Section } from './Section';
 import { unwrapAbilityResponse } from './ability';
-import type { Prefixes, SavePrefixesResponse } from './types';
+import type { Prefixes, UpdateSettingsResponse } from './types';
 
 interface Props {
 	prefixes: Prefixes;
 	// Receives whether the document prefix changed, which requires a Reindex.
-	onSaved: ( documentChanged: boolean ) => void;
+	onSaved: ( reindexRequired: boolean ) => void;
 }
 
 export function PrefixSection( { prefixes, onSaved }: Props ) {
@@ -26,7 +26,7 @@ export function PrefixSection( { prefixes, onSaved }: Props ) {
 		setError( null );
 		try {
 			const raw = await apiFetch( {
-				path: '/wp-abilities/v1/abilities/wp-mariadb-vector-search/save-prefixes/run',
+				path: '/wp-abilities/v1/abilities/wp-mariadb-vector-search/update-settings/run',
 				method: 'POST',
 				data: {
 					input: {
@@ -35,10 +35,11 @@ export function PrefixSection( { prefixes, onSaved }: Props ) {
 					},
 				},
 			} );
-			const saved = unwrapAbilityResponse< SavePrefixesResponse >( raw );
+			const saved =
+				unwrapAbilityResponse< UpdateSettingsResponse >( raw );
 			setQueryPrefix( saved.query_prefix );
 			setDocumentPrefix( saved.document_prefix );
-			onSaved( saved.document_changed );
+			onSaved( saved.reindex_required );
 		} catch ( err ) {
 			setError(
 				( err as { message?: string } )?.message ??

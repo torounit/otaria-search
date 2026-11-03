@@ -45,9 +45,10 @@ class Index_Settings_Abilities_Test extends \WP_UnitTestCase {
 	public function test_save_index_settings_stores_flag(): void {
 		update_option( Settings::OPTION_NAME, array( 'model' => 'm' ) );
 
-		$result = $this->run_ability( 'save-index-settings', array( 'exclude_password_protected' => false ) );
+		$result = $this->run_ability( 'update-settings', array( 'exclude_password_protected' => false ) );
 
-		$this->assertSame( array( 'exclude_password_protected' => false ), $result );
+		$this->assertFalse( $result['exclude_password_protected'] );
+		$this->assertTrue( $result['reindex_required'] );
 		$this->assertFalse( Settings::excludes_password_protected() );
 		$this->assertSame( 'm', get_option( Settings::OPTION_NAME )['model'] );
 	}
@@ -56,6 +57,6 @@ class Index_Settings_Abilities_Test extends \WP_UnitTestCase {
 	public function test_save_index_settings_requires_manage_options(): void {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
 
-		$this->assertWPError( $this->run_ability( 'save-index-settings', array( 'exclude_password_protected' => false ) ) );
+		$this->assertWPError( $this->run_ability( 'update-settings', array( 'exclude_password_protected' => false ) ) );
 	}
 }
