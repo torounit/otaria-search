@@ -1,6 +1,6 @@
 <?php
 /**
- * Admin Tools page — mounts the React admin app.
+ * Admin settings page — mounts the React admin app.
  *
  * @package WP_MariaDB_Vector_Search
  */
@@ -10,7 +10,10 @@ declare(strict_types=1);
 namespace WP_MariaDB_Vector_Search;
 
 /**
- * Registers the Tools > Vector Search admin page.
+ * Registers the Settings > Vector Search admin page.
+ *
+ * It sits under Settings, next to Connectors where the AI provider is set up,
+ * because it mostly holds configuration (model, search thresholds).
  *
  * Script enqueuing is handled automatically by the auto-generated
  * build/pages/wp-mariadb-vector-search/page-wp-admin.php loaded via build/build.php.
@@ -30,12 +33,12 @@ class Admin {
 	}
 
 	/**
-	 * Register the Tools submenu page.
+	 * Register the Settings submenu page.
 	 *
 	 * @return void
 	 */
 	public function add_menu(): void {
-		add_management_page(
+		add_options_page(
 			__( 'Vector Search', 'wp-mariadb-vector-search' ),
 			__( 'Vector Search', 'wp-mariadb-vector-search' ),
 			'manage_options',

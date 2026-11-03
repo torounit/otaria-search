@@ -10,7 +10,7 @@ Replaces WordPress's default `LIKE`-based search with cosine similarity search p
 | PHP        | 8.2+           |
 | MariaDB    | 11.7+          |
 
-Embeddings are generated via the **WordPress 7.2 core AI Client embedding API** (`wp_ai_client_embedding()`). Install and configure (Settings > Connectors) an AI provider plugin that supports embedding generation, e.g. AI Provider for OpenAI 1.1+, then select its model on Tools > Vector Search. If no model is selected or the provider fails, indexing is skipped and search falls back to the standard WordPress LIKE search.
+Embeddings are generated via the **WordPress 7.2 core AI Client embedding API** (`wp_ai_client_embedding()`). Install and configure (Settings > Connectors) an AI provider plugin that supports embedding generation, e.g. AI Provider for OpenAI 1.1+, then select its model on Settings > Vector Search. If no model is selected or the provider fails, indexing is skipped and search falls back to the standard WordPress LIKE search.
 
 ## Installation
 
@@ -23,7 +23,7 @@ Embeddings are generated via the **WordPress 7.2 core AI Client embedding API** 
 
 Posts are indexed (or removed from the index) automatically whenever they are published, updated, or deleted.
 
-### Admin page (Tools > Vector Search)
+### Admin page (Settings > Vector Search)
 
 Displays MariaDB VECTOR support status, indexed post count, table dimensions, and backfill progress.
 
@@ -150,7 +150,7 @@ npm run test:php
 
 ```
 includes/
-  Admin.php                  — Tools > Vector Search admin page
+  Admin.php                  — Settings > Vector Search admin page
   Chunker.php                — HTML-strip + paragraph/sentence chunking with overlap
   CLI.php                    — WP-CLI reindex command
   Content_Hash.php           — SHA-256 hash of post title + content

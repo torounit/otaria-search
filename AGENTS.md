@@ -116,7 +116,7 @@ model switch at the same dimension is re-embedded by a normal (non-force) Reinde
 | `includes/Search.php`             | `pre_get_posts` rewrite to `post__in` + `orderby=post__in`. Safe fallback to default search.       |
 | `includes/CLI.php`                | `wp mariadb-vector reindex [--post-type=] [--force] [--batch=]`. Loaded only if `WP_CLI`.          |
 | `includes/Cron_Backfill.php`      | Batched cron-driven reindex of all posts. Progress in transient.                                   |
-| `includes/Admin.php`              | Tools page: status, model selector, unified Reindex button (auto-detects dimension diff).          |
+| `includes/Admin.php`              | Settings page: status, model selector, unified Reindex button (auto-detects dimension diff).          |
 | `uninstall.php`                   | `DROP TABLE`, delete all `wp_mariadb_vector_search_*` options.                                     |
 
 ## Similarity search query
@@ -231,7 +231,7 @@ Test file naming convention: `*_Test.php`.
 1. `wp-env start` (ensure the image is MariaDB 11.7+; check with
    `wp-env run cli wp db query "SELECT VERSION();"`).
 2. Configure an embedding-capable provider plugin (Settings > Connectors) and
-   select its model on Tools > Vector Search.
+   select its model on Settings > Vector Search.
 3. Activate this plugin; check `SHOW CREATE TABLE wp_mariadb_vector_embeddings`.
 4. Create posts → `wp cron event run --due-now` → inspect:
    `wp db query "SELECT post_id, chunk_index, VEC_ToText(embedding) FROM wp_mariadb_vector_embeddings WHERE post_id=N;"`
