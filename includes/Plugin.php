@@ -60,6 +60,13 @@ class Plugin {
 		add_action( 'save_post', array( $indexer, 'index_post' ) );
 		add_action( 'delete_post', array( $indexer, 'delete_post' ) );
 		add_action( 'trashed_post', array( $indexer, 'delete_post' ) );
+		add_action( 'update_option_' . Settings::OPTION_NAME, array( $indexer, 'remove_deselected_post_types' ), 10, 2 );
+		add_action(
+			'add_option_' . Settings::OPTION_NAME,
+			static fn( string $option, mixed $value ) => $indexer->remove_deselected_post_types( array(), $value ),
+			10,
+			2
+		);
 
 		$backfill->register_hooks();
 		$search->register_hooks();

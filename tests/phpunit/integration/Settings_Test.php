@@ -191,6 +191,22 @@ class Settings_Test extends WP_UnitTestCase {
 	}
 
 	/**
+	 * The embedding key is "provider:model", plus the document prefix when one is set.
+	 */
+	public function test_get_embedding_key(): void {
+		Settings::update(
+			array(
+				'provider' => 'openai',
+				'model'    => 'text-embedding-3-small',
+			)
+		);
+		$this->assertSame( 'openai:text-embedding-3-small', Settings::get_embedding_key() );
+
+		Settings::update( array( 'document_prefix' => 'passage: ' ) );
+		$this->assertSame( "openai:text-embedding-3-small\x00passage: ", Settings::get_embedding_key() );
+	}
+
+	/**
 	 * Prefixes are empty until saved.
 	 */
 	public function test_get_prefixes_defaults_to_empty(): void {

@@ -56,6 +56,7 @@ export interface SearchSettings extends Thresholds {
 export interface UpdateSettingsResponse extends SearchSettings, Prefixes {
 	post_types: string[];
 	exclude_password_protected: boolean;
+	added_post_types: string[];
 	reindex_required: boolean;
 }
 

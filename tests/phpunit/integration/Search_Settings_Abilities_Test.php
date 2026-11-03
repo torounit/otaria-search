@@ -158,6 +158,13 @@ class Search_Settings_Abilities_Test extends \WP_UnitTestCase {
 		$this->assertSame( 0.4, $result['max_distance'] );
 	}
 
+	/** Null resets hybrid search to its default, on. */
+	public function test_update_settings_null_resets_hybrid(): void {
+		Settings::update( array( 'hybrid' => false ) );
+
+		$this->assertTrue( $this->run_ability( 'update-settings', array( 'hybrid' => null ) )['hybrid'] );
+	}
+
 	/** Null resets a threshold to its default. */
 	public function test_save_thresholds_null_resets_to_default(): void {
 		Settings::update( array( 'max_distance' => 0.4 ) );

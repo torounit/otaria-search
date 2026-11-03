@@ -64,7 +64,7 @@ class Indexer {
 			return;
 		}
 
-		$hash = Content_Hash::compute( $post->post_title, $post->post_content, $this->get_embedding_key() );
+		$hash = Content_Hash::compute( $post->post_title, $post->post_content, Settings::get_embedding_key() );
 		if ( $this->repository->get_content_hash( $post_id ) === $hash ) {
 			wp_mariadb_vector_search_log( "index_post({$post_id}): content hash unchanged, skipping." );
 			return;
@@ -126,25 +126,23 @@ class Indexer {
 	}
 
 	/**
-	 * Identify how chunks are embedded: the selected model as "provider:model",
-	 * plus the document prefix when one is set.
+	 * Remove the rows of post types that a settings change deselected.
 	 *
-	 * @since 0.2.0
-	 * @since 0.3.0 Renamed from get_model_key(); includes the document prefix.
+	 * Hooked to the option update, so it runs however the settings are
+	 * written. Added post types are left to a Reindex.
 	 *
-	 * @return string
+	 * @since 0.3.0
+	 *
+	 * @param mixed $old_value Previous settings.
+	 * @param mixed $value     New settings.
+	 * @return void
 	 */
-	private function get_embedding_key(): string {
-		$settings = get_option( Settings::OPTION_NAME, array() );
-		if ( ! is_array( $settings ) ) {
-			return '';
+	public function remove_deselected_post_types( mixed $old_value, mixed $value ): void {
+		$before = Settings::get_post_types( is_array( $old_value ) ? $old_value : array() );
+		$after  = Settings::get_post_types( is_array( $value ) ? $value : array() );
+
+		if ( array() !== array_diff( $before, $after ) && Schema::is_installed() ) {
+			$this->repository->delete_other_post_types( $after );
 		}
-
-		$key    = ( $settings['provider'] ?? '' ) . ':' . ( $settings['model'] ?? '' );
-		$prefix = Settings::get_prefixes()['document_prefix'];
-
-		// Without a prefix the key stays "provider:model", so posts indexed
-		// before prefixes existed are not re-embedded.
-		return '' === $prefix ? $key : $key . "\x00" . $prefix;
 	}
 }

@@ -16,6 +16,7 @@ import type {
 	PreviewResult,
 	SearchSettings,
 	Thresholds,
+	UpdateSettingsResponse,
 } from './types';
 
 interface Props {
@@ -64,7 +65,8 @@ export function SearchSection( { settings, defaults, onSaved }: Props ) {
 				method: 'POST',
 				data: { input },
 			} );
-			const saved = unwrapAbilityResponse< SearchSettings >( raw );
+			const saved =
+				unwrapAbilityResponse< UpdateSettingsResponse >( raw );
 			setHybrid( saved.hybrid );
 			setMaxDistance( String( saved.max_distance ) );
 			setMaxRelative( String( saved.max_relative_distance ) );

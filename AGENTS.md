@@ -114,12 +114,15 @@ CREATE TABLE {$prefix}mariadb_vector_embeddings (
 Changing the model to one with a different dimension requires dropping and
 re-creating the table; the Admin page handles this automatically.
 
-`content_hash` is a SHA-256 of the selected model (`provider:model`, plus the
-document prefix when one is set), title and raw content (length-prefixed) —
+`content_hash` is a SHA-256 of the embedding key (`Settings::get_embedding_key()`:
+`provider:model`, plus the document prefix when one is set), title and raw
+content (length-prefixed) —
 used by the indexer to skip work when neither the post body nor the embedding
 model has changed. Including the model means a model switch at the same
 dimension is re-embedded by a normal (non-force) Reindex; the same goes for a
-changed document prefix.
+changed document prefix. A setting that changes how chunks are embedded goes
+into the embedding key, so both the hash and `update-settings`'
+`reindex_required` follow it.
 
 ## Components
 
@@ -128,13 +131,13 @@ changed document prefix.
 | `wp-mariadb-vector-search.php`    | Bootstrap. Registers activation hooks. `wp_mariadb_vector_search_embedding()` (core builder bound to the selected model). |
 | `includes/Plugin.php`             | Composition root. Instantiates components and registers hooks.                                     |
 | `includes/Schema.php`             | Install/upgrade table. Verify MariaDB version. Admin notice on incompatibility.                    |
-| `includes/Settings.php`           | The settings option: getters with defaults (`get_thresholds()`, `is_hybrid()`, `get_post_types()`, `get_prefixes()`), `update()` for partial writes, `sanitize_settings()`. |
+| `includes/Settings.php`           | The settings option: getters with defaults (`get_thresholds()`, `is_hybrid()`, `get_post_types()`, `get_prefixes()`, `excludes_password_protected()`), `get_embedding_key()` (content hash input), `update()` for partial writes, `sanitize_settings()`. |
 | `includes/Repository.php`         | `$wpdb` wrapper. `replace_post_chunks()`, `delete_post()`, `delete_other_post_types()`, `search_similar()`. Vector text serialization. |
 | `includes/Model_Catalog.php`      | Enumerates models the AI Client registry reports as embedding-capable.                             |
-| `includes/Abilities.php`          | Abilities for the admin UI: `get-status`, `reindex`, `select-model` (probes the model's dimensions, then saves settings; clears thresholds and prefixes when the model changes), `update-settings` (every other setting: thresholds, hybrid, post types, prefixes, `exclude_password_protected`; changes only the given keys via `Settings::update()`, deletes the rows of deselected post types, and returns the settings in effect plus `reindex_required` for added post types, a changed document prefix or a changed password-protected exclusion), `preview-search` (nearest posts with distances and whether the thresholds keep them). |
+| `includes/Abilities.php`          | Abilities for the admin UI: `get-status`, `reindex`, `select-model` (probes the model's dimensions, then saves settings; clears thresholds and prefixes when the model changes), `update-settings` (every other setting: thresholds, hybrid, post types, prefixes, `exclude_password_protected`; the input schema properties are the accepted keys, `null` resets any of them; changes only the given keys via `Settings::update()`, rejecting the whole call on an unavailable post type; annotated destructive, since deselected post types lose their rows; returns the settings in effect plus `added_post_types` and `reindex_required` for added post types, a changed embedding key or a changed password-protected exclusion — a non-force Reindex applies all three), `preview-search` (nearest posts with distances and whether the thresholds keep them). |
 | `includes/Content_Hash.php`       | SHA-256 hash of post title + content.                                                              |
 | `includes/Chunker.php`            | Block strip + paragraph/sentence/char splitting with overlap. Title prepended to each chunk.       |
-| `includes/Indexer.php`            | `save_post`/`delete_post`/`trashed_post` hooks. Cron worker that embeds chunks and stores them via the repository. Removes password-protected posts from the index unless the setting allows them. |
+| `includes/Indexer.php`            | `save_post`/`delete_post`/`trashed_post` hooks. Cron worker that embeds chunks and stores them via the repository. Removes password-protected posts from the index unless the setting allows them. `remove_deselected_post_types()`, hooked to the settings option update, deletes the rows of post types a change deselected, however the option is written. |
 | `includes/Search.php`             | `pre_get_posts` rewrite to `post__in` + `orderby=post__in`; hybrid fusion with the LIKE search. Safe fallback to default search. |
 | `includes/Rank_Fusion.php`        | Reciprocal Rank Fusion of ranked post ID lists. Pure PHP.                                          |
 | `includes/CLI.php`                | `wp mariadb-vector reindex [--post-type=] [--force] [--batch=]`. Loaded only if `WP_CLI`.          |
@@ -196,7 +199,7 @@ first. Ties keep vector order.
 | `hybrid` | `true` | Fuse vector results with the LIKE search (`Settings::is_hybrid()`). Set on the admin page; `false` = vector-only. Kept across model changes. |
 | `exclude_password_protected` | true | Leave password-protected posts out of the index, since indexing sends their content to the provider. Set on the admin page; kept across model changes. Existing posts follow a change on the next Reindex. |
 | `query_prefix` / `document_prefix` | `''` | Prepended before embedding to search terms (Search, preview) and to chunks (Indexer; `chunk_text` is stored without it). Models such as E5/Nemotron need `query: ` / `passage: `. Entered by hand from the model card (no presets; no API reports them); spaces are kept, control characters removed. Cleared by `select-model` on a model change, like the thresholds. |
-| `post_types` | all available | Post types to index and search (`Settings::get_post_types()`). Available = public, searchable, minus `attachment` (never published). Saved types that become unavailable are ignored. Set on the admin page; `update-settings` deletes the rows of deselected types. |
+| `post_types` | all available | Post types to index and search (`Settings::get_post_types()`). Available = public, searchable, minus `attachment` (never published). Saved types that become unavailable are ignored. Set on the admin page. Deselecting a type deletes its rows on the option update (`Indexer::remove_deselected_post_types()`); `null` restores all available types, including ones registered later. |
 
 Writing the option:
 

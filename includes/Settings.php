@@ -101,6 +101,31 @@ class Settings {
 	}
 
 	/**
+	 * Identify how chunks are embedded: the selected model as "provider:model",
+	 * plus the document prefix when one is set.
+	 *
+	 * Part of each post's content hash, so posts are re-embedded when it
+	 * changes.
+	 *
+	 * @since 0.3.0
+	 *
+	 * @return string
+	 */
+	public static function get_embedding_key(): string {
+		$settings = get_option( self::OPTION_NAME, array() );
+		if ( ! is_array( $settings ) ) {
+			return '';
+		}
+
+		$key    = ( $settings['provider'] ?? '' ) . ':' . ( $settings['model'] ?? '' );
+		$prefix = self::get_prefixes()['document_prefix'];
+
+		// Without a prefix the key stays "provider:model", so posts indexed
+		// before prefixes existed are not re-embedded.
+		return '' === $prefix ? $key : $key . "\x00" . $prefix;
+	}
+
+	/**
 	 * Whether vector results are fused with WordPress's LIKE search results.
 	 *
 	 * @since 0.3.0
@@ -140,11 +165,12 @@ class Settings {
 	 *
 	 * @since 0.3.0
 	 *
+	 * @param array|null $settings Settings to read; the saved ones by default.
 	 * @return string[] The saved post types that are still available; without a
 	 *                  saved list, all available post types.
 	 */
-	public static function get_post_types(): array {
-		$settings  = get_option( self::OPTION_NAME, array() );
+	public static function get_post_types( ?array $settings = null ): array {
+		$settings  = $settings ?? get_option( self::OPTION_NAME, array() );
 		$available = self::available_post_types();
 
 		if ( ! is_array( $settings ) || ! isset( $settings['post_types'] ) || ! is_array( $settings['post_types'] ) ) {

@@ -53,6 +53,13 @@ class Index_Settings_Abilities_Test extends \WP_UnitTestCase {
 		$this->assertSame( 'm', get_option( Settings::OPTION_NAME )['model'] );
 	}
 
+	/** Null resets the exclusion to its default, on. */
+	public function test_update_settings_null_resets_exclude_password_protected(): void {
+		Settings::update( array( 'exclude_password_protected' => false ) );
+
+		$this->assertTrue( $this->run_ability( 'update-settings', array( 'exclude_password_protected' => null ) )['exclude_password_protected'] );
+	}
+
 	/** Editors cannot change the index settings. */
 	public function test_save_index_settings_requires_manage_options(): void {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
