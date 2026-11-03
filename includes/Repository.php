@@ -237,17 +237,15 @@ class Repository {
 	/**
 	 * Return post IDs whose embeddings are within a cosine distance threshold.
 	 *
-	 * Uses a two-step approach so the VECTOR INDEX is used by the inner query
-	 * (ORDER BY distance LIMIT overscan), then PHP aggregates per post and
-	 * applies the distance threshold filter.
-	 *
-	 * @param float[]  $query_vector Embedding of the search query.
-	 * @param string[] $post_types   Post types to include.
-	 * @param float    $max_distance Maximum cosine distance to include (0=identical, ~1=unrelated).
-	 *                               Default INF means no threshold filtering.
-	 * @param int      $max_results  Safety cap on the number of posts returned and the basis for
-	 *                               the inner LIMIT (ensures the VECTOR INDEX is used). Default 200.
-	 * @param int      $overscan     Inner LIMIT multiplier (default 5).
+	 * @param float[]  $query_vector          Embedding of the search query.
+	 * @param string[] $post_types            Post types to include.
+	 * @param float    $max_distance          Maximum cosine distance to include (0=identical, ~1=unrelated).
+	 *                                        Default INF means no threshold filtering.
+	 * @param int      $max_results           Safety cap on the number of posts returned and the basis for
+	 *                                        the inner LIMIT (ensures the VECTOR INDEX is used). Default 200.
+	 * @param float    $max_relative_distance Maximum distance behind the best match to include.
+	 *                                        Default INF means no relative filtering.
+	 * @param int      $overscan              Inner LIMIT multiplier (default 5).
 	 * @return int[]  Post IDs ordered by ascending cosine distance.
 	 */
 	public function search_similar(
@@ -255,13 +253,34 @@ class Repository {
 		array $post_types,
 		float $max_distance = INF,
 		int $max_results = 200,
+		float $max_relative_distance = INF,
 		int $overscan = 5
 	): array {
+		$distances = $this->nearest_posts( $query_vector, $post_types, $max_results, $overscan );
+		$distances = self::filter_by_distance( $distances, $max_distance, $max_relative_distance );
+
+		return array_keys( $distances );
+	}
+
+	/**
+	 * Return the posts closest to a vector with their cosine distances.
+	 *
+	 * Uses a two-step approach so the VECTOR INDEX is used by the inner query
+	 * (ORDER BY distance LIMIT limit * overscan), then PHP aggregates per post,
+	 * keeping each post's closest chunk.
+	 *
+	 * @param float[]  $query_vector Embedding of the search query.
+	 * @param string[] $post_types   Post types to include.
+	 * @param int      $limit        Maximum number of posts returned.
+	 * @param int      $overscan     Inner LIMIT multiplier (default 5).
+	 * @return array<int, float> Cosine distance by post ID, closest first.
+	 */
+	public function nearest_posts( array $query_vector, array $post_types, int $limit, int $overscan = 5 ): array {
 		global $wpdb;
 		$table = $wpdb->prefix . 'mariadb_vector_embeddings';
 
 		$vec_literal = self::format_vector_literal( $query_vector );
-		$inner_limit = $max_results * $overscan;
+		$inner_limit = $limit * $overscan;
 		$type_list   = implode( ',', array_map( static fn( $t ) => "'" . esc_sql( $t ) . "'", $post_types ) );
 
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -278,10 +297,6 @@ class Repository {
 		);
 		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 
-		if ( empty( $rows ) ) {
-			return array();
-		}
-
 		// Aggregate by post_id keeping the minimum distance (best chunk wins).
 		$min_by_post = array();
 		foreach ( $rows as $row ) {
@@ -294,15 +309,35 @@ class Repository {
 
 		asort( $min_by_post );
 
-		// Apply distance threshold: exclude posts that are too dissimilar.
+		return array_slice( $min_by_post, 0, $limit, true );
+	}
+
+	/**
+	 * Apply the distance thresholds to posts sorted by ascending distance.
+	 *
+	 * @param array<int, float> $distances             Cosine distance by post ID, closest first.
+	 * @param float             $max_distance          Maximum distance to keep. INF disables.
+	 * @param float             $max_relative_distance Maximum distance behind the closest kept post. INF disables.
+	 * @return array<int, float> The kept posts, in the same order.
+	 */
+	public static function filter_by_distance( array $distances, float $max_distance, float $max_relative_distance ): array {
+		// Exclude posts that are too dissimilar.
 		if ( is_finite( $max_distance ) ) {
-			$min_by_post = array_filter(
-				$min_by_post,
+			$distances = array_filter(
+				$distances,
 				static fn( float $d ): bool => $d <= $max_distance
 			);
 		}
 
-		$ids = array_keys( array_slice( $min_by_post, 0, $max_results, true ) );
-		return array_map( 'intval', $ids );
+		// Exclude posts far behind the best match.
+		if ( is_finite( $max_relative_distance ) && ! empty( $distances ) ) {
+			$cutoff    = reset( $distances ) + $max_relative_distance;
+			$distances = array_filter(
+				$distances,
+				static fn( float $d ): bool => $d <= $cutoff
+			);
+		}
+
+		return $distances;
 	}
 }

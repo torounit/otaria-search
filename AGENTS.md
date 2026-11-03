@@ -46,7 +46,13 @@ save_post ──► Indexer::enqueue (wp_schedule_single_event)
 is_search() ──► Search::pre_get_posts
                 │  query string → wp_mariadb_vector_search_embedding(s)->generate_embeddings()
                 ▼
-        Repository::search_similar(query_vec, post_types, max_distance, max_results) → post__in (ordered)
+        Repository::search_similar(query_vec, post_types, max_distance, max_results, max_relative_distance)
+                │  vector ranking                    WP_Query (LIKE, orderby=relevance)
+                ▼                                      │  lexical ranking
+        Rank_Fusion::fuse([vector, lexical], k) ◄──────┘
+                │
+                ▼
+        post__in (ordered), LIKE clause removed
 ```
 
 ### Design decisions
@@ -69,7 +75,18 @@ is_search() ──► Search::pre_get_posts
   DELETEd then re-INSERTed inside a transaction. Avoids stale chunks.
 - **Search override is opt-out-safe.** Filter `pre_get_posts` only when
   `is_main_query() && is_search() && s != ''`. On embedding error fall through
-  to default WordPress search rather than returning nothing.
+  to default WordPress search rather than returning nothing. When the search
+  runs but nothing matches, return no results (`post__in = [0]`) rather than
+  the LIKE results.
+- **Hybrid by default.** Vector results are fused with WordPress's own LIKE
+  search results (a sub `WP_Query`, `orderby=relevance`) by Reciprocal Rank
+  Fusion. Embeddings rank exact tokens (product codes, names) poorly; LIKE
+  catches them. RRF needs only ranks, since cosine distance and LIKE relevance
+  are not comparable. The distance thresholds still apply to the vector side.
+- **LIKE clause removal is scoped to the query.** The rewritten query is marked
+  with the `wp_mariadb_vector_search` query var, and a permanent `posts_search`
+  filter empties the clause only for marked queries. A filter added and removed
+  around the query would leak: `fields=ids` queries return before `the_posts`.
 
 ## Schema
 
@@ -109,14 +126,15 @@ model switch at the same dimension is re-embedded by a normal (non-force) Reinde
 | `includes/Schema.php`             | Install/upgrade table. Verify MariaDB version. Admin notice on incompatibility.                    |
 | `includes/Repository.php`         | `$wpdb` wrapper. `replace_post_chunks()`, `delete_post()`, `search_similar()`. Vector text serialization. |
 | `includes/Model_Catalog.php`      | Enumerates models the AI Client registry reports as embedding-capable.                             |
-| `includes/Abilities.php`          | Abilities for the admin UI: `get-status`, `reindex`, `select-model` (probes the model's dimensions, then saves settings). |
+| `includes/Abilities.php`          | Abilities for the admin UI: `get-status`, `reindex`, `select-model` (probes the model's dimensions, then saves settings; clears thresholds when the model changes), `save-thresholds`, `preview-search` (nearest posts with distances and whether the thresholds keep them). |
 | `includes/Content_Hash.php`       | SHA-256 hash of post title + content.                                                              |
 | `includes/Chunker.php`            | Block strip + paragraph/sentence/char splitting with overlap. Title prepended to each chunk.       |
 | `includes/Indexer.php`            | `save_post`/`delete_post`/`trashed_post` hooks. Cron worker that embeds chunks and stores them via the repository. |
-| `includes/Search.php`             | `pre_get_posts` rewrite to `post__in` + `orderby=post__in`. Safe fallback to default search.       |
+| `includes/Search.php`             | `pre_get_posts` rewrite to `post__in` + `orderby=post__in`; hybrid fusion with the LIKE search. Safe fallback to default search. |
+| `includes/Rank_Fusion.php`        | Reciprocal Rank Fusion of ranked post ID lists. Pure PHP.                                          |
 | `includes/CLI.php`                | `wp mariadb-vector reindex [--post-type=] [--force] [--batch=]`. Loaded only if `WP_CLI`.          |
 | `includes/Cron_Backfill.php`      | Batched cron-driven reindex of all posts. Progress in transient.                                   |
-| `includes/Admin.php`              | Settings page: status, model selector, unified Reindex button (auto-detects dimension diff).          |
+| `includes/Admin.php`              | Settings page: status, model selector, search thresholds with preview, unified Reindex button (auto-detects dimension diff). |
 | `uninstall.php`                   | `DROP TABLE`, delete all `wp_mariadb_vector_search_*` options.                                     |
 
 ## Similarity search query
@@ -134,12 +152,19 @@ ORDER  BY d ASC
 LIMIT  %d;
 
 -- Outer (PHP-side): group by post_id, keep MIN(d),
---   filter d <= max_distance, slice to max_results
+--   filter d <= max_distance and d <= MIN(d) + max_relative_distance,
+--   slice to max_results
 ```
 
 The default `overscan` of 5 covers typical content. `max_distance` (default
-0.65) excludes posts that are too dissimilar; `max_results` (default 200) caps
-the result set and ensures the VECTOR INDEX is engaged.
+0.65) excludes posts that are too dissimilar; `max_relative_distance` (default
+0.25) excludes posts far behind the best match (e.g. the default "Hello world!"
+post); `max_results` (default 200) caps the result set and ensures the VECTOR
+INDEX is engaged.
+
+With hybrid search on, the vector ranking and the LIKE ranking (up to
+`max_results` posts) are fused: each post scores `Σ 1 / (k + rank)` over the
+lists it appears in, so posts found by both rank first. Ties keep vector order.
 
 ## Chunking
 
@@ -160,6 +185,8 @@ the result set and ensures the VECTOR INDEX is engaged.
 | `provider`   | —       | AI provider id (e.g. `openai`, `lm_studio`).                |
 | `model`      | —       | Embedding model id (e.g. `text-embedding-3-small`).         |
 | `dimensions` | 1536    | Detected by probing the model in `select-model` (`EmbeddingResult::getDimensions()`); never entered manually. Schema's `VECTOR(N)`. Changing to a different dimension requires Reindex. |
+| `max_distance` | 0.65 | Search threshold (cosine distance, 0–2). Set on the admin page; absent = default. Cleared when `select-model` switches to another model, since distances are model-specific. |
+| `max_relative_distance` | 0.25 | Search threshold behind the best match (0–2). Same lifecycle as `max_distance`. |
 
 Other options:
 
@@ -168,8 +195,11 @@ Other options:
 ## Extension points (filters/actions)
 
 - `wp_mariadb_vector_search_post_types` (`string[]`) — override indexed post types.
-- `wp_mariadb_vector_search_max_distance` (`float`, default `0.65`) — maximum cosine distance to include in results. `0` = identical, smaller = more similar. Optimal value is model-dependent.
-- `wp_mariadb_vector_search_max_results` (`int`, default `200`) — safety cap on returned posts; also the basis for the inner `LIMIT` so the VECTOR INDEX is used.
+- `wp_mariadb_vector_search_max_distance` (`float`, default: saved setting, else `0.65`) — maximum cosine distance to include in results. `0` = identical, smaller = more similar. Optimal value is model-dependent.
+- `wp_mariadb_vector_search_max_relative_distance` (`float`, default: saved setting, else `0.25`) — maximum distance behind the best vector match. `INF` disables.
+- `wp_mariadb_vector_search_max_results` (`int`, default `200`) — safety cap on returned posts; also the basis for the inner `LIMIT` so the VECTOR INDEX is used, and the LIKE sub-query's limit.
+- `wp_mariadb_vector_search_hybrid` (`bool`, default `true`) — fuse vector results with the LIKE search. `false` = vector-only.
+- `wp_mariadb_vector_search_rrf_k` (`int`, default `60`) — RRF constant; higher values flatten the weight of top ranks. Negative values are treated as `0`.
 
 Embedding requests also honor core's AI Client filters, e.g.
 `wp_ai_client_default_request_timeout` (HTTP timeout, core default 30 s; it

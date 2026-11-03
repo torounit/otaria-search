@@ -1,7 +1,9 @@
 import apiFetch from '@wordpress/api-fetch';
-import { Button, Notice, SelectControl, Spinner } from '@wordpress/components';
+import { Button, Notice, SelectControl } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
+import { Stack, Text } from '@wordpress/ui';
+import { Section } from './Section';
 import { unwrapAbilityResponse } from './ability';
 import type { AvailableModel, Settings } from './types';
 
@@ -32,14 +34,18 @@ export function ModelSelector( {
 	const [ isSaving, setIsSaving ] = useState( false );
 	const [ error, setError ] = useState< string | null >( null );
 
+	const title = __( 'Embedding Model', 'wp-mariadb-vector-search' );
+
 	if ( availableModels.length === 0 ) {
 		return (
-			<p>
-				{ __(
-					'No embedding models available. Configure an embedding-capable AI provider in Settings › Connectors.',
-					'wp-mariadb-vector-search'
-				) }
-			</p>
+			<Section title={ title }>
+				<Text render={ <p /> }>
+					{ __(
+						'No embedding models available. Configure an embedding-capable AI provider in Settings › Connectors.',
+						'wp-mariadb-vector-search'
+					) }
+				</Text>
+			</Section>
 		);
 	}
 
@@ -97,7 +103,7 @@ export function ModelSelector( {
 	}
 
 	return (
-		<>
+		<Section title={ title }>
 			{ error && (
 				<Notice status="error" onRemove={ () => setError( null ) }>
 					{ error }
@@ -123,17 +129,18 @@ export function ModelSelector( {
 							)
 				}
 			/>
-			<Button
-				variant="primary"
-				onClick={ () => void handleSave() }
-				disabled={ isSaving || selected === '' }
-			>
-				{ isSaving ? (
-					<Spinner />
-				) : (
-					__( 'Save model', 'wp-mariadb-vector-search' )
-				) }
-			</Button>
-		</>
+			<Stack direction="row" gap="sm">
+				<Button
+					__next40pxDefaultSize
+					variant="primary"
+					onClick={ () => void handleSave() }
+					isBusy={ isSaving }
+					disabled={ isSaving || selected === '' }
+					accessibleWhenDisabled
+				>
+					{ __( 'Save model', 'wp-mariadb-vector-search' ) }
+				</Button>
+			</Stack>
+		</Section>
 	);
 }

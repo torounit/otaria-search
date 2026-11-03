@@ -3,11 +3,19 @@ import { Notice, Spinner } from '@wordpress/components';
 import { useEffect, useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { Page } from '@wordpress/admin-ui';
+import { Stack } from '@wordpress/ui';
 import { ModelSelector } from './ModelSelector';
 import { ReindexSection } from './ReindexSection';
 import { StatusSection } from './StatusSection';
+import { ThresholdSection } from './ThresholdSection';
 import { unwrapAbilityResponse } from './ability';
-import type { StatusResponse } from './types';
+import type { StatusResponse, Thresholds } from './types';
+
+// Mirrors Settings::DEFAULT_THRESHOLDS, for responses that lack them.
+const DEFAULT_THRESHOLDS: Thresholds = {
+	max_distance: 0.65,
+	max_relative_distance: 0.25,
+};
 
 type AppStatus =
 	| { phase: 'loading' }
@@ -30,6 +38,8 @@ function normalizeStatusResponse( raw: unknown ): StatusResponse {
 		},
 		available_models: resolved?.available_models ?? [],
 		dim_changed: resolved?.dim_changed ?? false,
+		thresholds: resolved?.thresholds ?? DEFAULT_THRESHOLDS,
+		default_thresholds: resolved?.default_thresholds ?? DEFAULT_THRESHOLDS,
 	};
 }
 
@@ -70,81 +80,97 @@ export function VectorSearchApp() {
 			hasPadding
 			title={ __( 'Vector Search', 'wp-mariadb-vector-search' ) }
 		>
-			{ successMessage && (
-				<Notice
-					status="success"
-					onRemove={ () => setSuccessMessage( null ) }
-				>
-					{ successMessage }
-				</Notice>
-			) }
+			<Stack direction="column" gap="xl">
+				{ successMessage && (
+					<Notice
+						status="success"
+						onRemove={ () => setSuccessMessage( null ) }
+					>
+						{ successMessage }
+					</Notice>
+				) }
 
-			{ status.phase === 'loading' && <Spinner /> }
+				{ status.phase === 'loading' && <Spinner /> }
 
-			{ status.phase === 'error' && (
-				<Notice status="error" isDismissible={ false }>
-					{ status.message }
-				</Notice>
-			) }
+				{ status.phase === 'error' && (
+					<Notice status="error" isDismissible={ false }>
+						{ status.message }
+					</Notice>
+				) }
 
-			{ status.phase === 'ready' && (
-				<>
-					<StatusSection
-						isSupported={ status.data.is_supported }
-						installed={ status.data.installed }
-						indexed={ status.data.indexed }
-						tableDims={ status.data.table_dims }
-						progress={ status.data.progress }
-					/>
+				{ status.phase === 'ready' && (
+					<>
+						<StatusSection
+							isSupported={ status.data.is_supported }
+							installed={ status.data.installed }
+							indexed={ status.data.indexed }
+							tableDims={ status.data.table_dims }
+							progress={ status.data.progress }
+						/>
 
-					<h2>
-						{ __( 'Embedding Model', 'wp-mariadb-vector-search' ) }
-					</h2>
-					<ModelSelector
-						availableModels={ status.data.available_models }
-						currentProvider={ status.data.settings.provider }
-						currentModel={ status.data.settings.model }
-						currentDims={ status.data.settings.dimensions }
-						tableDims={ status.data.table_dims }
-						onSaved={ ( _dims, needRebuild ) => {
-							setSuccessMessage(
-								needRebuild
-									? __(
-											'Model saved. The table dimension has changed — please run Reindex all posts to recreate the table.',
+						<ModelSelector
+							availableModels={ status.data.available_models }
+							currentProvider={ status.data.settings.provider }
+							currentModel={ status.data.settings.model }
+							currentDims={ status.data.settings.dimensions }
+							tableDims={ status.data.table_dims }
+							onSaved={ ( _dims, needRebuild ) => {
+								setSuccessMessage(
+									needRebuild
+										? __(
+												'Model saved. The table dimension has changed — please run Reindex all posts to recreate the table.',
+												'wp-mariadb-vector-search'
+											)
+										: __(
+												'Model saved. Please run Reindex all posts to apply the new model.',
+												'wp-mariadb-vector-search'
+											)
+								);
+								void loadStatus();
+							} }
+						/>
+
+						{ status.data.installed && (
+							<ThresholdSection
+								// Remount after a model change resets the thresholds.
+								key={ `${ status.data.settings.provider }:${ status.data.settings.model }` }
+								thresholds={ status.data.thresholds }
+								defaults={ status.data.default_thresholds }
+								onSaved={ () =>
+									setSuccessMessage(
+										__(
+											'Thresholds saved.',
 											'wp-mariadb-vector-search'
 										)
-									: __(
-											'Model saved. Please run Reindex all posts to apply the new model.',
-											'wp-mariadb-vector-search'
-										)
-							);
-							void loadStatus();
-						} }
-					/>
+									)
+								}
+							/>
+						) }
 
-					<ReindexSection
-						isSupported={ status.data.is_supported }
-						installed={ status.data.installed }
-						dimChanged={ status.data.dim_changed }
-						curDims={ status.data.settings.dimensions }
-						tableDims={ status.data.table_dims }
-						onReindexed={ ( rebuilt ) => {
-							setSuccessMessage(
-								rebuilt
-									? __(
-											'Table rebuilt. Reindex has been scheduled.',
-											'wp-mariadb-vector-search'
-										)
-									: __(
-											'Backfill has been scheduled.',
-											'wp-mariadb-vector-search'
-										)
-							);
-							void loadStatus();
-						} }
-					/>
-				</>
-			) }
+						<ReindexSection
+							isSupported={ status.data.is_supported }
+							installed={ status.data.installed }
+							dimChanged={ status.data.dim_changed }
+							curDims={ status.data.settings.dimensions }
+							tableDims={ status.data.table_dims }
+							onReindexed={ ( rebuilt ) => {
+								setSuccessMessage(
+									rebuilt
+										? __(
+												'Table rebuilt. Reindex has been scheduled.',
+												'wp-mariadb-vector-search'
+											)
+										: __(
+												'Backfill has been scheduled.',
+												'wp-mariadb-vector-search'
+											)
+								);
+								void loadStatus();
+							} }
+						/>
+					</>
+				) }
+			</Stack>
 		</Page>
 	);
 }

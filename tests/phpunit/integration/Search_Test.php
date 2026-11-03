@@ -17,6 +17,7 @@ use WP_MariaDB_Vector_Search\Indexer;
 use WP_MariaDB_Vector_Search\Repository;
 use WP_MariaDB_Vector_Search\Schema;
 use WP_MariaDB_Vector_Search\Search;
+use WP_MariaDB_Vector_Search\Settings;
 
 /**
  * Class Search_Test
@@ -50,6 +51,13 @@ class Search_Test extends \WP_UnitTestCase {
 	 * @var int
 	 */
 	private int $post_b;
+
+	/**
+	 * IDs of posts created by individual tests.
+	 *
+	 * @var int[]
+	 */
+	private array $extra_posts = array();
 
 	/**
 	 * Number of vector dimensions used in this test suite.
@@ -124,6 +132,13 @@ class Search_Test extends \WP_UnitTestCase {
 		// Delete posts before dropping schema so delete_post hooks don't error.
 		wp_delete_post( $this->post_a, true );
 		wp_delete_post( $this->post_b, true );
+		foreach ( $this->extra_posts as $post_id ) {
+			wp_delete_post( $post_id, true );
+		}
+
+		// Schema::drop() commits the test transaction (DDL), so saved thresholds
+		// would leak into later tests unless removed before it.
+		delete_option( Settings::OPTION_NAME );
 
 		Schema::drop();
 		delete_option( 'wp_mariadb_vector_search_db_version' );
@@ -167,9 +182,157 @@ class Search_Test extends \WP_UnitTestCase {
 		}
 	}
 
+	/**
+	 * Create a published post and index it with the given embedding.
+	 *
+	 * @param string  $title  Post title.
+	 * @param float[] $vector Embedding the fake provider returns while indexing.
+	 * @return int Post ID.
+	 */
+	private function create_indexed_post( string $title, array $vector ): int {
+		// Set the vector first: saving the post may already index it.
+		Fake_Embedding_Provider::$vector = $vector;
+		$post_id                         = $this->factory->post->create(
+			array(
+				'post_title'   => $title,
+				'post_content' => "About {$title}.",
+				'post_status'  => 'publish',
+			)
+		);
+		( new Indexer( $this->repository ) )->index_post( $post_id );
+		Fake_Embedding_Provider::reset();
+
+		$this->extra_posts[] = $post_id;
+		return $post_id;
+	}
+
+	/**
+	 * Run $search_term as the main search query.
+	 *
+	 * @param string $search_term Search term.
+	 * @return int[] Found post IDs, in result order.
+	 */
+	private function search_ids( string $search_term ): array {
+		$query = new \WP_Query(
+			array(
+				's'              => $search_term,
+				'post_type'      => 'post',
+				'posts_per_page' => 10,
+				'fields'         => 'ids',
+			)
+		);
+
+		$this->as_main_query( $query );
+		$query->get_posts();
+		$this->restore_main_query();
+
+		return array_map( 'intval', $query->posts );
+	}
+
 	// -----------------------------------------------------------------------
 	// Tests
 	// -----------------------------------------------------------------------
+
+	/** Suppressing the LIKE clause affects only the rewritten query. */
+	public function test_like_suppression_does_not_leak_into_later_queries(): void {
+		// fields=ids returns before the_posts runs.
+		$this->search_ids( 'animals' );
+
+		$later = new \WP_Query(
+			array(
+				's'         => 'Zorbex',
+				'post_type' => 'post',
+				'fields'    => 'ids',
+			)
+		);
+
+		$this->assertSame( array(), $later->posts );
+	}
+
+	/** A post far behind the best vector match is excluded by default. */
+	public function test_search_excludes_post_far_behind_best_match(): void {
+		// Cosine distance 0.5 from the query: within max_distance (0.65), but
+		// more than the default max_relative_distance (0.25) behind posts A and B.
+		$far = $this->create_indexed_post( 'Far', array( 0.5, 0.8660254038, 0.0, 0.0 ) );
+
+		$found_ids = $this->search_ids( 'animals' );
+
+		$this->assertContains( $this->post_a, $found_ids );
+		$this->assertNotContains( $far, $found_ids );
+	}
+
+	/** A saved max_relative_distance replaces the default. */
+	public function test_search_uses_saved_max_relative_distance(): void {
+		$far = $this->create_indexed_post( 'Far', array( 0.5, 0.8660254038, 0.0, 0.0 ) );
+		update_option( Settings::OPTION_NAME, array( 'max_relative_distance' => 0.6 ) );
+
+		$this->assertContains( $far, $this->search_ids( 'animals' ) );
+	}
+
+	/** A saved max_distance replaces the default. */
+	public function test_search_uses_saved_max_distance(): void {
+		add_filter( 'wp_mariadb_vector_search_hybrid', '__return_false' );
+		// Cosine distance 0.1 from the query; posts A and B are at 0.
+		$near = $this->create_indexed_post( 'Near', array( 0.9, 0.4358898944, 0.0, 0.0 ) );
+		update_option( Settings::OPTION_NAME, array( 'max_distance' => 0.05 ) );
+
+		$found_ids = $this->search_ids( 'animals' );
+
+		$this->assertNotContains( $near, $found_ids );
+		$this->assertContains( $this->post_a, $found_ids );
+	}
+
+	/** Filters still override the saved thresholds. */
+	public function test_max_distance_filter_overrides_saved_value(): void {
+		add_filter( 'wp_mariadb_vector_search_hybrid', '__return_false' );
+		$near = $this->create_indexed_post( 'Near', array( 0.9, 0.4358898944, 0.0, 0.0 ) );
+		update_option( Settings::OPTION_NAME, array( 'max_distance' => 0.05 ) );
+		add_filter( 'wp_mariadb_vector_search_max_distance', static fn() => 0.65 );
+
+		$this->assertContains( $near, $this->search_ids( 'animals' ) );
+	}
+
+	/** Hybrid search adds posts that only the LIKE search finds. */
+	public function test_hybrid_includes_lexical_only_match(): void {
+		// Orthogonal to the query vector, so vector search never finds it.
+		$lexical = $this->create_indexed_post( 'Zorbex Gadget Guide', array( 0.0, 0.0, 0.0, 1.0 ) );
+
+		$found_ids = $this->search_ids( 'Zorbex' );
+
+		$this->assertContains( $lexical, $found_ids );
+		$this->assertContains( $this->post_a, $found_ids );
+	}
+
+	/** A post found by both vector and LIKE search ranks first. */
+	public function test_hybrid_ranks_post_found_by_both_searches_first(): void {
+		// Third on the vector side (distance 0.1, behind posts A and B), but
+		// the only post that matches "Hounds" lexically.
+		$both = $this->create_indexed_post( 'Hounds', array( 0.9, 0.4358898944, 0.0, 0.0 ) );
+
+		$found_ids = $this->search_ids( 'Hounds' );
+
+		$this->assertSame( $both, $found_ids[0] );
+	}
+
+	/** Disabling hybrid search leaves vector results only. */
+	public function test_hybrid_filter_false_excludes_lexical_only_match(): void {
+		$lexical = $this->create_indexed_post( 'Zorbex Gadget Guide', array( 0.0, 0.0, 0.0, 1.0 ) );
+		add_filter( 'wp_mariadb_vector_search_hybrid', '__return_false' );
+
+		$found_ids = $this->search_ids( 'Zorbex' );
+
+		$this->assertNotContains( $lexical, $found_ids );
+		$this->assertContains( $this->post_a, $found_ids );
+	}
+
+	/** Without matches, the search returns nothing rather than falling back to LIKE. */
+	public function test_no_vector_match_does_not_fall_back_to_like(): void {
+		add_filter( 'wp_mariadb_vector_search_hybrid', '__return_false' );
+		// Orthogonal to every indexed post; "Cats" still matches post A lexically.
+		Fake_Embedding_Provider::$vector = array( 0.0, 0.0, 0.0, 1.0 );
+
+		$this->assertSame( array(), $this->search_ids( 'Cats' ) );
+	}
 
 	/** Vector search returns at least one post. */
 	public function test_search_returns_indexed_posts(): void {

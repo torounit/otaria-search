@@ -131,6 +131,50 @@ class Abilities_Test extends WP_UnitTestCase {
 		$this->assertSame( get_option( Settings::OPTION_NAME ), $result );
 	}
 
+	/** Switching to another model resets thresholds tuned for the previous one. */
+	public function test_select_model_clears_thresholds_when_model_changes(): void {
+		update_option(
+			Settings::OPTION_NAME,
+			array(
+				'provider'     => 'openai',
+				'model'        => 'text-embedding-3-small',
+				'dimensions'   => 1536,
+				'max_distance' => 0.3,
+			)
+		);
+
+		$this->select_model(
+			array(
+				'provider' => Fake_Embedding_Provider::ID,
+				'model'    => Fake_Embedding_Provider::MODEL,
+			)
+		);
+
+		$this->assertArrayNotHasKey( 'max_distance', get_option( Settings::OPTION_NAME ) );
+	}
+
+	/** Re-selecting the current model keeps its thresholds. */
+	public function test_select_model_keeps_thresholds_for_same_model(): void {
+		update_option(
+			Settings::OPTION_NAME,
+			array(
+				'provider'     => Fake_Embedding_Provider::ID,
+				'model'        => Fake_Embedding_Provider::MODEL,
+				'dimensions'   => 4,
+				'max_distance' => 0.3,
+			)
+		);
+
+		$this->select_model(
+			array(
+				'provider' => Fake_Embedding_Provider::ID,
+				'model'    => Fake_Embedding_Provider::MODEL,
+			)
+		);
+
+		$this->assertSame( 0.3, get_option( Settings::OPTION_NAME )['max_distance'] );
+	}
+
 	/** A failed probe returns the error and leaves the saved settings untouched. */
 	public function test_select_model_keeps_settings_when_probe_fails(): void {
 		$saved = array(
