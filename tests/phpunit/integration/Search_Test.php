@@ -65,12 +65,6 @@ class Search_Test extends \WP_UnitTestCase {
 	private const DIMS = 4;
 
 	/**
-	 * Query vector at cosine distance 0.1 from posts A and B, so a ratio to
-	 * the best distance has something to multiply.
-	 */
-	private const OFFSET_QUERY_VECTOR = array( 0.9, 0.0, 0.4358898944, 0.0 );
-
-	/**
 	 * Saved main WP_Query reference for restoration.
 	 *
 	 * @var \WP_Query|null
@@ -289,10 +283,10 @@ class Search_Test extends \WP_UnitTestCase {
 
 	/** A post far behind the best vector match is excluded by default. */
 	public function test_search_excludes_post_far_behind_best_match(): void {
-		// From this query, posts A and B are at 0.1 and Far at 0.28: within
-		// max_distance (0.65), but more than the default ratio (1.3) times 0.1.
-		$far                             = $this->create_indexed_post( 'Far', array( 0.8, 0.6, 0.0, 0.0 ) );
-		Fake_Embedding_Provider::$vector = self::OFFSET_QUERY_VECTOR;
+		// Cosine distance 0.5: within max_distance (0.65), but past the default
+		// cutoff: 0.7 of the way from posts A and B (0) to the reference,
+		// max_distance with fewer than 50 posts, is 0.455.
+		$far = $this->create_indexed_post( 'Far', array( 0.5, 0.8660254038, 0.0, 0.0 ) );
 
 		$found_ids = $this->search_ids( 'animals' );
 
@@ -300,11 +294,10 @@ class Search_Test extends \WP_UnitTestCase {
 		$this->assertNotContains( $far, $found_ids );
 	}
 
-	/** A saved max_distance_ratio replaces the default. */
-	public function test_search_uses_saved_max_distance_ratio(): void {
-		$far                             = $this->create_indexed_post( 'Far', array( 0.8, 0.6, 0.0, 0.0 ) );
-		Fake_Embedding_Provider::$vector = self::OFFSET_QUERY_VECTOR;
-		Settings::update( array( 'max_distance_ratio' => 3.0 ) );
+	/** A saved relative_cutoff replaces the default. */
+	public function test_search_uses_saved_relative_cutoff(): void {
+		$far = $this->create_indexed_post( 'Far', array( 0.5, 0.8660254038, 0.0, 0.0 ) );
+		Settings::update( array( 'relative_cutoff' => 1.0 ) );
 
 		$this->assertContains( $far, $this->search_ids( 'animals' ) );
 	}
@@ -339,11 +332,9 @@ class Search_Test extends \WP_UnitTestCase {
 
 	/** A post found by both vector and LIKE search ranks first. */
 	public function test_hybrid_ranks_post_found_by_both_searches_first(): void {
-		// Third on the vector side (distance 0.12, behind posts A and B at 0.1,
-		// within the default ratio), but the only post that matches "Hounds"
-		// lexically.
-		$both                            = $this->create_indexed_post( 'Hounds', array( 0.792, 0.4749736835, 0.3835830871, 0.0 ) );
-		Fake_Embedding_Provider::$vector = self::OFFSET_QUERY_VECTOR;
+		// Third on the vector side (distance 0.1, behind posts A and B), but
+		// the only post that matches "Hounds" lexically.
+		$both = $this->create_indexed_post( 'Hounds', array( 0.9, 0.4358898944, 0.0, 0.0 ) );
 
 		$found_ids = $this->search_ids( 'Hounds' );
 

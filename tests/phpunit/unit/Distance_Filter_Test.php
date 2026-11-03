@@ -40,25 +40,45 @@ class Distance_Filter_Test extends \WP_UnitTestCase {
 		);
 	}
 
-	/** Posts farther than max_distance_ratio times the best distance are dropped. */
-	public function test_max_distance_ratio_drops_posts_beyond_multiple_of_best(): void {
-		// The best is 0.2, so a ratio of 2 keeps distances up to 0.4.
+	/** With fewer than 50 posts, the window reaches toward max_distance. */
+	public function test_relative_cutoff_uses_max_distance_below_reference_rank(): void {
+		// Best 0.2, reference max_distance 0.7: 0.5 keeps up to 0.2 + 0.5 * 0.5 = 0.45.
 		$this->assertSame(
 			array(
 				7 => 0.2,
 				3 => 0.35,
 			),
-			Repository::filter_by_distance( self::DISTANCES, INF, 2.0 )
+			Repository::filter_by_distance( self::DISTANCES, 0.7, 0.5 )
 		);
 	}
 
-	/** The ratio applies to the best post kept by max_distance. */
-	public function test_max_distance_ratio_applies_after_max_distance(): void {
-		$this->assertSame( array( 7 => 0.2 ), Repository::filter_by_distance( self::DISTANCES, 0.3, 4.0 ) );
+	/** Without max_distance, the farthest post is the reference below rank 50. */
+	public function test_relative_cutoff_uses_farthest_post_without_max_distance(): void {
+		// Best 0.2, reference 0.8: 0.5 keeps up to 0.5.
+		$this->assertSame(
+			array(
+				7 => 0.2,
+				3 => 0.35,
+			),
+			Repository::filter_by_distance( self::DISTANCES, INF, 0.5 )
+		);
 	}
 
-	/** Nothing within max_distance leaves nothing for the ratio filter. */
+	/** The window is a fraction of the gap between the best and the 50th post. */
+	public function test_relative_cutoff_uses_fiftieth_post_as_reference(): void {
+		$distances = array();
+		for ( $i = 0; $i < 60; $i++ ) {
+			$distances[ 100 + $i ] = 0.1 + 0.01 * $i;
+		}
+
+		// The 50th is at 0.59: 0.5 keeps up to 0.1 + 0.5 * 0.49 = 0.345, the first 25.
+		$kept = Repository::filter_by_distance( $distances, INF, 0.5 );
+
+		$this->assertSame( array_slice( $distances, 0, 25, true ), $kept );
+	}
+
+	/** Nothing within max_distance leaves nothing for the relative cutoff. */
 	public function test_no_post_within_max_distance_returns_empty(): void {
-		$this->assertSame( array(), Repository::filter_by_distance( self::DISTANCES, 0.1, 2.0 ) );
+		$this->assertSame( array(), Repository::filter_by_distance( self::DISTANCES, 0.1, 0.5 ) );
 	}
 }

@@ -92,7 +92,7 @@ class Search {
 		}
 
 		$thresholds = Settings::get_thresholds();
-		$ids        = $this->repository->search_similar( $result[0]->getValues(), $post_types, $thresholds['max_distance'], self::MAX_RESULTS, $thresholds['max_distance_ratio'] );
+		$ids        = $this->repository->search_similar( $result[0]->getValues(), $post_types, $thresholds['max_distance'], self::MAX_RESULTS, $thresholds['relative_cutoff'] );
 
 		if ( Settings::is_hybrid() ) {
 			$ids = Rank_Fusion::fuse( array( $ids, $this->search_like( $search_term, $post_types, self::MAX_RESULTS ) ), self::RRF_K );

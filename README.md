@@ -69,7 +69,7 @@ Search falls back to the standard WordPress search, and indexing is retried on t
 
 ### How do I tune the search results?
 
-On **Settings > Otaria Search**, the **Search** section sets two thresholds: the maximum distance of a post from the search term, and how many times farther than the best match a post may be (1.3 keeps posts up to 1.3 times as far). Suitable values depend on the model, so enter a search term in the preview to see the nearest posts with their distances before saving. Switching to another model resets the thresholds.
+On **Settings > Otaria Search**, the **Search** section sets two thresholds: the maximum distance of a post from the search term, and a cutoff relative to the best match: posts are kept up to this fraction of the way from the closest post to a typical unrelated one (the 50th closest). Suitable values depend on the model, so enter a search term in the preview to see the nearest posts with their distances before saving. Switching to another model resets the thresholds.
 
 ### What happens when I switch to another embedding model?
 
@@ -119,7 +119,7 @@ The embeddings table and all of the plugin's settings.
 
 ### Unreleased
 
-* The threshold relative to the best match is now a ratio: posts farther than 1.3 times the best match's distance are left out (it was a difference, 0.25 by default). A ratio suits embedding models whose distances run on different scales, and fewer unrelated posts trail the results. A value saved for the former threshold is reset to the new default. Hybrid search still adds the posts that contain the search term.
+* The threshold relative to the best match is now measured against each search's own distances: posts are kept up to 0.7 of the way from the closest post to the 50th closest, a typical unrelated one (it was a fixed distance behind the closest post, 0.25). Far fewer unrelated posts trail the results, searches with no good match return few posts instead of many, and one default suits embedding models whose distances run on different scales. A value saved for the former threshold is reset to the new default. Hybrid search still adds the posts that contain the search term.
 
 ### 0.3.0
 

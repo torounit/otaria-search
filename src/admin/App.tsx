@@ -17,7 +17,7 @@ import type { StatusResponse, Thresholds } from './types';
 // Mirrors Settings::DEFAULT_THRESHOLDS, for responses that lack them.
 const DEFAULT_THRESHOLDS: Thresholds = {
 	max_distance: 0.65,
-	max_distance_ratio: 1.3,
+	relative_cutoff: 0.7,
 };
 
 type AppStatus =

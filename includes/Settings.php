@@ -21,32 +21,31 @@ class Settings {
 	 *
 	 * @since 0.2.0
 	 */
-	const THRESHOLD_KEYS = array( 'max_distance', 'max_distance_ratio' );
+	const THRESHOLD_KEYS = array( 'max_distance', 'relative_cutoff' );
 
 	/**
 	 * Default thresholds, used until the admin saves model-specific values.
 	 *
 	 * The max_distance stays loose: distance scales differ a lot between models,
 	 * and a tight absolute cutoff empties the results of a model with large
-	 * distances. max_distance_ratio trims the tail instead, as a multiple of
-	 * the best match's distance, so one value suits models of different
-	 * scales. It never drops the best match, and hybrid search keeps the LIKE
-	 * matches.
+	 * distances. relative_cutoff trims the tail instead, measured per query
+	 * against a typical unrelated distance (Repository::filter_by_distance()),
+	 * so one value suits different models. It never drops the best match, and
+	 * hybrid search keeps the LIKE matches.
 	 *
 	 * @since 0.2.0
 	 */
 	const DEFAULT_THRESHOLDS = array(
-		'max_distance'       => 0.65,
-		'max_distance_ratio' => 1.3,
+		'max_distance'    => 0.65,
+		'relative_cutoff' => 0.7,
 	);
 
 	/**
-	 * Valid range of each threshold. A ratio below 1 would drop the best
-	 * match itself.
+	 * Valid range of each threshold.
 	 */
 	private const THRESHOLD_RANGES = array(
-		'max_distance'       => array( 0.0, 2.0 ),
-		'max_distance_ratio' => array( 1.0, 10.0 ),
+		'max_distance'    => array( 0.0, 2.0 ),
+		'relative_cutoff' => array( 0.0, 1.0 ),
 	);
 
 	/**
@@ -62,7 +61,7 @@ class Settings {
 	 *
 	 * @since 0.2.0
 	 *
-	 * @return array{max_distance: float, max_distance_ratio: float}
+	 * @return array{max_distance: float, relative_cutoff: float}
 	 */
 	public static function get_thresholds(): array {
 		$settings = get_option( self::OPTION_NAME, array() );

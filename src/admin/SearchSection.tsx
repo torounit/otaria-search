@@ -38,8 +38,8 @@ export function SearchSection( { settings, defaults, onSaved }: Props ) {
 	const [ maxDistance, setMaxDistance ] = useState(
 		String( settings.max_distance )
 	);
-	const [ maxRatio, setMaxRatio ] = useState(
-		String( settings.max_distance_ratio )
+	const [ relativeCutoff, setRelativeCutoff ] = useState(
+		String( settings.relative_cutoff )
 	);
 	const [ isSaving, setIsSaving ] = useState( false );
 	const [ error, setError ] = useState< string | null >( null );
@@ -50,11 +50,12 @@ export function SearchSection( { settings, defaults, onSaved }: Props ) {
 
 	const values = {
 		max_distance: Number( maxDistance ),
-		max_distance_ratio: Number( maxRatio ),
+		relative_cutoff: Number( relativeCutoff ),
 	};
 	const inRange = ( v: string, min: number, max: number ) =>
 		v !== '' && Number( v ) >= min && Number( v ) <= max;
-	const isValid = inRange( maxDistance, 0, 2 ) && inRange( maxRatio, 1, 10 );
+	const isValid =
+		inRange( maxDistance, 0, 2 ) && inRange( relativeCutoff, 0, 1 );
 
 	async function save( input: Record< string, number | boolean | null > ) {
 		setIsSaving( true );
@@ -69,7 +70,7 @@ export function SearchSection( { settings, defaults, onSaved }: Props ) {
 				unwrapAbilityResponse< UpdateSettingsResponse >( raw );
 			setHybrid( saved.hybrid );
 			setMaxDistance( String( saved.max_distance ) );
-			setMaxRatio( String( saved.max_distance_ratio ) );
+			setRelativeCutoff( String( saved.relative_cutoff ) );
 			onSaved();
 		} catch ( err ) {
 			setError( errorMessage( err ) );
@@ -147,19 +148,19 @@ export function SearchSection( { settings, defaults, onSaved }: Props ) {
 			/>
 			<TextControl
 				type="number"
-				min={ 1 }
-				max={ 10 }
-				step={ 0.1 }
+				min={ 0 }
+				max={ 1 }
+				step={ 0.05 }
 				label={ __(
-					'Maximum distance relative to the best match',
+					'Cutoff relative to the best match',
 					'otaria-search'
 				) }
 				help={ `${ __(
-					'Posts farther than this many times the distance of the closest post are excluded: 1.3 keeps posts up to 1.3 times as far. Default:',
+					'Keeps posts up to this fraction of the way from the closest post to a typical unrelated one (the 50th closest): 0.7 keeps those within 70 percent of the way, 1 keeps up to the 50th. A clear match leaves a wide margin; a search with no good match, a narrow one. Default:',
 					'otaria-search'
-				) } ${ defaults.max_distance_ratio }` }
-				value={ maxRatio }
-				onChange={ setMaxRatio }
+				) } ${ defaults.relative_cutoff }` }
+				value={ relativeCutoff }
+				onChange={ setRelativeCutoff }
 			/>
 			<Stack direction="row" gap="sm" wrap="wrap">
 				<Button
@@ -178,7 +179,7 @@ export function SearchSection( { settings, defaults, onSaved }: Props ) {
 					onClick={ () =>
 						void save( {
 							max_distance: null,
-							max_distance_ratio: null,
+							relative_cutoff: null,
 						} )
 					}
 					disabled={ isSaving }

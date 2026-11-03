@@ -122,7 +122,9 @@ One row per chunk: `post_id`, `chunk_index`, `post_type`, `dimensions`,
 1. SQL: top `max_results × overscan` (overscan 5) chunks by
    `VEC_DISTANCE_COSINE(embedding, VEC_FromText(%s))`, filtered by post type.
 2. PHP: group by post (`MIN(d)`), keep `d <= max_distance` and
-   `d <= best × max_distance_ratio`, slice to `max_results`
+   `d <= best + relative_cutoff × (ref − best)`, slice to `max_results`.
+   `ref` is the 50th post's distance (`Repository::REFERENCE_RANK`), or
+   `max_distance` when fewer are within it
    (`Search::MAX_RESULTS` = 200).
 
 With hybrid on, the vector ranking and the LIKE ranking (up to `max_results`)
@@ -147,7 +149,7 @@ Single option `otaria_search_settings` (array). Other option:
 | `provider`, `model` | — | Selected via `select-model`. |
 | `dimensions` | 1536 | Probed by `select-model`, never entered by hand. |
 | `max_distance` | 0.65 | Cosine distance (0–2). Model-specific: cleared on model change. |
-| `max_distance_ratio` | 1.3 | Distance as a multiple of the best match's (1–10). Cleared on model change. Trims the tail; a ratio rather than a difference because distance scales differ between models, which is also why `max_distance` stays loose. A best match at distance ~0 leaves only itself on the vector side. Replaces `max_relative_distance` (0.3.0, a difference), which is ignored and dropped on the next save. |
+| `relative_cutoff` | 0.7 | Fraction (0–1) of the way from the best match to the 50th post's distance (a typical unrelated post) within which posts are kept. Cleared on model change. Measured per query, so it cancels the scale and offset of each model's distances, and it widens for clear matches and narrows for queries with no good match. A fixed difference or a ratio to the best distance does neither (a ratio even gives no-answer queries the widest window). `max_distance` stays loose because its scale is model-specific. Replaces `max_relative_distance` (0.3.0, a difference), which is ignored and dropped on the next save. |
 | `query_prefix`, `document_prefix` | `''` | For models such as E5 (`query: ` / `passage: `). Applied before embedding; `chunk_text` is stored without it. Spaces kept, control characters removed. Cleared on model change. |
 | `hybrid` | `true` | `false` = vector only. |
 | `exclude_password_protected` | `true` | Indexing sends content to the provider. Existing posts follow on the next Reindex. |

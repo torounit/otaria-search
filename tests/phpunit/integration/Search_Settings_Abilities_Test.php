@@ -22,13 +22,6 @@ use Otaria_Search\Settings;
 class Search_Settings_Abilities_Test extends \WP_UnitTestCase {
 
 	/**
-	 * Query vector at cosine distance 0.1 from (1, 0, 0, 0) and 0.28 from
-	 * (0.8, 0.6, 0, 0), so a ratio to the best distance has something to
-	 * multiply.
-	 */
-	private const QUERY_VECTOR = array( 0.9, 0.0, 0.4358898944, 0.0 );
-
-	/**
 	 * IDs of posts created by the test.
 	 *
 	 * @var int[]
@@ -116,8 +109,8 @@ class Search_Settings_Abilities_Test extends \WP_UnitTestCase {
 
 		$this->assertSame(
 			array(
-				'max_distance'       => 0.4,
-				'max_distance_ratio' => 1.3,
+				'max_distance'    => 0.4,
+				'relative_cutoff' => 0.7,
 			),
 			$status['thresholds']
 		);
@@ -138,14 +131,14 @@ class Search_Settings_Abilities_Test extends \WP_UnitTestCase {
 		$result = $this->run_ability(
 			'update-settings',
 			array(
-				'max_distance'       => 0.4,
-				'max_distance_ratio' => 2.0,
+				'max_distance'    => 0.4,
+				'relative_cutoff' => 0.5,
 			)
 		);
 
 		$expected = array(
-			'max_distance'       => 0.4,
-			'max_distance_ratio' => 2.0,
+			'max_distance'    => 0.4,
+			'relative_cutoff' => 0.5,
 		);
 		$this->assertSame( $expected, array_intersect_key( $result, $expected ) );
 		$this->assertTrue( $result['hybrid'] );
@@ -186,9 +179,9 @@ class Search_Settings_Abilities_Test extends \WP_UnitTestCase {
 		$this->assertWPError( $this->run_ability( 'update-settings', array( 'max_distance' => 3 ) ) );
 	}
 
-	/** A ratio below 1 is rejected by the input schema. */
-	public function test_save_thresholds_rejects_ratio_below_one(): void {
-		$this->assertWPError( $this->run_ability( 'update-settings', array( 'max_distance_ratio' => 0.5 ) ) );
+	/** A relative cutoff above 1 is rejected by the input schema. */
+	public function test_save_thresholds_rejects_relative_cutoff_above_one(): void {
+		$this->assertWPError( $this->run_ability( 'update-settings', array( 'relative_cutoff' => 1.5 ) ) );
 	}
 
 	/** The model cannot be changed here: select-model probes it first. */
@@ -206,38 +199,61 @@ class Search_Settings_Abilities_Test extends \WP_UnitTestCase {
 
 	/** The search preview lists the nearest posts with distances and whether the thresholds keep them. */
 	public function test_preview_search_marks_posts_kept_by_thresholds(): void {
-		$best = $this->create_indexed_post( 'Best', array( 1.0, 0.0, 0.0, 0.0 ) );    // Distance 0.1.
-		$near = $this->create_indexed_post( 'Near', array( 0.8, 0.6, 0.0, 0.0 ) );    // Distance 0.28.
+		$best = $this->create_indexed_post( 'Best', array( 1.0, 0.0, 0.0, 0.0 ) );    // Distance 0.
+		$near = $this->create_indexed_post( 'Near', array( 0.8, 0.6, 0.0, 0.0 ) );    // Distance 0.2.
 		$far  = $this->create_indexed_post( 'Far', array( 0.0, 1.0, 0.0, 0.0 ) );     // Distance 1.
-
-		Fake_Embedding_Provider::$vector = self::QUERY_VECTOR;
 
 		$result = $this->run_ability(
 			'preview-search',
 			array(
-				'query'              => 'anything',
-				'max_distance'       => 0.5,
-				'max_distance_ratio' => 10,
+				'query'           => 'anything',
+				'max_distance'    => 0.5,
+				'relative_cutoff' => 1,
 			)
 		);
 
 		$this->assertSame( array( $best, $near, $far ), array_column( $result['results'], 'post_id' ) );
 		$this->assertSame( array( true, true, false ), array_column( $result['results'], 'included' ) );
 		$this->assertSame( 'Near', $result['results'][1]['title'] );
-		$this->assertEqualsWithDelta( 0.28, $result['results'][1]['distance'], 1e-6 );
+		$this->assertEqualsWithDelta( 0.2, $result['results'][1]['distance'], 1e-6 );
 	}
 
 	/** Thresholds omitted from the preview input fall back to the saved values. */
 	public function test_preview_search_uses_saved_thresholds_by_default(): void {
 		$this->create_indexed_post( 'Best', array( 1.0, 0.0, 0.0, 0.0 ) );
 		$this->create_indexed_post( 'Near', array( 0.8, 0.6, 0.0, 0.0 ) );
-		Fake_Embedding_Provider::$vector = self::QUERY_VECTOR;
-		// Near (0.28) is 2.8 times Best (0.1): dropped by the default (1.3), kept by the saved value.
-		Settings::update( array( 'max_distance_ratio' => 3.0 ) );
+		// Near (0.2) is within the default cutoff (0.7 of the way to max_distance,
+		// 0.455) but not within the saved one (0.2 of the way, 0.13).
+		Settings::update( array( 'relative_cutoff' => 0.2 ) );
 
 		$result = $this->run_ability( 'preview-search', array( 'query' => 'anything' ) );
 
-		$this->assertSame( array( true, true ), array_column( $result['results'], 'included' ) );
+		$this->assertSame( array( true, false ), array_column( $result['results'], 'included' ) );
+	}
+
+	/** The preview judges its posts as the search does, against the 50th post, not only those listed. */
+	public function test_preview_search_judges_against_reference_beyond_listed_posts(): void {
+		// 60 posts at distances 0.005, 0.010, … 0.300 from the query.
+		for ( $i = 1; $i <= 60; $i++ ) {
+			$d = 0.005 * $i;
+			$this->create_indexed_post( "Post {$i}", array( 1.0 - $d, sqrt( 1.0 - ( 1.0 - $d ) ** 2 ), 0.0, 0.0 ) );
+		}
+
+		// The 50th is at 0.25: 0.2 of the way from 0.005 keeps up to 0.054, the
+		// first 10. Judged on the 20 listed posts alone, the reference would be
+		// max_distance and all 20 would be kept.
+		$result = $this->run_ability(
+			'preview-search',
+			array(
+				'query'           => 'anything',
+				'relative_cutoff' => 0.2,
+			)
+		);
+
+		$this->assertSame(
+			array_merge( array_fill( 0, 10, true ), array_fill( 0, 10, false ) ),
+			array_column( $result['results'], 'included' )
+		);
 	}
 
 	/** An embedding failure is returned as an error. */
