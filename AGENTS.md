@@ -279,6 +279,45 @@ Layering:
 
 Test file naming convention: `*_Test.php`.
 
+## README, CI and releases
+
+- `README.md` is the WordPress.org readme (Markdown readme format): header
+  fields, then Description, Installation, FAQ and Changelog for site owners.
+  Developer documentation belongs here in AGENTS.md, not in the README.
+  Record user-visible changes under `### Unreleased` in the Changelog.
+- A husky pre-commit hook runs lint-staged sequentially (set up by
+  `npm install`; the tasks overlap on the same files): PHPCBF
+  and PHPCS on PHP, Prettier on JS/TS/JSON/YAML, ESLint and the whole-project
+  `tsc` on JS/TS, and `lint:pkg-json` on `package.json`. PHP runs on the host
+  (`vendor/bin`), so it needs PHP and `composer install` locally.
+- `.github/workflows/lint.yml` (ESLint, `lint:pkg-json`, PHPCS, `tsc`) and
+  `test.yml` (PHPUnit on wp-env) run on pull requests and pushes to `main`,
+  skipping Markdown-only changes.
+- Releases follow the `bump-version` skill (`.claude/skills/bump-version`):
+  `bin/bump-version.sh <version>` on a `release/<version>` branch updates the
+  plugin header, `Stable tag`, the changelog heading, `package.json` and
+  `package-lock.json`. Merging
+  that PR makes `draft-release.yml` draft a GitHub release from the changelog;
+  publishing the draft runs `release.yml`, which lints, tests, builds and
+  attaches the plugin zip to the GitHub release. It deploys to WordPress.org
+  only when the `WPORG_DEPLOY` repository variable is `true` (SVN secrets
+  `SVN_USERNAME` / `SVN_PASSWORD`); until the plugin is approved there, its SVN
+  repository does not exist, so the zip is built from `.distignore` instead.
+- `.distignore` decides what is released: the WordPress.org deploy (10up
+  action) copies the files it does not list into SVN and builds the release
+  zip from them, so it ships `build/` and the production `vendor/`, not
+  `src/` or `routes/`. `.gitattributes` (`export-ignore`) only shapes the
+  GitHub source archives; keep the two lists in step when adding files.
+- `bin/check-version.sh <version>` checks a release: `package.json`,
+  `package-lock.json`, the plugin header `Version` and the `Stable tag` must
+  equal the version, and its changelog section must have entries. With
+  `--untagged` it also refuses a version whose tag already exists. It runs on
+  `release/*` PRs (`release-check.yml`; make "Check Release Version" a required
+  check to block the merge), when the draft is created, and when a release is
+  published (before lint and tests). `check-version.sh --notes <version>`
+  prints the changelog section for the release notes. Only `1.2.3` versions
+  are supported, not prereleases.
+
 ## Manual verification
 
 1. `wp-env start` (ensure the image is MariaDB 11.7+; check with

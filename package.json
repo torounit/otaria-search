@@ -2,7 +2,21 @@
 	"name": "squirrel-search",
 	"version": "0.2.0",
 	"description": "Semantic and hybrid search for WordPress, backed by MariaDB's VECTOR type.",
+	"author": "Toro_Unit",
 	"license": "GPL-2.0-or-later",
+	"keywords": [
+		"wordpress",
+		"search",
+		"semantic-search",
+		"vector-search",
+		"mariadb"
+	],
+	"homepage": "https://github.com/torounit/squirrel-search",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/torounit/squirrel-search.git"
+	},
+	"bugs": "https://github.com/torounit/squirrel-search/issues",
 	"private": true,
 	"wpPlugin": {
 		"name": "squirrel_search",
@@ -11,32 +25,9 @@
 			"squirrel-search"
 		]
 	},
-	"scripts": {
-		"build:routes": "wp-build",
-		"build": "npm run build:routes",
-		"format": "wp-scripts format",
-		"lint:js:fix": "wp-scripts lint-js --fix",
-		"lint:js": "wp-scripts lint-js",
-		"lint:php:fix": "wp-env --config=.wp-env.test.json run cli --env-cwd=wp-content/plugins/squirrel-search composer run-script format",
-		"lint:php": "wp-env --config=.wp-env.test.json run cli --env-cwd=wp-content/plugins/squirrel-search composer run-script lint",
-		"start:routes": "wp-build --watch",
-		"start": "npm run start:routes",
-		"test:php": "npm-run-all test:php:setup test:php:base",
-		"test:php:setup": "wp-env --config=.wp-env.test.json start",
-		"test:php:base": "wp-env --config=.wp-env.test.json run --env-cwd='wp-content/plugins/squirrel-search' wordpress vendor/bin/phpunit -c phpunit.xml.dist",
-		"typecheck": "tsc --noEmit",
-		"wp-env": "wp-env",
-		"wp-env:cli": "wp-env run cli --env-cwd=wp-content/plugins/squirrel-search",
-		"wp-env:test": "wp-env --config=.wp-env.test.json"
-	},
-	"devDependencies": {
-		"@types/react": "^18.3.28",
-		"@types/react-dom": "^18.3.7",
-		"@wordpress/build": "^0.26.0",
-		"@wordpress/env": "^12.0.0",
-		"@wordpress/scripts": "^36.1.0",
-		"npm-run-all": "^4.1.5",
-		"typescript": "^6.0.3"
+	"engines": {
+		"node": ">=24",
+		"npm": ">=10.9.4"
 	},
 	"dependencies": {
 		"@wordpress/admin-ui": "^3.0.0",
@@ -49,9 +40,48 @@
 		"@wordpress/url": "^5.0.0",
 		"react": "^18.3.1"
 	},
-	"engines": {
-		"node": ">=24",
-		"npm": ">=10.9.4"
+	"devDependencies": {
+		"@types/react": "^18.3.28",
+		"@types/react-dom": "^18.3.7",
+		"@wordpress/build": "^0.26.0",
+		"@wordpress/env": "^12.0.0",
+		"@wordpress/scripts": "^36.1.0",
+		"husky": "^9.1.7",
+		"lint-staged": "^17.6.0",
+		"npm-run-all": "^4.1.5",
+		"typescript": "^6.0.3"
+	},
+	"scripts": {
+		"build:routes": "wp-build",
+		"build": "npm run build:routes",
+		"format": "wp-scripts format",
+		"lint:js:fix": "wp-scripts lint-js --fix",
+		"lint:js": "wp-scripts lint-js",
+		"lint:pkg-json": "wp-scripts lint-pkg-json ./package.json",
+		"lint:php:fix": "wp-env --config=.wp-env.test.json run cli --env-cwd=wp-content/plugins/squirrel-search composer run-script format",
+		"lint:php": "wp-env --config=.wp-env.test.json run cli --env-cwd=wp-content/plugins/squirrel-search composer run-script lint",
+		"start:routes": "wp-build --watch",
+		"start": "npm run start:routes",
+		"test:php": "npm-run-all test:php:setup test:php:base",
+		"test:php:setup": "wp-env --config=.wp-env.test.json start",
+		"test:php:base": "wp-env --config=.wp-env.test.json run --env-cwd='wp-content/plugins/squirrel-search' wordpress vendor/bin/phpunit -c phpunit.xml.dist",
+		"typecheck": "tsc --noEmit",
+		"wp-env": "wp-env",
+		"wp-env:cli": "wp-env run cli --env-cwd=wp-content/plugins/squirrel-search",
+		"wp-env:test": "wp-env --config=.wp-env.test.json",
+		"prepare": "husky"
+	},
+	"lint-staged": {
+		"*.php": [
+			"sh -c 'vendor/bin/phpcbf \"$@\" || true' --",
+			"vendor/bin/phpcs"
+		],
+		"*.{js,mjs,ts,tsx,json,yaml,yml}": "wp-scripts format",
+		"*.{js,mjs,ts,tsx}": [
+			"wp-scripts lint-js",
+			"sh -c 'npm run typecheck' --"
+		],
+		"package.json": "sh -c 'npm run lint:pkg-json' --"
 	},
 	"overrides": {
 		"react": "^18.3.1",
