@@ -71,6 +71,12 @@ Search falls back to the standard WordPress search, and indexing is retried on t
 
 On **Settings > Squirrel Search**, the **Search** section sets two thresholds: the maximum distance of a post from the search term, and the maximum distance behind the best match. Suitable values depend on the model, so enter a search term in the preview to see the nearest posts with their distances before saving. Switching to another model resets the thresholds.
 
+### What happens when I switch to another embedding model?
+
+Embeddings from different models cannot be compared, so every post has to be embedded again: run **Reindex all posts** right after saving the new model. This sends all indexed posts to the AI provider again. The search thresholds and prefixes are reset, since they depend on the model.
+
+If the new model has a different number of dimensions, Reindex recreates the embeddings table after you confirm it, which deletes all existing embeddings. Search results are unreliable until the reindex has finished.
+
 ### What are the query and document prefixes?
 
 Some embedding models are trained with a text in front of search terms and documents, such as `query: ` and `passage: ` for E5 and Nemotron models, and are less accurate without it. Check your model's documentation and enter them exactly, including trailing spaces. Most models, including OpenAI's, need none. A changed document prefix requires a Reindex.

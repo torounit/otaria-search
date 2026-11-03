@@ -298,9 +298,15 @@ Test file naming convention: `*_Test.php`.
   that PR makes `draft-release.yml` draft a GitHub release from the changelog;
   publishing the draft runs `release.yml`, which lints, tests, builds and
   deploys to WordPress.org (SVN secrets `SVN_USERNAME` / `SVN_PASSWORD`).
-- `.distignore` (WordPress.org deploy) and `.gitattributes` (`export-ignore`)
-  keep development files out of the release zip; it ships `build/` and the
-  production `vendor/`, not `src/` or `routes/`.
+- `.distignore` decides what is released: the WordPress.org deploy (10up
+  action) copies the files it does not list into SVN and builds the release
+  zip from them, so it ships `build/` and the production `vendor/`, not
+  `src/` or `routes/`. `.gitattributes` (`export-ignore`) only shapes the
+  GitHub source archives; keep the two lists in step when adding files.
+- `release.yml` refuses a release whose tag differs from `package.json`, the
+  plugin header `Version` or (for stable releases) the `Stable tag`;
+  `draft-release.yml` refuses a `release/<version>` branch whose
+  `package.json` version differs, or an empty changelog section.
 
 ## Manual verification
 
