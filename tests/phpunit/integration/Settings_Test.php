@@ -71,6 +71,54 @@ class Settings_Test extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Distance thresholds are stored as floats within the cosine distance range.
+	 */
+	public function test_settings_sanitize_accepts_distance_thresholds(): void {
+		$result = Settings::sanitize_settings(
+			array(
+				'max_distance'          => '0.4',
+				'max_relative_distance' => 0.1,
+			)
+		);
+
+		$this->assertSame( 0.4, $result['max_distance'] );
+		$this->assertSame( 0.1, $result['max_relative_distance'] );
+	}
+
+	/**
+	 * Thresholds outside 0–2 or non-numeric are rejected.
+	 */
+	public function test_settings_sanitize_rejects_invalid_distance_thresholds(): void {
+		$result = Settings::sanitize_settings(
+			array(
+				'max_distance'          => 2.5,
+				'max_relative_distance' => 'wide',
+			)
+		);
+
+		$this->assertArrayNotHasKey( 'max_distance', $result );
+		$this->assertArrayNotHasKey( 'max_relative_distance', $result );
+	}
+
+	/**
+	 * Omitted thresholds keep their saved values; null clears them back to the default.
+	 */
+	public function test_settings_sanitize_preserves_or_clears_distance_thresholds(): void {
+		update_option(
+			self::SETTINGS_OPTION,
+			array(
+				'max_distance'          => 0.4,
+				'max_relative_distance' => 0.1,
+			)
+		);
+
+		$result = Settings::sanitize_settings( array( 'max_relative_distance' => null ) );
+
+		$this->assertSame( 0.4, $result['max_distance'] );
+		$this->assertArrayNotHasKey( 'max_relative_distance', $result );
+	}
+
+	/**
 	 * Partial updates preserve existing provider, model, and dimensions.
 	 */
 	public function test_settings_sanitize_preserves_existing_on_partial_update(): void {
