@@ -185,15 +185,16 @@ class Search_Test extends \WP_UnitTestCase {
 	/**
 	 * Create a published post and index it with the given embedding.
 	 *
-	 * @param string  $title  Post title.
-	 * @param float[] $vector Embedding the fake provider returns while indexing.
+	 * @param string  $title     Post title.
+	 * @param float[] $vector    Embedding the fake provider returns while indexing.
+	 * @param array   $post_args Extra post fields.
 	 * @return int Post ID.
 	 */
-	private function create_indexed_post( string $title, array $vector ): int {
+	private function create_indexed_post( string $title, array $vector, array $post_args = array() ): int {
 		// Set the vector first: saving the post may already index it.
 		Fake_Embedding_Provider::$vector = $vector;
 		$post_id                         = $this->factory->post->create(
-			array(
+			$post_args + array(
 				'post_title'   => $title,
 				'post_content' => "About {$title}.",
 				'post_status'  => 'publish',
@@ -247,6 +248,25 @@ class Search_Test extends \WP_UnitTestCase {
 		);
 
 		$this->assertSame( array(), $later->posts );
+	}
+
+	/** Like core search, password-protected posts are hidden from logged-out visitors. */
+	public function test_search_excludes_password_protected_post_when_logged_out(): void {
+		$protected = $this->create_indexed_post( 'Protected', array( 1.0, 0.0, 0.0, 0.0 ), array( 'post_password' => 'secret' ) );
+		wp_set_current_user( 0 );
+
+		$found_ids = $this->search_ids( 'animals' );
+
+		$this->assertNotContains( $protected, $found_ids );
+		$this->assertContains( $this->post_a, $found_ids );
+	}
+
+	/** Like core search, logged-in users find password-protected posts. */
+	public function test_search_includes_password_protected_post_when_logged_in(): void {
+		$protected = $this->create_indexed_post( 'Protected', array( 1.0, 0.0, 0.0, 0.0 ), array( 'post_password' => 'secret' ) );
+		wp_set_current_user( $this->factory->user->create() );
+
+		$this->assertContains( $protected, $this->search_ids( 'animals' ) );
 	}
 
 	/** A post far behind the best vector match is excluded by default. */

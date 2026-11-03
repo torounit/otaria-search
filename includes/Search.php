@@ -144,6 +144,11 @@ class Search {
 		$query->set( 'post__in', $ids );
 		$query->set( 'orderby', 'post__in' );
 		$query->set( self::QUERY_VAR, true );
+
+		// Core adds this to the search clause, which remove_like_clause() drops.
+		if ( ! is_user_logged_in() ) {
+			$query->set( 'has_password', false );
+		}
 	}
 
 	/**

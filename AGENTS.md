@@ -87,6 +87,8 @@ is_search() ──► Search::pre_get_posts
   with the `wp_mariadb_vector_search` query var, and a permanent `posts_search`
   filter empties the clause only for marked queries. A filter added and removed
   around the query would leak: `fields=ids` queries return before `the_posts`.
+  Core hides password-protected posts from logged-out visitors inside that
+  clause, so the rewrite restores it with `has_password = false`.
 
 ## Schema
 
