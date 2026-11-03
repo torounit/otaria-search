@@ -128,6 +128,7 @@ changed document prefix.
 | `wp-mariadb-vector-search.php`    | Bootstrap. Registers activation hooks. `wp_mariadb_vector_search_embedding()` (core builder bound to the selected model). |
 | `includes/Plugin.php`             | Composition root. Instantiates components and registers hooks.                                     |
 | `includes/Schema.php`             | Install/upgrade table. Verify MariaDB version. Admin notice on incompatibility.                    |
+| `includes/Settings.php`           | The settings option: getters with defaults (`get_thresholds()`, `is_hybrid()`, `get_post_types()`, `get_prefixes()`), `update()` for partial writes, `sanitize_settings()`. |
 | `includes/Repository.php`         | `$wpdb` wrapper. `replace_post_chunks()`, `delete_post()`, `delete_other_post_types()`, `search_similar()`. Vector text serialization. |
 | `includes/Model_Catalog.php`      | Enumerates models the AI Client registry reports as embedding-capable.                             |
 | `includes/Abilities.php`          | Abilities for the admin UI: `get-status`, `reindex`, `select-model` (probes the model's dimensions, then saves settings; clears thresholds and prefixes when the model changes), `save-search-settings` (thresholds and hybrid), `save-prefixes` (reports whether the document prefix changed, which needs a Reindex), `save-post-types` (deletes the rows of deselected types; reports added types, which need a Reindex), `preview-search` (nearest posts with distances and whether the thresholds keep them), `save-index-settings`. |
@@ -190,12 +191,25 @@ first. Ties keep vector order.
 | `provider`   | —       | AI provider id (e.g. `openai`, `lm_studio`).                |
 | `model`      | —       | Embedding model id (e.g. `text-embedding-3-small`).         |
 | `dimensions` | 1536    | Detected by probing the model in `select-model` (`EmbeddingResult::getDimensions()`); never entered manually. Schema's `VECTOR(N)`. Changing to a different dimension requires Reindex. |
-| `max_distance` | 0.65 | Search threshold (cosine distance, 0–2). Set on the admin page; absent = default. Cleared when `select-model` switches to another model, since distances are model-specific. |
+| `max_distance` | 0.65 | Search threshold (cosine distance, 0–2). Set on the admin page; absent = default. Removed (`null`) when `select-model` switches to another model, since distances are model-specific. |
 | `max_relative_distance` | 0.25 | Search threshold behind the best match (0–2). Same lifecycle as `max_distance`. |
 | `hybrid` | `true` | Fuse vector results with the LIKE search (`Settings::is_hybrid()`). Set on the admin page; `false` = vector-only. Kept across model changes. |
 | `exclude_password_protected` | true | Leave password-protected posts out of the index, since indexing sends their content to the provider. Set on the admin page; kept across model changes. Existing posts follow a change on the next Reindex. |
 | `query_prefix` / `document_prefix` | `''` | Prepended before embedding to search terms (Search, preview) and to chunks (Indexer; `chunk_text` is stored without it). Models such as E5/Nemotron need `query: ` / `passage: `. Entered by hand from the model card (no presets; no API reports them); spaces are kept, control characters removed. Cleared by `select-model` on a model change, like the thresholds. |
 | `post_types` | all available | Post types to index and search (`Settings::get_post_types()`). Available = public, searchable, minus `attachment` (never published). Saved types that become unavailable are ignored. Set on the admin page; `save-post-types` deletes the rows of deselected types. |
+
+Writing the option:
+
+- **Use `Settings::update( $changes )`** for partial writes. It merges the
+  changes into the saved option (`null` removes a key, restoring its default),
+  then sanitizes and saves. Abilities write settings only through it.
+- **`sanitize_settings()` is pure.** It validates and normalizes the given
+  array and drops invalid values and unknown keys; it never reads the saved
+  option. It is the `register_setting()` callback, so a raw
+  `update_option()` replaces the whole option.
+- Read settings through the `Settings` getters, which apply the defaults.
+- The option is not exposed in the REST settings endpoint (`show_in_rest`
+  off): the admin page goes through abilities.
 
 Other options:
 

@@ -89,7 +89,7 @@ class Post_Types_Abilities_Test extends \WP_UnitTestCase {
 
 	/** The get-status ability reports the indexed post types and the ones to choose from. */
 	public function test_get_status_reports_post_types(): void {
-		update_option( Settings::OPTION_NAME, array( 'post_types' => array( 'page' ) ) );
+		Settings::update( array( 'post_types' => array( 'page' ) ) );
 
 		$status = $this->run_ability( 'get-status' );
 
@@ -125,7 +125,7 @@ class Post_Types_Abilities_Test extends \WP_UnitTestCase {
 
 	/** Post types that were not indexed before are reported, since they need a Reindex. */
 	public function test_save_post_types_reports_added_types(): void {
-		update_option( Settings::OPTION_NAME, array( 'post_types' => array( 'post' ) ) );
+		Settings::update( array( 'post_types' => array( 'post' ) ) );
 
 		$result = $this->run_ability( 'save-post-types', array( 'post_types' => array( 'post', 'page' ) ) );
 

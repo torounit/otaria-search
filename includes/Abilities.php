@@ -398,12 +398,7 @@ class Abilities {
 	public static function execute_save_prefixes( ?array $input = null ): array {
 		$before = Settings::get_prefixes()['document_prefix'];
 
-		// Settings::sanitize_settings() keeps the other settings and any
-		// prefix omitted from the input.
-		update_option(
-			Settings::OPTION_NAME,
-			array_intersect_key( (array) $input, array_flip( Settings::PREFIX_KEYS ) )
-		);
+		Settings::update( array_intersect_key( (array) $input, array_flip( Settings::PREFIX_KEYS ) ) );
 
 		$prefixes = Settings::get_prefixes();
 
@@ -434,7 +429,7 @@ class Abilities {
 		}
 
 		$before = Settings::get_post_types();
-		update_option( Settings::OPTION_NAME, array( 'post_types' => $post_types ) );
+		Settings::update( array( 'post_types' => $post_types ) );
 
 		if ( Schema::is_installed() ) {
 			( new Repository() )->delete_other_post_types( $post_types );
@@ -455,11 +450,7 @@ class Abilities {
 	 * @return array The index settings now in effect.
 	 */
 	public static function execute_save_index_settings( ?array $input = null ): array {
-		// Settings::sanitize_settings() keeps the other settings.
-		update_option(
-			Settings::OPTION_NAME,
-			array( 'exclude_password_protected' => (bool) ( $input['exclude_password_protected'] ?? true ) )
-		);
+		Settings::update( array( 'exclude_password_protected' => (bool) ( $input['exclude_password_protected'] ?? true ) ) );
 
 		return array( 'exclude_password_protected' => Settings::excludes_password_protected() );
 	}
@@ -473,12 +464,7 @@ class Abilities {
 	 * @return array The thresholds and hybrid setting now in effect.
 	 */
 	public static function execute_save_search_settings( ?array $input = null ): array {
-		// Settings::sanitize_settings() keeps the model settings and any
-		// search setting omitted from the input.
-		update_option(
-			Settings::OPTION_NAME,
-			array_intersect_key( (array) $input, array_flip( array( ...Settings::THRESHOLD_KEYS, 'hybrid' ) ) )
-		);
+		Settings::update( array_intersect_key( (array) $input, array_flip( array( ...Settings::THRESHOLD_KEYS, 'hybrid' ) ) ) );
 
 		return Settings::get_thresholds() + array( 'hybrid' => Settings::is_hybrid() );
 	}
@@ -611,7 +597,7 @@ class Abilities {
 			$settings += array_fill_keys( array( ...Settings::THRESHOLD_KEYS, ...Settings::PREFIX_KEYS ), null );
 		}
 
-		update_option( Settings::OPTION_NAME, $settings );
+		Settings::update( $settings );
 
 		return get_option( Settings::OPTION_NAME );
 	}

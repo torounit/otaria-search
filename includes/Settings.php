@@ -167,131 +167,91 @@ class Settings {
 				'type'              => 'object',
 				'default'           => array(),
 				'sanitize_callback' => array( __CLASS__, 'sanitize_settings' ),
-				'show_in_rest'      => array(
-					'schema' => array(
-						'type'                 => 'object',
-						'additionalProperties' => false,
-						'properties'           => array(
-							'provider'                   => array(
-								'type' => 'string',
-							),
-							'model'                      => array(
-								'type' => 'string',
-							),
-							'dimensions'                 => array(
-								'type' => 'integer',
-							),
-							'max_distance'               => array(
-								'type'    => 'number',
-								'minimum' => 0,
-								'maximum' => 2,
-							),
-							'max_relative_distance'      => array(
-								'type'    => 'number',
-								'minimum' => 0,
-								'maximum' => 2,
-							),
-							'exclude_password_protected' => array(
-								'type' => 'boolean',
-							),
-							'hybrid'                     => array(
-								'type' => 'boolean',
-							),
-							'post_types'                 => array(
-								'type'  => 'array',
-								'items' => array(
-									'type' => 'string',
-								),
-							),
-							'query_prefix'               => array(
-								'type' => 'string',
-							),
-							'document_prefix'            => array(
-								'type' => 'string',
-							),
-						),
-					),
-				),
 			)
 		);
 	}
 
 	/**
+	 * Save changes to the settings, keeping the keys not in $changes.
+	 *
+	 * The merge happens here, not in sanitize_settings(), so that writing the
+	 * option always means what it says.
+	 *
+	 * @since 0.3.0
+	 *
+	 * @param array $changes Settings to change. Null removes a key, restoring its default.
+	 * @return void
+	 */
+	public static function update( array $changes ): void {
+		$settings = get_option( self::OPTION_NAME, array() );
+		if ( ! is_array( $settings ) ) {
+			$settings = array();
+		}
+
+		foreach ( $changes as $key => $value ) {
+			if ( null === $value ) {
+				unset( $settings[ $key ] );
+			} else {
+				$settings[ $key ] = $value;
+			}
+		}
+
+		// Sanitize here too: the sanitize_callback is registered only when
+		// the database supports VECTOR.
+		update_option( self::OPTION_NAME, self::sanitize_settings( $settings ) );
+	}
+
+	/**
 	 * Sanitize settings.
 	 *
-	 * @param mixed $input Sanitized input.
+	 * Validates and normalizes the given settings only; invalid values and
+	 * unknown keys are dropped. Saved settings are not read: use update() to
+	 * change some keys and keep the others.
+	 *
+	 * @param mixed $input Settings to sanitize.
 	 * @return array Sanitized settings.
 	 */
 	public static function sanitize_settings( mixed $input ): array {
 		if ( ! is_array( $input ) ) {
-			$input = array();
-		}
-
-		$existing = get_option( self::OPTION_NAME, array() );
-		if ( ! is_array( $existing ) ) {
-			$existing = array();
+			return array();
 		}
 
 		$sanitized = array();
 
-		if ( isset( $input['provider'] ) && is_string( $input['provider'] ) ) {
-			$sanitized['provider'] = sanitize_text_field( $input['provider'] );
-		} elseif ( isset( $existing['provider'] ) && is_string( $existing['provider'] ) ) {
-			$sanitized['provider'] = $existing['provider'];
-		}
-
-		if ( isset( $input['model'] ) && is_string( $input['model'] ) ) {
-			$sanitized['model'] = sanitize_text_field( $input['model'] );
-		} elseif ( isset( $existing['model'] ) && is_string( $existing['model'] ) ) {
-			$sanitized['model'] = $existing['model'];
+		foreach ( array( 'provider', 'model' ) as $key ) {
+			if ( isset( $input[ $key ] ) && is_string( $input[ $key ] ) ) {
+				$sanitized[ $key ] = sanitize_text_field( $input[ $key ] );
+			}
 		}
 
 		if ( isset( $input['dimensions'] ) && is_numeric( $input['dimensions'] ) && (int) $input['dimensions'] >= 1 ) {
 			$sanitized['dimensions'] = (int) $input['dimensions'];
-		} elseif ( isset( $existing['dimensions'] ) && is_numeric( $existing['dimensions'] ) ) {
-			$sanitized['dimensions'] = (int) $existing['dimensions'];
 		}
 
 		foreach ( self::THRESHOLD_KEYS as $key ) {
-			if ( array_key_exists( $key, $input ) ) {
-				// Present: a valid value is stored; null or invalid clears it.
-				if ( self::is_valid_distance( $input[ $key ] ) ) {
-					$sanitized[ $key ] = (float) $input[ $key ];
-				}
-			} elseif ( isset( $existing[ $key ] ) && self::is_valid_distance( $existing[ $key ] ) ) {
-				$sanitized[ $key ] = (float) $existing[ $key ];
+			if ( isset( $input[ $key ] ) && self::is_valid_distance( $input[ $key ] ) ) {
+				$sanitized[ $key ] = (float) $input[ $key ];
 			}
 		}
 
 		if ( isset( $input['exclude_password_protected'] ) ) {
 			$sanitized['exclude_password_protected'] = rest_sanitize_boolean( $input['exclude_password_protected'] );
-		} elseif ( isset( $existing['exclude_password_protected'] ) ) {
-			$sanitized['exclude_password_protected'] = (bool) $existing['exclude_password_protected'];
 		}
 
 		if ( isset( $input['hybrid'] ) && is_bool( $input['hybrid'] ) ) {
 			$sanitized['hybrid'] = $input['hybrid'];
-		} elseif ( isset( $existing['hybrid'] ) && is_bool( $existing['hybrid'] ) ) {
-			$sanitized['hybrid'] = $existing['hybrid'];
 		}
 
 		if ( isset( $input['post_types'] ) && is_array( $input['post_types'] ) ) {
 			$sanitized['post_types'] = array_values(
 				array_unique( array_map( 'sanitize_key', array_filter( $input['post_types'], 'is_string' ) ) )
 			);
-		} elseif ( isset( $existing['post_types'] ) && is_array( $existing['post_types'] ) ) {
-			$sanitized['post_types'] = $existing['post_types'];
 		}
 
 		foreach ( self::PREFIX_KEYS as $key ) {
-			if ( array_key_exists( $key, $input ) ) {
-				// Present: a non-empty string is stored; null or empty clears it.
-				$prefix = is_string( $input[ $key ] ) ? self::sanitize_prefix( $input[ $key ] ) : '';
-				if ( '' !== $prefix ) {
-					$sanitized[ $key ] = $prefix;
-				}
-			} elseif ( isset( $existing[ $key ] ) && is_string( $existing[ $key ] ) ) {
-				$sanitized[ $key ] = $existing[ $key ];
+			$prefix = isset( $input[ $key ] ) && is_string( $input[ $key ] ) ? self::sanitize_prefix( $input[ $key ] ) : '';
+			if ( '' !== $prefix ) {
+				$sanitized[ $key ] = $prefix;
 			}
 		}
 

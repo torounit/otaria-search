@@ -69,7 +69,7 @@ class Prefix_Abilities_Test extends \WP_UnitTestCase {
 
 	/** The get-status ability reports the saved prefixes. */
 	public function test_get_status_reports_prefixes(): void {
-		update_option( Settings::OPTION_NAME, array( 'query_prefix' => 'query: ' ) );
+		Settings::update( array( 'query_prefix' => 'query: ' ) );
 
 		$this->assertSame(
 			array(
@@ -111,7 +111,7 @@ class Prefix_Abilities_Test extends \WP_UnitTestCase {
 
 	/** The search preview embeds the query with the query prefix. */
 	public function test_preview_search_embeds_query_with_prefix(): void {
-		update_option( Settings::OPTION_NAME, array( 'query_prefix' => 'query: ' ) );
+		Settings::update( array( 'query_prefix' => 'query: ' ) );
 
 		$this->run_ability( 'preview-search', array( 'query' => 'cats' ) );
 

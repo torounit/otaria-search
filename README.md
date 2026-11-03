@@ -65,7 +65,7 @@ wp mariadb-vector reindex --batch=100
 
 ## Configuration
 
-Stored in the `wp_mariadb_vector_search_settings` option (array). Values are written automatically by the **Save model** action in the admin UI.
+Stored in the `wp_mariadb_vector_search_settings` option (array). Values are written by the admin page; missing keys fall back to their defaults.
 
 | Key          | Description |
 |--------------|-------------|

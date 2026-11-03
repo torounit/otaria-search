@@ -103,7 +103,7 @@ class Search_Settings_Abilities_Test extends \WP_UnitTestCase {
 
 	/** The get-status ability reports the saved thresholds and the defaults. */
 	public function test_get_status_reports_thresholds(): void {
-		update_option( Settings::OPTION_NAME, array( 'max_distance' => 0.4 ) );
+		Settings::update( array( 'max_distance' => 0.4 ) );
 
 		$status = $this->run_ability( 'get-status' );
 
@@ -121,7 +121,7 @@ class Search_Settings_Abilities_Test extends \WP_UnitTestCase {
 	public function test_get_status_reports_hybrid(): void {
 		$this->assertTrue( $this->run_ability( 'get-status' )['hybrid'] );
 
-		update_option( Settings::OPTION_NAME, array( 'hybrid' => false ) );
+		Settings::update( array( 'hybrid' => false ) );
 
 		$this->assertFalse( $this->run_ability( 'get-status' )['hybrid'] );
 	}
@@ -147,7 +147,7 @@ class Search_Settings_Abilities_Test extends \WP_UnitTestCase {
 
 	/** Saving hybrid stores it and keeps the saved thresholds. */
 	public function test_save_hybrid_keeps_thresholds(): void {
-		update_option( Settings::OPTION_NAME, array( 'max_distance' => 0.4 ) );
+		Settings::update( array( 'max_distance' => 0.4 ) );
 
 		$result = $this->run_ability( 'save-search-settings', array( 'hybrid' => false ) );
 
@@ -158,7 +158,7 @@ class Search_Settings_Abilities_Test extends \WP_UnitTestCase {
 
 	/** Null resets a threshold to its default. */
 	public function test_save_thresholds_null_resets_to_default(): void {
-		update_option( Settings::OPTION_NAME, array( 'max_distance' => 0.4 ) );
+		Settings::update( array( 'max_distance' => 0.4 ) );
 
 		$result = $this->run_ability( 'save-search-settings', array( 'max_distance' => null ) );
 
@@ -201,7 +201,7 @@ class Search_Settings_Abilities_Test extends \WP_UnitTestCase {
 	public function test_preview_search_uses_saved_thresholds_by_default(): void {
 		$this->create_indexed_post( 'Best', array( 1.0, 0.0, 0.0, 0.0 ) );
 		$this->create_indexed_post( 'Near', array( 0.8, 0.6, 0.0, 0.0 ) );
-		update_option( Settings::OPTION_NAME, array( 'max_relative_distance' => 0.1 ) );
+		Settings::update( array( 'max_relative_distance' => 0.1 ) );
 
 		$result = $this->run_ability( 'preview-search', array( 'query' => 'anything' ) );
 
