@@ -306,10 +306,14 @@ Test file naming convention: `*_Test.php`.
   zip from them, so it ships `build/` and the production `vendor/`, not
   `src/` or `routes/`. `.gitattributes` (`export-ignore`) only shapes the
   GitHub source archives; keep the two lists in step when adding files.
-- `release.yml` refuses a release whose tag differs from `package.json`, the
-  plugin header `Version` or (for stable releases) the `Stable tag`;
-  `draft-release.yml` refuses a `release/<version>` branch whose
-  `package.json` version differs, or an empty changelog section.
+- `bin/check-version.sh <version> [stable|prerelease]` is the one place that
+  checks a release: `package.json`, the plugin header `Version` and (for stable
+  releases) the `Stable tag` must equal the version, and its changelog section
+  must have entries. It runs on `release/*` PRs (`release-check.yml`; make
+  "Check Release Version" a required check to block the merge), when the
+  draft is created, and when a release is published (with the release's own
+  prerelease flag, before lint and tests). A version with a `-` suffix is a
+  prerelease, in this script and in `bin/bump-version.sh`.
 
 ## Manual verification
 
