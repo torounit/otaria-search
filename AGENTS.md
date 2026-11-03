@@ -146,8 +146,8 @@ Single option `otaria_search_settings` (array). Other option:
 | --- | ------- | ----- |
 | `provider`, `model` | — | Selected via `select-model`. |
 | `dimensions` | 1536 | Probed by `select-model`, never entered by hand. |
-| `max_distance` | 0.65 | Cosine distance (0–2). Model-specific: cleared on model change. |
-| `max_relative_distance` | 0.10 | Distance behind the best match (0–2). Cleared on model change. Trims the tail; `max_distance` stays loose because distance scales differ between models. |
+| `max_distance` | 0.50 | Cosine distance (0–2). Model-specific: cleared on model change. Turns away most no-answer searches for a model such as bge-m3; out of reach for one with small distances such as EmbeddingGemma. |
+| `max_relative_distance` | 0.10 | Distance behind the best match (0–2). Cleared on model change. Trims the tail; never drops the best match. |
 | `query_prefix`, `document_prefix` | `''` | For models such as E5 (`query: ` / `passage: `). Applied before embedding; `chunk_text` is stored without it. Spaces kept, control characters removed. Cleared on model change. |
 | `hybrid` | `true` | `false` = vector only. |
 | `exclude_password_protected` | `true` | Indexing sends content to the provider. Existing posts follow on the next Reindex. |

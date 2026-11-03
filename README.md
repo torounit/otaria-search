@@ -119,7 +119,7 @@ The embeddings table and all of the plugin's settings.
 
 ### Unreleased
 
-* The default maximum distance behind the best match is now 0.10 (was 0.25), so fewer unrelated posts trail the results. Saved values are unchanged; hybrid search still adds the posts that contain the search term.
+* Tighter default thresholds, so fewer unrelated posts show up: the maximum distance from the search term is now 0.50 (was 0.65) and the maximum distance behind the best match 0.10 (was 0.25). Saved values are unchanged; hybrid search still adds the posts that contain the search term.
 
 ### 0.3.0
 

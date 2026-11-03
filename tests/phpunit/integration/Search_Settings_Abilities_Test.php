@@ -171,7 +171,7 @@ class Search_Settings_Abilities_Test extends \WP_UnitTestCase {
 
 		$result = $this->run_ability( 'update-settings', array( 'max_distance' => null ) );
 
-		$this->assertSame( 0.65, $result['max_distance'] );
+		$this->assertSame( 0.5, $result['max_distance'] );
 	}
 
 	/** Values outside the cosine distance range are rejected by the input schema. */
