@@ -73,7 +73,19 @@ jobs:
             - name: Install Composer production dependencies
               run: composer install --no-dev --no-progress --no-interaction --optimize-autoloader
 
+            # Until the plugin is approved on WordPress.org, its SVN repository does not exist
+            # and the deploy action cannot even check it out (dry-run included). Build the
+            # zip the same way instead: the files .distignore does not list, in a squirrel-search/
+            # directory. Set the WPORG_DEPLOY repository variable to "true" to deploy.
+            - name: Build plugin zip
+              if: vars.WPORG_DEPLOY != 'true'
+              run: |
+                  mkdir -p "$RUNNER_TEMP/squirrel-search"
+                  rsync -rc --exclude-from=.distignore ./ "$RUNNER_TEMP/squirrel-search/"
+                  (cd "$RUNNER_TEMP" && zip -r "$GITHUB_WORKSPACE/squirrel-search.zip" squirrel-search)
+
             - name: WordPress Plugin Deploy
+              if: vars.WPORG_DEPLOY == 'true'
               uses: 10up/action-wordpress-plugin-deploy@stable
               with:
                   generate-zip: true

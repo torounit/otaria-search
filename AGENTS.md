@@ -297,7 +297,10 @@ Test file naming convention: `*_Test.php`.
   plugin header, `Stable tag`, the changelog heading and `package.json`. Merging
   that PR makes `draft-release.yml` draft a GitHub release from the changelog;
   publishing the draft runs `release.yml`, which lints, tests, builds and
-  deploys to WordPress.org (SVN secrets `SVN_USERNAME` / `SVN_PASSWORD`).
+  attaches the plugin zip to the GitHub release. It deploys to WordPress.org
+  only when the `WPORG_DEPLOY` repository variable is `true` (SVN secrets
+  `SVN_USERNAME` / `SVN_PASSWORD`); until the plugin is approved there, its SVN
+  repository does not exist, so the zip is built from `.distignore` instead.
 - `.distignore` decides what is released: the WordPress.org deploy (10up
   action) copies the files it does not list into SVN and builds the release
   zip from them, so it ships `build/` and the production `vendor/`, not

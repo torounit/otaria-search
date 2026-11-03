@@ -14,8 +14,9 @@ Version bumps go through a pull request, because `main` only accepts changes via
 - When a PR from a `release/*` branch is merged, CI (`.github/workflows/draft-release.yml`) creates a
   draft GitHub release targeting the merge commit, with the changelog section as its notes.
 - Publishing the draft in the GitHub web UI creates the tag on that merge commit and triggers the
-  release job (`.github/workflows/release.yml`), which runs lint and tests, then builds and deploys
-  to WordPress.org.
+  release job (`.github/workflows/release.yml`), which runs lint and tests, then builds the plugin
+  zip and attaches it to the release. It deploys to WordPress.org only when the `WPORG_DEPLOY`
+  repository variable is `true`, which is not the case until the plugin is approved there.
 
 ## Steps
 
@@ -74,7 +75,8 @@ Version bumps go through a pull request, because `main` only accepts changes via
 
    After the PR is merged, CI creates a draft release `<version>`. Ask the user to review and publish
    it in the GitHub web UI (https://github.com/torounit/squirrel-search/releases). Publishing it tags
-   the merge commit on `main` and deploys to WordPress.org.
+   the merge commit on `main` and attaches the plugin zip (and deploys to WordPress.org once
+   `WPORG_DEPLOY` is set).
 
 ## Notes
 
