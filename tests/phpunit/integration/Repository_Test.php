@@ -362,6 +362,32 @@ class Repository_Test extends \WP_UnitTestCase {
 		$this->assertSame( array( 1 ), $ids );
 	}
 
+	/** Each post's closest-chunk distance is returned, closest first. */
+	public function test_nearest_posts_returns_distances_by_post(): void {
+		$chunks = array(
+			1 => array( array( 0.0, 1.0, 0.0, 0.0 ), array( 0.8, 0.6, 0.0, 0.0 ) ), // Best chunk: distance 0.2.
+			2 => array( array( 1.0, 0.0, 0.0, 0.0 ) ),                             // Distance 0.
+			3 => array( array( 0.0, 0.0, 1.0, 0.0 ) ),                             // Distance 1.
+		);
+		foreach ( $chunks as $post_id => $vectors ) {
+			$rows = array();
+			foreach ( $vectors as $i => $vector ) {
+				$rows[] = array(
+					'chunk_index' => $i,
+					'chunk_text'  => "Post {$post_id}",
+					'vector'      => $vector,
+				);
+			}
+			$this->repository->replace_post_chunks( $post_id, 'post', "h{$post_id}", $rows );
+		}
+
+		$distances = $this->repository->nearest_posts( array( 1.0, 0.0, 0.0, 0.0 ), array( 'post' ), 2 );
+
+		$this->assertSame( array( 2, 1 ), array_keys( $distances ) );
+		$this->assertEqualsWithDelta( 0.0, $distances[2], 1e-6 );
+		$this->assertEqualsWithDelta( 0.2, $distances[1], 1e-6 );
+	}
+
 	/** A post far behind the best match is excluded by the relative distance threshold. */
 	public function test_search_similar_filters_by_max_relative_distance(): void {
 		$vectors = array(
