@@ -36,8 +36,6 @@ class Settings {
 	/**
 	 * Saved distance thresholds, falling back to the defaults.
 	 *
-	 * Filters are not applied here; see Search::rewrite_search_query().
-	 *
 	 * @since 0.2.0
 	 *
 	 * @return array{max_distance: float, max_relative_distance: float}

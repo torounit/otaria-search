@@ -198,8 +198,6 @@ Other options:
 ## Extension points (filters/actions)
 
 - `wp_mariadb_vector_search_post_types` (`string[]`) — override indexed post types.
-- `wp_mariadb_vector_search_max_distance` (`float`, default: saved setting, else `0.65`) — maximum cosine distance to include in results. `0` = identical, smaller = more similar. Optimal value is model-dependent.
-- `wp_mariadb_vector_search_max_relative_distance` (`float`, default: saved setting, else `0.25`) — maximum distance behind the best vector match. `INF` disables.
 - `wp_mariadb_vector_search_max_results` (`int`, default `200`) — safety cap on returned posts; also the basis for the inner `LIMIT` so the VECTOR INDEX is used, and the LIKE sub-query's limit.
 - `wp_mariadb_vector_search_hybrid` (`bool`, default `true`) — fuse vector results with the LIKE search. `false` = vector-only.
 - `wp_mariadb_vector_search_rrf_k` (`int`, default `60`) — RRF constant; higher values flatten the weight of top ranks. Negative values are treated as `0`.

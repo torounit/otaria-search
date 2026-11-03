@@ -18,10 +18,9 @@ namespace WP_MariaDB_Vector_Search;
  * - the 's' parameter is non-empty.
  *
  * On embedding failure the query falls through to default WP search.
- * Vector results are filtered by cosine distance (wp_mariadb_vector_search_max_distance)
- * and by distance behind the best match (wp_mariadb_vector_search_max_relative_distance),
- * both defaulting to the saved settings (Settings::get_thresholds()), then fused with
- * WordPress's LIKE search results via Reciprocal Rank Fusion
+ * Vector results are filtered by cosine distance and by distance behind the
+ * best match, both from the saved settings (Settings::get_thresholds()), then
+ * fused with WordPress's LIKE search results via Reciprocal Rank Fusion
  * (opt out with wp_mariadb_vector_search_hybrid).
  */
 class Search {
@@ -75,20 +74,6 @@ class Search {
 			return;
 		}
 
-		$thresholds = Settings::get_thresholds();
-
-		/**
-		 * Filters the maximum cosine distance of posts included in search results.
-		 *
-		 * 0 is identical; smaller is more similar. The best value depends on the model.
-		 *
-		 * @since 0.1.0
-		 * @since 0.2.0 Defaults to the saved setting.
-		 *
-		 * @param float $max_distance Maximum cosine distance (0–2). Default the saved setting, else 0.65.
-		 */
-		$max_distance = (float) apply_filters( 'wp_mariadb_vector_search_max_distance', $thresholds['max_distance'] );
-
 		/**
 		 * Filters the maximum number of posts returned by the vector search.
 		 *
@@ -101,19 +86,8 @@ class Search {
 		 */
 		$max_results = (int) apply_filters( 'wp_mariadb_vector_search_max_results', 200 );
 
-		/**
-		 * Filters the maximum distance behind the best vector match.
-		 *
-		 * Posts farther than this from the closest post are excluded.
-		 *
-		 * @since 0.2.0
-		 *
-		 * @param float $max_relative Maximum distance behind the best match. INF disables.
-		 *                            Default the saved setting, else 0.25.
-		 */
-		$max_relative = (float) apply_filters( 'wp_mariadb_vector_search_max_relative_distance', $thresholds['max_relative_distance'] );
-
-		$ids = $this->repository->search_similar( $result[0]->getValues(), $post_types, $max_distance, $max_results, $max_relative );
+		$thresholds = Settings::get_thresholds();
+		$ids        = $this->repository->search_similar( $result[0]->getValues(), $post_types, $thresholds['max_distance'], $max_results, $thresholds['max_relative_distance'] );
 
 		/**
 		 * Filters whether vector results are fused with WordPress's LIKE search results.

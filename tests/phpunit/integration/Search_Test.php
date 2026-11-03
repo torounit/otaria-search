@@ -315,16 +315,6 @@ class Search_Test extends \WP_UnitTestCase {
 		$this->assertContains( $this->post_a, $found_ids );
 	}
 
-	/** Filters still override the saved thresholds. */
-	public function test_max_distance_filter_overrides_saved_value(): void {
-		add_filter( 'wp_mariadb_vector_search_hybrid', '__return_false' );
-		$near = $this->create_indexed_post( 'Near', array( 0.9, 0.4358898944, 0.0, 0.0 ) );
-		update_option( Settings::OPTION_NAME, array( 'max_distance' => 0.05 ) );
-		add_filter( 'wp_mariadb_vector_search_max_distance', static fn() => 0.65 );
-
-		$this->assertContains( $near, $this->search_ids( 'animals' ) );
-	}
-
 	/** Hybrid search adds posts that only the LIKE search finds. */
 	public function test_hybrid_includes_lexical_only_match(): void {
 		// Orthogonal to the query vector, so vector search never finds it.
