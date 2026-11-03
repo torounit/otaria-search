@@ -1,0 +1,39 @@
+name: Test
+on:
+    pull_request:
+        paths-ignore:
+            - "**.md"
+    push:
+        branches: [main]
+        paths-ignore:
+            - "**.md"
+    workflow_call:
+
+jobs:
+    phpunit:
+        name: PHPUnit
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v7
+              with:
+                  node-version-file: .node-version
+                  cache: npm
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: "8.2"
+
+            # The admin page assets are built, since the plugin loads build/build.php.
+            - name: Install Node dependencies and build
+              run: npm ci && npm run build
+
+            - name: Install Composer dependencies
+              run: composer install --no-progress --no-interaction
+
+            # Embeddings come from Fake_Embedding_Provider, so no AI provider key is needed.
+            - name: Run PHPUnit
+              run: npm run test:php

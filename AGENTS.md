@@ -279,6 +279,25 @@ Layering:
 
 Test file naming convention: `*_Test.php`.
 
+## README, CI and releases
+
+- `README.md` is the WordPress.org readme (Markdown readme format): header
+  fields, then Description, Installation, FAQ and Changelog for site owners.
+  Developer documentation belongs here in AGENTS.md, not in the README.
+  Record user-visible changes under `### Unreleased` in the Changelog.
+- `.github/workflows/lint.yml` (ESLint, `lint:pkg-json`, PHPCS, `tsc`) and
+  `test.yml` (PHPUnit on wp-env) run on pull requests and pushes to `main`,
+  skipping Markdown-only changes.
+- Releases follow the `bump-version` skill (`.claude/skills/bump-version`):
+  `bin/bump-version.sh <version>` on a `release/<version>` branch updates the
+  plugin header, `Stable tag`, the changelog heading and `package.json`. Merging
+  that PR makes `draft-release.yml` draft a GitHub release from the changelog;
+  publishing the draft runs `release.yml`, which lints, tests, builds and
+  deploys to WordPress.org (SVN secrets `SVN_USERNAME` / `SVN_PASSWORD`).
+- `.distignore` (WordPress.org deploy) and `.gitattributes` (`export-ignore`)
+  keep development files out of the release zip; it ships `build/` and the
+  production `vendor/`, not `src/` or `routes/`.
+
 ## Manual verification
 
 1. `wp-env start` (ensure the image is MariaDB 11.7+; check with
