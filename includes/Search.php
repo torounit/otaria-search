@@ -28,6 +28,8 @@ class Search {
 
 	/**
 	 * Query var that marks a query rewritten to post__in.
+	 *
+	 * @since 0.2.0
 	 */
 	const QUERY_VAR = 'wp_mariadb_vector_search';
 
@@ -101,6 +103,8 @@ class Search {
 	 * fields=ids queries return before the_posts, so a one-shot filter would
 	 * leak into later searches.
 	 *
+	 * @since 0.2.0
+	 *
 	 * @param string    $search Search SQL for the WHERE clause.
 	 * @param \WP_Query $query  The query.
 	 * @return string Empty for rewritten queries; otherwise unchanged.
@@ -113,6 +117,8 @@ class Search {
 	 * Run WordPress's default LIKE search.
 	 *
 	 * This is not the main query, so it does not re-enter rewrite_search_query().
+	 *
+	 * @since 0.2.0
 	 *
 	 * @param string   $search_term Search term.
 	 * @param string[] $post_types  Post types to include.
@@ -156,6 +162,8 @@ class Search {
 	/**
 	 * All public, searchable post types, filtered by
 	 * wp_mariadb_vector_search_post_types.
+	 *
+	 * @since 0.2.0
 	 *
 	 * @return string[] Post type slugs.
 	 */

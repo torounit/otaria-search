@@ -23,6 +23,8 @@ class Abilities {
 
 	/**
 	 * Number of posts listed by the search preview.
+	 *
+	 * @since 0.2.0
 	 */
 	const PREVIEW_LIMIT = 20;
 
@@ -253,6 +255,8 @@ class Abilities {
 	/**
 	 * Callback for save-thresholds ability.
 	 *
+	 * @since 0.2.0
+	 *
 	 * @param array|null $input Ability input with optional 'max_distance' and 'max_relative_distance'.
 	 * @return array The thresholds now in effect.
 	 */
@@ -269,6 +273,8 @@ class Abilities {
 
 	/**
 	 * Callback for preview-search ability.
+	 *
+	 * @since 0.2.0
 	 *
 	 * @param array|null $input Ability input with 'query' and optional thresholds.
 	 * @return array|\WP_Error Nearest posts, or the embedding error.
