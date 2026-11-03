@@ -141,6 +141,29 @@ class Settings_Test extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Hybrid is stored as a boolean; omitted, it keeps the saved value.
+	 */
+	public function test_settings_sanitize_stores_or_preserves_hybrid(): void {
+		$this->assertFalse( Settings::sanitize_settings( array( 'hybrid' => false ) )['hybrid'] );
+		$this->assertArrayNotHasKey( 'hybrid', Settings::sanitize_settings( array( 'hybrid' => 'no' ) ) );
+
+		update_option( self::SETTINGS_OPTION, array( 'hybrid' => false ) );
+
+		$this->assertFalse( Settings::sanitize_settings( array( 'model' => 'm' ) )['hybrid'] );
+	}
+
+	/**
+	 * Hybrid search is on unless it has been turned off.
+	 */
+	public function test_is_hybrid_defaults_to_true(): void {
+		$this->assertTrue( Settings::is_hybrid() );
+
+		update_option( self::SETTINGS_OPTION, array( 'hybrid' => false ) );
+
+		$this->assertFalse( Settings::is_hybrid() );
+	}
+
+	/**
 	 * Partial updates preserve existing provider, model, and dimensions.
 	 */
 	public function test_settings_sanitize_preserves_existing_on_partial_update(): void {

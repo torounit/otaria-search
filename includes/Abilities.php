@@ -26,11 +26,11 @@ class Abilities {
 	const ABILITY_SELECT = 'wp-mariadb-vector-search/select-model';
 
 	/**
-	 * Ability that saves the search distance thresholds.
+	 * Ability that saves the search settings: distance thresholds and hybrid search.
 	 *
-	 * @since 0.2.0
+	 * @since 0.3.0
 	 */
-	const ABILITY_THRESHOLDS = 'wp-mariadb-vector-search/save-thresholds';
+	const ABILITY_SEARCH_SETTINGS = 'wp-mariadb-vector-search/save-search-settings';
 
 	/**
 	 * Ability that lists the posts nearest to a query with their distances.
@@ -170,12 +170,12 @@ class Abilities {
 			'maximum' => 2,
 		);
 
-		// Register save-thresholds ability.
+		// Register save-search-settings ability.
 		wp_register_ability(
-			self::ABILITY_THRESHOLDS,
+			self::ABILITY_SEARCH_SETTINGS,
 			array(
-				'label'               => __( 'Save Thresholds', 'wp-mariadb-vector-search' ),
-				'description'         => __( 'Saves the cosine distance thresholds for search results. Null resets a threshold to its default.', 'wp-mariadb-vector-search' ),
+				'label'               => __( 'Save Search Settings', 'wp-mariadb-vector-search' ),
+				'description'         => __( 'Saves the cosine distance thresholds for search results and whether hybrid search is on. Null resets a threshold to its default.', 'wp-mariadb-vector-search' ),
 				'category'            => self::CATEGORY_SLUG,
 				'meta'                => array( 'show_in_rest' => true ),
 				'input_schema'        => array(
@@ -187,9 +187,13 @@ class Abilities {
 						'max_relative_distance' => $distance_schema + array(
 							'description' => __( 'Maximum distance behind the best match.', 'wp-mariadb-vector-search' ),
 						),
+						'hybrid'                => array(
+							'type'        => 'boolean',
+							'description' => __( 'Fuse vector results with the LIKE search results.', 'wp-mariadb-vector-search' ),
+						),
 					),
 				),
-				'execute_callback'    => array( __CLASS__, 'execute_save_thresholds' ),
+				'execute_callback'    => array( __CLASS__, 'execute_save_search_settings' ),
 				'permission_callback' => function () {
 					return current_user_can( 'manage_options' );
 				},
@@ -299,6 +303,7 @@ class Abilities {
 			'dim_changed'                => $dim_changed,
 			'thresholds'                 => Settings::get_thresholds(),
 			'default_thresholds'         => Settings::DEFAULT_THRESHOLDS,
+			'hybrid'                     => Settings::is_hybrid(),
 			'exclude_password_protected' => Settings::excludes_password_protected(),
 		);
 	}
@@ -322,22 +327,22 @@ class Abilities {
 	}
 
 	/**
-	 * Callback for save-thresholds ability.
+	 * Callback for save-search-settings ability.
 	 *
-	 * @since 0.2.0
+	 * @since 0.3.0
 	 *
-	 * @param array|null $input Ability input with optional 'max_distance' and 'max_relative_distance'.
-	 * @return array The thresholds now in effect.
+	 * @param array|null $input Ability input with optional 'max_distance', 'max_relative_distance' and 'hybrid'.
+	 * @return array The thresholds and hybrid setting now in effect.
 	 */
-	public static function execute_save_thresholds( ?array $input = null ): array {
+	public static function execute_save_search_settings( ?array $input = null ): array {
 		// Settings::sanitize_settings() keeps the model settings and any
-		// threshold omitted from the input.
+		// search setting omitted from the input.
 		update_option(
 			Settings::OPTION_NAME,
-			array_intersect_key( (array) $input, array_flip( Settings::THRESHOLD_KEYS ) )
+			array_intersect_key( (array) $input, array_flip( array( ...Settings::THRESHOLD_KEYS, 'hybrid' ) ) )
 		);
 
-		return Settings::get_thresholds();
+		return Settings::get_thresholds() + array( 'hybrid' => Settings::is_hybrid() );
 	}
 
 	/**

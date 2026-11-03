@@ -304,10 +304,15 @@ class Search_Test extends \WP_UnitTestCase {
 
 	/** A saved max_distance replaces the default. */
 	public function test_search_uses_saved_max_distance(): void {
-		add_filter( 'wp_mariadb_vector_search_hybrid', '__return_false' );
 		// Cosine distance 0.1 from the query; posts A and B are at 0.
 		$near = $this->create_indexed_post( 'Near', array( 0.9, 0.4358898944, 0.0, 0.0 ) );
-		update_option( Settings::OPTION_NAME, array( 'max_distance' => 0.05 ) );
+		update_option(
+			Settings::OPTION_NAME,
+			array(
+				'max_distance' => 0.05,
+				'hybrid'       => false,
+			)
+		);
 
 		$found_ids = $this->search_ids( 'animals' );
 
@@ -337,10 +342,10 @@ class Search_Test extends \WP_UnitTestCase {
 		$this->assertSame( $both, $found_ids[0] );
 	}
 
-	/** Disabling hybrid search leaves vector results only. */
-	public function test_hybrid_filter_false_excludes_lexical_only_match(): void {
+	/** Turning hybrid search off leaves vector results only. */
+	public function test_hybrid_off_excludes_lexical_only_match(): void {
 		$lexical = $this->create_indexed_post( 'Zorbex Gadget Guide', array( 0.0, 0.0, 0.0, 1.0 ) );
-		add_filter( 'wp_mariadb_vector_search_hybrid', '__return_false' );
+		update_option( Settings::OPTION_NAME, array( 'hybrid' => false ) );
 
 		$found_ids = $this->search_ids( 'Zorbex' );
 
@@ -350,7 +355,7 @@ class Search_Test extends \WP_UnitTestCase {
 
 	/** Without matches, the search returns nothing rather than falling back to LIKE. */
 	public function test_no_vector_match_does_not_fall_back_to_like(): void {
-		add_filter( 'wp_mariadb_vector_search_hybrid', '__return_false' );
+		update_option( Settings::OPTION_NAME, array( 'hybrid' => false ) );
 		// Orthogonal to every indexed post; "Cats" still matches post A lexically.
 		Fake_Embedding_Provider::$vector = array( 0.0, 0.0, 0.0, 1.0 );
 

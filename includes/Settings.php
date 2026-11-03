@@ -73,6 +73,19 @@ class Settings {
 	}
 
 	/**
+	 * Whether vector results are fused with WordPress's LIKE search results.
+	 *
+	 * @since 0.3.0
+	 *
+	 * @return bool True unless turned off on the admin page.
+	 */
+	public static function is_hybrid(): bool {
+		$settings = get_option( self::OPTION_NAME, array() );
+
+		return ! is_array( $settings ) || ( $settings['hybrid'] ?? true ) !== false;
+	}
+
+	/**
 	 * Register settings.
 	 *
 	 * @return void
@@ -110,6 +123,9 @@ class Settings {
 								'maximum' => 2,
 							),
 							'exclude_password_protected' => array(
+								'type' => 'boolean',
+							),
+							'hybrid'                     => array(
 								'type' => 'boolean',
 							),
 						),
@@ -170,6 +186,12 @@ class Settings {
 			$sanitized['exclude_password_protected'] = rest_sanitize_boolean( $input['exclude_password_protected'] );
 		} elseif ( isset( $existing['exclude_password_protected'] ) ) {
 			$sanitized['exclude_password_protected'] = (bool) $existing['exclude_password_protected'];
+		}
+
+		if ( isset( $input['hybrid'] ) && is_bool( $input['hybrid'] ) ) {
+			$sanitized['hybrid'] = $input['hybrid'];
+		} elseif ( isset( $existing['hybrid'] ) && is_bool( $existing['hybrid'] ) ) {
+			$sanitized['hybrid'] = $existing['hybrid'];
 		}
 
 		return $sanitized;

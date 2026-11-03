@@ -1,15 +1,25 @@
 import apiFetch from '@wordpress/api-fetch';
-import { Button, Notice, TextControl } from '@wordpress/components';
+import {
+	Button,
+	Notice,
+	TextControl,
+	ToggleControl,
+} from '@wordpress/components';
 import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { Stack, Text } from '@wordpress/ui';
 import { addQueryArgs } from '@wordpress/url';
 import { Section } from './Section';
 import { unwrapAbilityResponse } from './ability';
-import type { PreviewResponse, PreviewResult, Thresholds } from './types';
+import type {
+	PreviewResponse,
+	PreviewResult,
+	SearchSettings,
+	Thresholds,
+} from './types';
 
 interface Props {
-	thresholds: Thresholds;
+	settings: SearchSettings;
 	defaults: Thresholds;
 	onSaved: () => void;
 }
@@ -21,13 +31,14 @@ function errorMessage( err: unknown ): string {
 	);
 }
 
-export function ThresholdSection( { thresholds, defaults, onSaved }: Props ) {
+export function SearchSection( { settings, defaults, onSaved }: Props ) {
+	const [ hybrid, setHybrid ] = useState( settings.hybrid );
 	// Inputs are kept as strings so a half-typed value is not rewritten.
 	const [ maxDistance, setMaxDistance ] = useState(
-		String( thresholds.max_distance )
+		String( settings.max_distance )
 	);
 	const [ maxRelative, setMaxRelative ] = useState(
-		String( thresholds.max_relative_distance )
+		String( settings.max_relative_distance )
 	);
 	const [ isSaving, setIsSaving ] = useState( false );
 	const [ error, setError ] = useState< string | null >( null );
@@ -44,16 +55,17 @@ export function ThresholdSection( { thresholds, defaults, onSaved }: Props ) {
 		( v ) => v !== '' && Number( v ) >= 0 && Number( v ) <= 2
 	);
 
-	async function save( input: Record< string, number | null > ) {
+	async function save( input: Record< string, number | boolean | null > ) {
 		setIsSaving( true );
 		setError( null );
 		try {
 			const raw = await apiFetch( {
-				path: '/wp-abilities/v1/abilities/wp-mariadb-vector-search/save-thresholds/run',
+				path: '/wp-abilities/v1/abilities/wp-mariadb-vector-search/save-search-settings/run',
 				method: 'POST',
 				data: { input },
 			} );
-			const saved = unwrapAbilityResponse< Thresholds >( raw );
+			const saved = unwrapAbilityResponse< SearchSettings >( raw );
+			setHybrid( saved.hybrid );
 			setMaxDistance( String( saved.max_distance ) );
 			setMaxRelative( String( saved.max_relative_distance ) );
 			onSaved();
@@ -86,21 +98,37 @@ export function ThresholdSection( { thresholds, defaults, onSaved }: Props ) {
 	}
 
 	return (
-		<Section
-			title={ __( 'Search Thresholds', 'wp-mariadb-vector-search' ) }
-		>
-			<Text render={ <p /> }>
-				{ __(
-					'Suitable values depend on the embedding model; they are reset to the defaults when the model changes. Use the preview to check them. Posts that contain the search term are still added by hybrid search.',
-					'wp-mariadb-vector-search'
-				) }
-			</Text>
-
+		<Section title={ __( 'Search', 'wp-mariadb-vector-search' ) }>
 			{ error && (
 				<Notice status="error" onRemove={ () => setError( null ) }>
 					{ error }
 				</Notice>
 			) }
+
+			<ToggleControl
+				label={ __( 'Hybrid search', 'wp-mariadb-vector-search' ) }
+				help={ __(
+					"Also include posts that WordPress's standard search finds (posts containing the search term), ranked together with the vector results. Catches exact terms such as product codes and names.",
+					'wp-mariadb-vector-search'
+				) }
+				checked={ hybrid }
+				onChange={ setHybrid }
+			/>
+
+			<Text variant="heading-md" render={ <h3 /> }>
+				{ __( 'Thresholds', 'wp-mariadb-vector-search' ) }
+			</Text>
+			<Text render={ <p /> }>
+				{ hybrid
+					? __(
+							'Suitable values depend on the embedding model; they are reset to the defaults when the model changes. Use the preview to check them. The thresholds apply to the vector results; posts that contain the search term are still added by hybrid search.',
+							'wp-mariadb-vector-search'
+						)
+					: __(
+							'Suitable values depend on the embedding model; they are reset to the defaults when the model changes. Use the preview to check them.',
+							'wp-mariadb-vector-search'
+						) }
+			</Text>
 
 			<TextControl
 				type="number"
@@ -135,12 +163,12 @@ export function ThresholdSection( { thresholds, defaults, onSaved }: Props ) {
 				<Button
 					__next40pxDefaultSize
 					variant="primary"
-					onClick={ () => void save( values ) }
+					onClick={ () => void save( { ...values, hybrid } ) }
 					isBusy={ isSaving }
 					disabled={ isSaving || ! isValid }
 					accessibleWhenDisabled
 				>
-					{ __( 'Save thresholds', 'wp-mariadb-vector-search' ) }
+					{ __( 'Save', 'wp-mariadb-vector-search' ) }
 				</Button>
 				<Button
 					__next40pxDefaultSize
@@ -154,7 +182,10 @@ export function ThresholdSection( { thresholds, defaults, onSaved }: Props ) {
 					disabled={ isSaving }
 					accessibleWhenDisabled
 				>
-					{ __( 'Reset to defaults', 'wp-mariadb-vector-search' ) }
+					{ __(
+						'Reset thresholds to defaults',
+						'wp-mariadb-vector-search'
+					) }
 				</Button>
 			</Stack>
 

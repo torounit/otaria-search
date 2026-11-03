@@ -21,7 +21,7 @@ namespace WP_MariaDB_Vector_Search;
  * Vector results are filtered by cosine distance and by distance behind the
  * best match, both from the saved settings (Settings::get_thresholds()), then
  * fused with WordPress's LIKE search results via Reciprocal Rank Fusion
- * (opt out with wp_mariadb_vector_search_hybrid).
+ * unless hybrid search is turned off (Settings::is_hybrid()).
  */
 class Search {
 
@@ -94,14 +94,7 @@ class Search {
 		$thresholds = Settings::get_thresholds();
 		$ids        = $this->repository->search_similar( $result[0]->getValues(), $post_types, $thresholds['max_distance'], self::MAX_RESULTS, $thresholds['max_relative_distance'] );
 
-		/**
-		 * Filters whether vector results are fused with WordPress's LIKE search results.
-		 *
-		 * @since 0.2.0
-		 *
-		 * @param bool $hybrid True to fuse via Reciprocal Rank Fusion, false for vector-only. Default true.
-		 */
-		if ( apply_filters( 'wp_mariadb_vector_search_hybrid', true ) ) {
+		if ( Settings::is_hybrid() ) {
 			$ids = Rank_Fusion::fuse( array( $ids, $this->search_like( $search_term, $post_types, self::MAX_RESULTS ) ), self::RRF_K );
 		}
 

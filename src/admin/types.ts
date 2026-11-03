@@ -26,6 +26,7 @@ export interface StatusResponse {
 	dim_changed: boolean;
 	thresholds: Thresholds;
 	default_thresholds: Thresholds;
+	hybrid: boolean;
 	exclude_password_protected: boolean;
 }
 
@@ -36,6 +37,10 @@ export interface IndexSettings {
 export interface Thresholds {
 	max_distance: number;
 	max_relative_distance: number;
+}
+
+export interface SearchSettings extends Thresholds {
+	hybrid: boolean;
 }
 
 export interface PreviewResult {

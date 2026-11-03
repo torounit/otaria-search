@@ -7,8 +7,8 @@ import { Stack } from '@wordpress/ui';
 import { IndexSettingsSection } from './IndexSettingsSection';
 import { ModelSelector } from './ModelSelector';
 import { ReindexSection } from './ReindexSection';
+import { SearchSection } from './SearchSection';
 import { StatusSection } from './StatusSection';
-import { ThresholdSection } from './ThresholdSection';
 import { unwrapAbilityResponse } from './ability';
 import type { StatusResponse, Thresholds } from './types';
 
@@ -41,6 +41,7 @@ function normalizeStatusResponse( raw: unknown ): StatusResponse {
 		dim_changed: resolved?.dim_changed ?? false,
 		thresholds: resolved?.thresholds ?? DEFAULT_THRESHOLDS,
 		default_thresholds: resolved?.default_thresholds ?? DEFAULT_THRESHOLDS,
+		hybrid: resolved?.hybrid ?? true,
 		exclude_password_protected:
 			resolved?.exclude_password_protected ?? true,
 	};
@@ -134,15 +135,18 @@ export function VectorSearchApp() {
 						/>
 
 						{ status.data.installed && (
-							<ThresholdSection
+							<SearchSection
 								// Remount after a model change resets the thresholds.
 								key={ `${ status.data.settings.provider }:${ status.data.settings.model }` }
-								thresholds={ status.data.thresholds }
+								settings={ {
+									...status.data.thresholds,
+									hybrid: status.data.hybrid,
+								} }
 								defaults={ status.data.default_thresholds }
 								onSaved={ () =>
 									setSuccessMessage(
 										__(
-											'Thresholds saved.',
+											'Search settings saved.',
 											'wp-mariadb-vector-search'
 										)
 									)
