@@ -208,6 +208,17 @@ class Search_Test extends \WP_UnitTestCase {
 	}
 
 	/**
+	 * Index password-protected posts, which are left out of the index by
+	 * default, so the tests reach the search side.
+	 *
+	 * @return void
+	 */
+	private function allow_password_protected_in_index(): void {
+		// Settings::sanitize_settings() keeps the other settings.
+		update_option( Settings::OPTION_NAME, array( 'exclude_password_protected' => false ) );
+	}
+
+	/**
 	 * Run $search_term as the main search query.
 	 *
 	 * @param string $search_term Search term.
@@ -252,6 +263,7 @@ class Search_Test extends \WP_UnitTestCase {
 
 	/** Like core search, password-protected posts are hidden from logged-out visitors. */
 	public function test_search_excludes_password_protected_post_when_logged_out(): void {
+		$this->allow_password_protected_in_index();
 		$protected = $this->create_indexed_post( 'Protected', array( 1.0, 0.0, 0.0, 0.0 ), array( 'post_password' => 'secret' ) );
 		wp_set_current_user( 0 );
 
@@ -263,6 +275,7 @@ class Search_Test extends \WP_UnitTestCase {
 
 	/** Like core search, logged-in users find password-protected posts. */
 	public function test_search_includes_password_protected_post_when_logged_in(): void {
+		$this->allow_password_protected_in_index();
 		$protected = $this->create_indexed_post( 'Protected', array( 1.0, 0.0, 0.0, 0.0 ), array( 'post_password' => 'secret' ) );
 		wp_set_current_user( $this->factory->user->create() );
 
