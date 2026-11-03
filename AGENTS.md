@@ -130,7 +130,7 @@ into the embedding key, so both the hash and `update-settings`'
 | --------------------------------- | -------------------------------------------------------------------------------------------------- |
 | `squirrel-search.php`    | Bootstrap. Registers activation hooks. `squirrel_search_embedding()` (core builder bound to the selected model). |
 | `includes/Plugin.php`             | Composition root. Instantiates components and registers hooks.                                     |
-| `includes/Schema.php`             | Install/upgrade table. Verify MariaDB version. Admin notice on incompatibility.                    |
+| `includes/Schema.php`             | Install/upgrade table. Verify MariaDB version. Admin notice on incompatibility. `table_name()` is the only place the table name is spelled out; option names live in `Settings::OPTION_NAME` and `Schema::DB_VERSION_OPTION`. |
 | `includes/Settings.php`           | The settings option: getters with defaults (`get_thresholds()`, `is_hybrid()`, `get_post_types()`, `get_prefixes()`, `excludes_password_protected()`), `get_embedding_key()` (content hash input), `update()` for partial writes, `sanitize_settings()`. |
 | `includes/Repository.php`         | `$wpdb` wrapper. `replace_post_chunks()`, `delete_post()`, `delete_other_post_types()`, `search_similar()`. Vector text serialization. |
 | `includes/Model_Catalog.php`      | Enumerates models the AI Client registry reports as embedding-capable.                             |

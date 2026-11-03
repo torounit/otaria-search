@@ -299,7 +299,7 @@ class Abilities {
 		$installed    = Schema::is_installed();
 		$schema_ready = $is_supported && $installed;
 
-		$settings     = get_option( Admin::SETTINGS_KEY, array() );
+		$settings     = get_option( Settings::OPTION_NAME, array() );
 		$cur_provider = is_array( $settings ) ? (string) ( $settings['provider'] ?? '' ) : '';
 		$cur_model    = is_array( $settings ) ? (string) ( $settings['model'] ?? '' ) : '';
 		$cur_dims     = is_array( $settings ) && isset( $settings['dimensions'] ) ? (int) $settings['dimensions'] : null;
@@ -442,7 +442,7 @@ class Abilities {
 			? (bool) $input['confirm_rebuild']
 			: false;
 
-		$settings   = get_option( Admin::SETTINGS_KEY, array() );
+		$settings   = get_option( Settings::OPTION_NAME, array() );
 		$cur_dims   = is_array( $settings ) && isset( $settings['dimensions'] ) ? (int) $settings['dimensions'] : null;
 		$saved_dims = $cur_dims ?? Plugin::DEFAULT_DIMENSIONS;
 

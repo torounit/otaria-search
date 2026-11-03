@@ -21,6 +21,19 @@ class Schema {
 	const DB_VERSION_OPTION = 'squirrel_search_db_version';
 
 	/**
+	 * Name of the embeddings table, under the site's table prefix.
+	 *
+	 * @since 0.3.0
+	 *
+	 * @return string
+	 */
+	public static function table_name(): string {
+		global $wpdb;
+
+		return $wpdb->prefix . 'squirrel_search_embeddings';
+	}
+
+	/**
 	 * Install or upgrade the embeddings table.
 	 *
 	 * Safe to call multiple times (idempotent).
@@ -31,7 +44,7 @@ class Schema {
 	public static function install( int $dimensions ): void {
 		global $wpdb;
 
-		$table           = $wpdb->prefix . 'squirrel_search_embeddings';
+		$table           = self::table_name();
 		$charset_collate = $wpdb->get_charset_collate();
 		$current_ver     = get_option( self::DB_VERSION_OPTION, '' );
 
@@ -81,7 +94,7 @@ class Schema {
 	 */
 	public static function drop(): void {
 		global $wpdb;
-		$table = $wpdb->prefix . 'squirrel_search_embeddings';
+		$table = self::table_name();
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
 		$wpdb->query( "DROP TABLE IF EXISTS `{$table}`" );
 	}

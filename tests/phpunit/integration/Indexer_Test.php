@@ -57,7 +57,7 @@ class Indexer_Test extends \WP_UnitTestCase {
 		remove_filter( 'query', array( $this, '_drop_temporary_tables' ) );
 
 		Schema::drop();
-		delete_option( 'squirrel_search_db_version' );
+		delete_option( Schema::DB_VERSION_OPTION );
 		Schema::install( self::DIMS );
 		Fake_Embedding_Provider::select();
 
@@ -73,7 +73,7 @@ class Indexer_Test extends \WP_UnitTestCase {
 		// Schema::drop() commits the test transaction (DDL); clean up before it.
 		delete_option( Settings::OPTION_NAME );
 		Schema::drop();
-		delete_option( 'squirrel_search_db_version' );
+		delete_option( Schema::DB_VERSION_OPTION );
 		add_filter( 'query', array( $this, '_create_temporary_tables' ) );
 		add_filter( 'query', array( $this, '_drop_temporary_tables' ) );
 		parent::tear_down();
@@ -82,7 +82,7 @@ class Indexer_Test extends \WP_UnitTestCase {
 	/** Chunks are stored after index_post(). */
 	public function test_index_post_stores_chunks(): void {
 		global $wpdb;
-		$table = $wpdb->prefix . 'squirrel_search_embeddings';
+		$table = Schema::table_name();
 
 		$post_id = $this->factory->post->create(
 			array(
@@ -105,7 +105,7 @@ class Indexer_Test extends \WP_UnitTestCase {
 	/** A post with unchanged content is not re-indexed. */
 	public function test_index_post_skips_unchanged_content(): void {
 		global $wpdb;
-		$table = $wpdb->prefix . 'squirrel_search_embeddings';
+		$table = Schema::table_name();
 
 		$post_id = $this->factory->post->create(
 			array(
@@ -177,7 +177,7 @@ class Indexer_Test extends \WP_UnitTestCase {
 		$this->indexer->index_post( $post_id );
 
 		$this->assertSame( array( "passage: Cats\n\nCats are small animals." ), Fake_Embedding_Provider::$inputs );
-		$table = $wpdb->prefix . 'squirrel_search_embeddings';
+		$table = Schema::table_name();
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$chunk_text = $wpdb->get_var( $wpdb->prepare( "SELECT chunk_text FROM `{$table}` WHERE post_id = %d", $post_id ) );
 		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -205,7 +205,7 @@ class Indexer_Test extends \WP_UnitTestCase {
 	/** A post with changed content is re-indexed with a new hash. */
 	public function test_index_post_reindexes_changed_content(): void {
 		global $wpdb;
-		$table = $wpdb->prefix . 'squirrel_search_embeddings';
+		$table = Schema::table_name();
 
 		$post_id = $this->factory->post->create(
 			array(
@@ -244,7 +244,7 @@ class Indexer_Test extends \WP_UnitTestCase {
 	/** All rows are removed after delete_post(). */
 	public function test_delete_post_removes_rows(): void {
 		global $wpdb;
-		$table = $wpdb->prefix . 'squirrel_search_embeddings';
+		$table = Schema::table_name();
 
 		$post_id = $this->factory->post->create(
 			array(
@@ -268,7 +268,7 @@ class Indexer_Test extends \WP_UnitTestCase {
 	/** Draft posts are not indexed. */
 	public function test_index_post_skips_non_published(): void {
 		global $wpdb;
-		$table = $wpdb->prefix . 'squirrel_search_embeddings';
+		$table = Schema::table_name();
 
 		$post_id = $this->factory->post->create(
 			array(
@@ -356,7 +356,7 @@ class Indexer_Test extends \WP_UnitTestCase {
 	/** Non-indexable post types (e.g. nav_menu_item) are not indexed. */
 	public function test_index_post_skips_non_indexable_post_type(): void {
 		global $wpdb;
-		$table = $wpdb->prefix . 'squirrel_search_embeddings';
+		$table = Schema::table_name();
 
 		$post_id = wp_insert_post(
 			array(

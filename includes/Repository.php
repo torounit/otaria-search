@@ -85,7 +85,7 @@ class Repository {
 		}
 
 		global $wpdb;
-		$table = $wpdb->prefix . 'squirrel_search_embeddings';
+		$table = Schema::table_name();
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$col_type = $wpdb->get_var(
@@ -129,7 +129,7 @@ class Repository {
 		array $chunks
 	): void {
 		global $wpdb;
-		$table = $wpdb->prefix . 'squirrel_search_embeddings';
+		$table = Schema::table_name();
 		$now   = current_time( 'mysql', true );
 		$dims  = count( $chunks[0]['vector'] );
 
@@ -196,7 +196,7 @@ class Repository {
 	 */
 	public function delete_post( int $post_id ): void {
 		global $wpdb;
-		$table = $wpdb->prefix . 'squirrel_search_embeddings';
+		$table = Schema::table_name();
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->query( $wpdb->prepare( "DELETE FROM `{$table}` WHERE post_id = %d", $post_id ) );
 	}
@@ -211,7 +211,7 @@ class Repository {
 	 */
 	public function delete_other_post_types( array $post_types ): void {
 		global $wpdb;
-		$table = $wpdb->prefix . 'squirrel_search_embeddings';
+		$table = Schema::table_name();
 
 		if ( empty( $post_types ) ) {
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -232,7 +232,7 @@ class Repository {
 	 */
 	public function get_content_hash( int $post_id ): ?string {
 		global $wpdb;
-		$table = $wpdb->prefix . 'squirrel_search_embeddings';
+		$table = Schema::table_name();
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$result = $wpdb->get_var(
 			$wpdb->prepare( "SELECT content_hash FROM `{$table}` WHERE post_id = %d LIMIT 1", $post_id )
@@ -252,7 +252,7 @@ class Repository {
 	 */
 	public function count_indexed(): int {
 		global $wpdb;
-		$table = $wpdb->prefix . 'squirrel_search_embeddings';
+		$table = Schema::table_name();
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		return (int) $wpdb->get_var( "SELECT COUNT(DISTINCT post_id) FROM `{$table}`" );
 	}
@@ -305,7 +305,7 @@ class Repository {
 	 */
 	public function nearest_posts( array $query_vector, array $post_types, int $limit, int $overscan = 5 ): array {
 		global $wpdb;
-		$table = $wpdb->prefix . 'squirrel_search_embeddings';
+		$table = Schema::table_name();
 
 		$vec_literal = self::format_vector_literal( $query_vector );
 		$inner_limit = $limit * $overscan;

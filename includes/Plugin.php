@@ -101,7 +101,7 @@ class Plugin {
 			return;
 		}
 
-		$settings   = get_option( 'squirrel_search_settings', array() );
+		$settings   = get_option( Settings::OPTION_NAME, array() );
 		$dimensions = isset( $settings['dimensions'] ) ? (int) $settings['dimensions'] : self::DEFAULT_DIMENSIONS;
 		Schema::install( $dimensions );
 	}
@@ -116,7 +116,7 @@ class Plugin {
 			return;
 		}
 
-		$settings   = get_option( 'squirrel_search_settings', array() );
+		$settings   = get_option( Settings::OPTION_NAME, array() );
 		$dimensions = isset( $settings['dimensions'] ) ? (int) $settings['dimensions'] : self::DEFAULT_DIMENSIONS;
 		Schema::install( $dimensions );
 	}

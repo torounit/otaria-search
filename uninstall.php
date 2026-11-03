@@ -15,8 +15,8 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 Squirrel_Search\Schema::drop();
 
-delete_option( 'squirrel_search_db_version' );
-delete_option( 'squirrel_search_settings' );
+delete_option( Squirrel_Search\Schema::DB_VERSION_OPTION );
+delete_option( Squirrel_Search\Settings::OPTION_NAME );
 delete_transient( Squirrel_Search\Cron_Backfill::PROGRESS_KEY );
 
 $timestamp = wp_next_scheduled( Squirrel_Search\Cron_Backfill::CRON_HOOK );

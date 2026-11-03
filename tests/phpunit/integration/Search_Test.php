@@ -87,7 +87,7 @@ class Search_Test extends \WP_UnitTestCase {
 		remove_filter( 'query', array( $this, '_drop_temporary_tables' ) );
 
 		Schema::drop();
-		delete_option( 'squirrel_search_db_version' );
+		delete_option( Schema::DB_VERSION_OPTION );
 		Schema::install( self::DIMS );
 		Fake_Embedding_Provider::select();
 
@@ -141,7 +141,7 @@ class Search_Test extends \WP_UnitTestCase {
 		delete_option( Settings::OPTION_NAME );
 
 		Schema::drop();
-		delete_option( 'squirrel_search_db_version' );
+		delete_option( Schema::DB_VERSION_OPTION );
 
 		add_filter( 'query', array( $this, '_create_temporary_tables' ) );
 		add_filter( 'query', array( $this, '_drop_temporary_tables' ) );

@@ -17,7 +17,7 @@ use WP_UnitTestCase;
  */
 class Settings_Test extends WP_UnitTestCase {
 
-	const SETTINGS_OPTION = 'squirrel_search_settings';
+	const SETTINGS_OPTION = Settings::OPTION_NAME;
 
 	/**
 	 * Ensure each test starts with no stored settings.

@@ -20,8 +20,7 @@ namespace Squirrel_Search;
  */
 class Admin {
 
-	const PAGE_SLUG    = 'squirrel-search-wp-admin';
-	const SETTINGS_KEY = 'squirrel_search_settings';
+	const PAGE_SLUG = 'squirrel-search-wp-admin';
 
 	/**
 	 * Register admin hooks.
