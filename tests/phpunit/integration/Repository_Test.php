@@ -405,34 +405,4 @@ class Repository_Test extends \WP_UnitTestCase {
 		$this->assertEqualsWithDelta( 0.0, $distances[2], 1e-6 );
 		$this->assertEqualsWithDelta( 0.2, $distances[1], 1e-6 );
 	}
-
-	/** A post past the relative cutoff is excluded. */
-	public function test_search_similar_filters_by_relative_cutoff(): void {
-		$vectors = array(
-			1 => array( 0.9, 0.0, 0.4358898944, 0.0 ), // Distance 0.1 (the best match).
-			2 => array( 0.8, 0.6, 0.0, 0.0 ),          // Distance 0.2.
-			3 => array( 0.5, 0.8660254038, 0.0, 0.0 ), // Distance 0.5.
-		);
-		foreach ( $vectors as $post_id => $vector ) {
-			$this->repository->replace_post_chunks(
-				$post_id,
-				'post',
-				"h{$post_id}",
-				array(
-					array(
-						'chunk_index' => 0,
-						'chunk_text'  => "Post {$post_id}",
-						'vector'      => $vector,
-					),
-				)
-			);
-		}
-
-		// Only the relative cutoff applies. With fewer than 50 posts and no
-		// max_distance, the reference is the farthest (0.5): half the way from
-		// 0.1 keeps up to 0.3.
-		$ids = $this->repository->search_similar( array( 1.0, 0.0, 0.0, 0.0 ), array( 'post' ), INF, 200, 0.5 );
-
-		$this->assertSame( array( 1, 2 ), $ids );
-	}
 }

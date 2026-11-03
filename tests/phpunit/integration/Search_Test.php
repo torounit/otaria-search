@@ -281,23 +281,11 @@ class Search_Test extends \WP_UnitTestCase {
 		$this->assertContains( $protected, $this->search_ids( 'animals' ) );
 	}
 
-	/** A post far behind the best vector match is excluded by default. */
-	public function test_search_excludes_post_far_behind_best_match(): void {
-		// Cosine distance 0.5: within max_distance (0.65), but past the default
-		// cutoff: 0.7 of the way from posts A and B (0) to the reference,
-		// max_distance with fewer than 50 posts, is 0.455.
+	/** Only max_distance limits the vector results, not the distance behind the best match. */
+	public function test_search_includes_post_far_behind_best_match_within_max_distance(): void {
+		// Cosine distance 0.5 from the query, 0.5 behind posts A and B, but
+		// within the default max_distance (0.65).
 		$far = $this->create_indexed_post( 'Far', array( 0.5, 0.8660254038, 0.0, 0.0 ) );
-
-		$found_ids = $this->search_ids( 'animals' );
-
-		$this->assertContains( $this->post_a, $found_ids );
-		$this->assertNotContains( $far, $found_ids );
-	}
-
-	/** A saved relative_cutoff replaces the default. */
-	public function test_search_uses_saved_relative_cutoff(): void {
-		$far = $this->create_indexed_post( 'Far', array( 0.5, 0.8660254038, 0.0, 0.0 ) );
-		Settings::update( array( 'relative_cutoff' => 1.0 ) );
 
 		$this->assertContains( $far, $this->search_ids( 'animals' ) );
 	}

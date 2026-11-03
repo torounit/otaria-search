@@ -71,32 +71,22 @@ class Settings_Test extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Thresholds are stored as floats: a cosine distance (0–2) and a fraction (0–1).
+	 * The distance threshold is stored as a float within the cosine distance range.
 	 */
-	public function test_settings_sanitize_accepts_distance_thresholds(): void {
-		$result = Settings::sanitize_settings(
-			array(
-				'max_distance'    => '0.4',
-				'relative_cutoff' => '0.5',
-			)
-		);
-
-		$this->assertSame( 0.4, $result['max_distance'] );
-		$this->assertSame( 0.5, $result['relative_cutoff'] );
+	public function test_settings_sanitize_accepts_distance_threshold(): void {
+		$this->assertSame( 0.4, Settings::sanitize_settings( array( 'max_distance' => '0.4' ) )['max_distance'] );
 	}
 
 	/**
-	 * Thresholds out of range or non-numeric are rejected.
+	 * A threshold outside 0–2 or non-numeric is rejected.
 	 */
-	public function test_settings_sanitize_rejects_invalid_distance_thresholds(): void {
+	public function test_settings_sanitize_rejects_invalid_distance_threshold(): void {
 		$this->assertSame( array(), Settings::sanitize_settings( array( 'max_distance' => 2.5 ) ) );
-		$this->assertSame( array(), Settings::sanitize_settings( array( 'relative_cutoff' => 'wide' ) ) );
-		$this->assertSame( array(), Settings::sanitize_settings( array( 'relative_cutoff' => -0.1 ) ) );
-		$this->assertSame( array(), Settings::sanitize_settings( array( 'relative_cutoff' => 1.5 ) ) );
+		$this->assertSame( array(), Settings::sanitize_settings( array( 'max_distance' => 'wide' ) ) );
 	}
 
 	/**
-	 * The former max_relative_distance (a difference, measured differently) is dropped.
+	 * The removed max_relative_distance is dropped from the saved settings.
 	 */
 	public function test_settings_sanitize_drops_max_relative_distance(): void {
 		$this->assertSame( array(), Settings::sanitize_settings( array( 'max_relative_distance' => 0.25 ) ) );
@@ -261,14 +251,14 @@ class Settings_Test extends WP_UnitTestCase {
 	public function test_update_null_removes_key(): void {
 		Settings::update(
 			array(
-				'max_distance'    => 0.4,
-				'relative_cutoff' => 0.5,
+				'max_distance' => 0.4,
+				'hybrid'       => false,
 			)
 		);
 
-		Settings::update( array( 'relative_cutoff' => null ) );
+		Settings::update( array( 'max_distance' => null ) );
 
-		$this->assertSame( array( 'max_distance' => 0.4 ), get_option( self::SETTINGS_OPTION ) );
+		$this->assertSame( array( 'hybrid' => false ), get_option( self::SETTINGS_OPTION ) );
 	}
 
 	/**

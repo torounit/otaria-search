@@ -38,9 +38,6 @@ export function SearchSection( { settings, defaults, onSaved }: Props ) {
 	const [ maxDistance, setMaxDistance ] = useState(
 		String( settings.max_distance )
 	);
-	const [ relativeCutoff, setRelativeCutoff ] = useState(
-		String( settings.relative_cutoff )
-	);
 	const [ isSaving, setIsSaving ] = useState( false );
 	const [ error, setError ] = useState< string | null >( null );
 
@@ -50,12 +47,11 @@ export function SearchSection( { settings, defaults, onSaved }: Props ) {
 
 	const values = {
 		max_distance: Number( maxDistance ),
-		relative_cutoff: Number( relativeCutoff ),
 	};
-	const inRange = ( v: string, min: number, max: number ) =>
-		v !== '' && Number( v ) >= min && Number( v ) <= max;
 	const isValid =
-		inRange( maxDistance, 0, 2 ) && inRange( relativeCutoff, 0, 1 );
+		maxDistance !== '' &&
+		Number( maxDistance ) >= 0 &&
+		Number( maxDistance ) <= 2;
 
 	async function save( input: Record< string, number | boolean | null > ) {
 		setIsSaving( true );
@@ -70,7 +66,6 @@ export function SearchSection( { settings, defaults, onSaved }: Props ) {
 				unwrapAbilityResponse< UpdateSettingsResponse >( raw );
 			setHybrid( saved.hybrid );
 			setMaxDistance( String( saved.max_distance ) );
-			setRelativeCutoff( String( saved.relative_cutoff ) );
 			onSaved();
 		} catch ( err ) {
 			setError( errorMessage( err ) );
@@ -119,16 +114,16 @@ export function SearchSection( { settings, defaults, onSaved }: Props ) {
 			/>
 
 			<Text variant="heading-md" render={ <h3 /> }>
-				{ __( 'Thresholds', 'otaria-search' ) }
+				{ __( 'Threshold', 'otaria-search' ) }
 			</Text>
 			<Text render={ <p /> }>
 				{ hybrid
 					? __(
-							'Suitable values depend on the embedding model; they are reset to the defaults when the model changes. Use the preview to check them. The thresholds apply to the vector results; posts that contain the search term are still added by hybrid search.',
+							'A suitable value depends on the embedding model; it is reset to the default when the model changes. Use the preview to check it. The threshold applies to the vector results; posts that contain the search term are still added by hybrid search.',
 							'otaria-search'
 						)
 					: __(
-							'Suitable values depend on the embedding model; they are reset to the defaults when the model changes. Use the preview to check them.',
+							'A suitable value depends on the embedding model; it is reset to the default when the model changes. Use the preview to check it.',
 							'otaria-search'
 						) }
 			</Text>
@@ -145,22 +140,6 @@ export function SearchSection( { settings, defaults, onSaved }: Props ) {
 				) } ${ defaults.max_distance }` }
 				value={ maxDistance }
 				onChange={ setMaxDistance }
-			/>
-			<TextControl
-				type="number"
-				min={ 0 }
-				max={ 1 }
-				step={ 0.05 }
-				label={ __(
-					'Cutoff relative to the best match',
-					'otaria-search'
-				) }
-				help={ `${ __(
-					'Keeps posts up to this fraction of the way from the closest post to a typical unrelated one (the 50th closest): 0.7 keeps those within 70 percent of the way, 1 keeps up to the 50th. A clear match leaves a wide margin; a search with no good match, a narrow one. Default:',
-					'otaria-search'
-				) } ${ defaults.relative_cutoff }` }
-				value={ relativeCutoff }
-				onChange={ setRelativeCutoff }
 			/>
 			<Stack direction="row" gap="sm" wrap="wrap">
 				<Button
@@ -179,13 +158,12 @@ export function SearchSection( { settings, defaults, onSaved }: Props ) {
 					onClick={ () =>
 						void save( {
 							max_distance: null,
-							relative_cutoff: null,
 						} )
 					}
 					disabled={ isSaving }
 					accessibleWhenDisabled
 				>
-					{ __( 'Reset thresholds to defaults', 'otaria-search' ) }
+					{ __( 'Reset threshold to default', 'otaria-search' ) }
 				</Button>
 			</Stack>
 

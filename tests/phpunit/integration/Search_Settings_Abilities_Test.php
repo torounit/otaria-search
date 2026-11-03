@@ -107,13 +107,7 @@ class Search_Settings_Abilities_Test extends \WP_UnitTestCase {
 
 		$status = $this->run_ability( 'get-status' );
 
-		$this->assertSame(
-			array(
-				'max_distance'    => 0.4,
-				'relative_cutoff' => 0.7,
-			),
-			$status['thresholds']
-		);
+		$this->assertSame( array( 'max_distance' => 0.4 ), $status['thresholds'] );
 		$this->assertSame( Settings::DEFAULT_THRESHOLDS, $status['default_thresholds'] );
 	}
 
@@ -128,18 +122,9 @@ class Search_Settings_Abilities_Test extends \WP_UnitTestCase {
 
 	/** Saving thresholds stores the values and keeps the model settings. */
 	public function test_save_thresholds_stores_values(): void {
-		$result = $this->run_ability(
-			'update-settings',
-			array(
-				'max_distance'    => 0.4,
-				'relative_cutoff' => 0.5,
-			)
-		);
+		$result = $this->run_ability( 'update-settings', array( 'max_distance' => 0.4 ) );
 
-		$expected = array(
-			'max_distance'    => 0.4,
-			'relative_cutoff' => 0.5,
-		);
+		$expected = array( 'max_distance' => 0.4 );
 		$this->assertSame( $expected, array_intersect_key( $result, $expected ) );
 		$this->assertTrue( $result['hybrid'] );
 		$this->assertFalse( $result['reindex_required'] );
@@ -179,11 +164,6 @@ class Search_Settings_Abilities_Test extends \WP_UnitTestCase {
 		$this->assertWPError( $this->run_ability( 'update-settings', array( 'max_distance' => 3 ) ) );
 	}
 
-	/** A relative cutoff above 1 is rejected by the input schema. */
-	public function test_save_thresholds_rejects_relative_cutoff_above_one(): void {
-		$this->assertWPError( $this->run_ability( 'update-settings', array( 'relative_cutoff' => 1.5 ) ) );
-	}
-
 	/** The model cannot be changed here: select-model probes it first. */
 	public function test_update_settings_rejects_model(): void {
 		$this->assertWPError( $this->run_ability( 'update-settings', array( 'model' => 'another-model' ) ) );
@@ -206,9 +186,8 @@ class Search_Settings_Abilities_Test extends \WP_UnitTestCase {
 		$result = $this->run_ability(
 			'preview-search',
 			array(
-				'query'           => 'anything',
-				'max_distance'    => 0.5,
-				'relative_cutoff' => 1,
+				'query'        => 'anything',
+				'max_distance' => 0.5,
 			)
 		);
 
@@ -222,38 +201,12 @@ class Search_Settings_Abilities_Test extends \WP_UnitTestCase {
 	public function test_preview_search_uses_saved_thresholds_by_default(): void {
 		$this->create_indexed_post( 'Best', array( 1.0, 0.0, 0.0, 0.0 ) );
 		$this->create_indexed_post( 'Near', array( 0.8, 0.6, 0.0, 0.0 ) );
-		// Near (0.2) is within the default cutoff (0.7 of the way to max_distance,
-		// 0.455) but not within the saved one (0.2 of the way, 0.13).
-		Settings::update( array( 'relative_cutoff' => 0.2 ) );
+		// Near is at 0.2: within the default max_distance, not the saved one.
+		Settings::update( array( 'max_distance' => 0.1 ) );
 
 		$result = $this->run_ability( 'preview-search', array( 'query' => 'anything' ) );
 
 		$this->assertSame( array( true, false ), array_column( $result['results'], 'included' ) );
-	}
-
-	/** The preview judges its posts as the search does, against the 50th post, not only those listed. */
-	public function test_preview_search_judges_against_reference_beyond_listed_posts(): void {
-		// 60 posts at distances 0.005, 0.010, … 0.300 from the query.
-		for ( $i = 1; $i <= 60; $i++ ) {
-			$d = 0.005 * $i;
-			$this->create_indexed_post( "Post {$i}", array( 1.0 - $d, sqrt( 1.0 - ( 1.0 - $d ) ** 2 ), 0.0, 0.0 ) );
-		}
-
-		// The 50th is at 0.25: 0.2 of the way from 0.005 keeps up to 0.054, the
-		// first 10. Judged on the 20 listed posts alone, the reference would be
-		// max_distance and all 20 would be kept.
-		$result = $this->run_ability(
-			'preview-search',
-			array(
-				'query'           => 'anything',
-				'relative_cutoff' => 0.2,
-			)
-		);
-
-		$this->assertSame(
-			array_merge( array_fill( 0, 10, true ), array_fill( 0, 10, false ) ),
-			array_column( $result['results'], 'included' )
-		);
 	}
 
 	/** An embedding failure is returned as an error. */

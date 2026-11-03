@@ -45,7 +45,6 @@ export interface AvailablePostType {
 
 export interface Thresholds {
 	max_distance: number;
-	relative_cutoff: number;
 }
 
 export interface SearchSettings extends Thresholds {

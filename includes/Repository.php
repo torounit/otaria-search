@@ -16,12 +16,6 @@ namespace Otaria_Search;
 class Repository {
 
 	/**
-	 * Rank of the post whose distance stands for a typical unrelated post:
-	 * the reference for the relative cutoff.
-	 */
-	const REFERENCE_RANK = 50;
-
-	/**
 	 * Whether get_column_dimensions() has already queried the database.
 	 *
 	 * Separating the "cached" flag from the value allows caching a null result
@@ -267,18 +261,14 @@ class Repository {
 	 * Return post IDs whose embeddings are within a cosine distance threshold.
 	 *
 	 * @since 0.1.0
-	 * @since 0.2.0 Added the `$max_relative_distance` parameter.
 	 *
-	 * @param float[]  $query_vector          Embedding of the search query.
-	 * @param string[] $post_types            Post types to include.
-	 * @param float    $max_distance          Maximum cosine distance to include (0=identical, ~1=unrelated).
-	 *                                        Default INF means no threshold filtering.
-	 * @param int      $max_results           Safety cap on the number of posts returned and the basis for
-	 *                                        the inner LIMIT (ensures the VECTOR INDEX is used). Default 200.
-	 * @param float    $relative_cutoff       Fraction of the gap between the best match and the
-	 *                                        reference distance to keep (see filter_by_distance()).
-	 *                                        Default INF means no relative filtering.
-	 * @param int      $overscan              Inner LIMIT multiplier (default 5).
+	 * @param float[]  $query_vector Embedding of the search query.
+	 * @param string[] $post_types   Post types to include.
+	 * @param float    $max_distance Maximum cosine distance to include (0=identical, ~1=unrelated).
+	 *                               Default INF means no threshold filtering.
+	 * @param int      $max_results  Safety cap on the number of posts returned and the basis for
+	 *                               the inner LIMIT (ensures the VECTOR INDEX is used). Default 200.
+	 * @param int      $overscan     Inner LIMIT multiplier (default 5).
 	 * @return int[]  Post IDs ordered by ascending cosine distance.
 	 */
 	public function search_similar(
@@ -286,11 +276,10 @@ class Repository {
 		array $post_types,
 		float $max_distance = INF,
 		int $max_results = 200,
-		float $relative_cutoff = INF,
 		int $overscan = 5
 	): array {
 		$distances = $this->nearest_posts( $query_vector, $post_types, $max_results, $overscan );
-		$distances = self::filter_by_distance( $distances, $max_distance, $relative_cutoff );
+		$distances = self::filter_by_distance( $distances, $max_distance );
 
 		return array_keys( $distances );
 	}
@@ -348,44 +337,22 @@ class Repository {
 	}
 
 	/**
-	 * Apply the distance thresholds to posts sorted by ascending distance.
-	 *
-	 * The relative cutoff keeps posts within a fraction of the gap between
-	 * the best match and a reference distance: that of the REFERENCE_RANK-th
-	 * post, or max_distance (else the farthest post) when there are fewer.
-	 * A clear match stands far ahead of the reference and gets a wide window;
-	 * a query with no good match gets a narrow one. Measuring the gap per
-	 * query also cancels out the scale and offset of the model's distances.
+	 * Apply the distance threshold to posts sorted by ascending distance.
 	 *
 	 * @since 0.2.0
 	 *
-	 * @param array<int, float> $distances       Cosine distance by post ID, closest first.
-	 * @param float             $max_distance    Maximum distance to keep. INF disables.
-	 * @param float             $relative_cutoff Fraction (0–1) of the gap between the closest kept
-	 *                                           post and the reference to keep. INF disables.
+	 * @param array<int, float> $distances    Cosine distance by post ID, closest first.
+	 * @param float             $max_distance Maximum distance to keep. INF disables.
 	 * @return array<int, float> The kept posts, in the same order.
 	 */
-	public static function filter_by_distance( array $distances, float $max_distance, float $relative_cutoff ): array {
-		// Exclude posts that are too dissimilar.
-		if ( is_finite( $max_distance ) ) {
-			$distances = array_filter(
-				$distances,
-				static fn( float $d ): bool => $d <= $max_distance
-			);
+	public static function filter_by_distance( array $distances, float $max_distance ): array {
+		if ( ! is_finite( $max_distance ) ) {
+			return $distances;
 		}
 
-		// Exclude posts far behind the best match.
-		if ( is_finite( $relative_cutoff ) && ! empty( $distances ) ) {
-			$sorted    = array_values( $distances );
-			$best      = $sorted[0];
-			$reference = $sorted[ self::REFERENCE_RANK - 1 ] ?? ( is_finite( $max_distance ) ? $max_distance : end( $sorted ) );
-			$cutoff    = $best + $relative_cutoff * ( $reference - $best );
-			$distances = array_filter(
-				$distances,
-				static fn( float $d ): bool => $d <= $cutoff
-			);
-		}
-
-		return $distances;
+		return array_filter(
+			$distances,
+			static fn( float $d ): bool => $d <= $max_distance
+		);
 	}
 }
