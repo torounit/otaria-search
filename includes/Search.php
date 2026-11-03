@@ -161,7 +161,7 @@ class Search {
 	 * Determine the post types to search.
 	 *
 	 * Uses the query's post_type parameter when set; otherwise falls back to
-	 * default_post_types().
+	 * the post types set on the admin page (Settings::get_post_types()).
 	 *
 	 * @param \WP_Query $query The query.
 	 * @return string[] Post type slugs.
@@ -173,34 +173,6 @@ class Search {
 			return (array) $from_query;
 		}
 
-		return self::default_post_types();
-	}
-
-	/**
-	 * All public, searchable post types, filtered by
-	 * wp_mariadb_vector_search_post_types.
-	 *
-	 * @since 0.2.0
-	 *
-	 * @return string[] Post type slugs.
-	 */
-	public static function default_post_types(): array {
-		$types = array_keys(
-			get_post_types(
-				array(
-					'public'              => true,
-					'exclude_from_search' => false,
-				)
-			)
-		);
-
-		/**
-		 * Filters the post types that are indexed and searched.
-		 *
-		 * @since 0.1.0
-		 *
-		 * @param string[] $types Post type slugs. Default public, searchable post types.
-		 */
-		return apply_filters( 'wp_mariadb_vector_search_post_types', $types );
+		return Settings::get_post_types();
 	}
 }

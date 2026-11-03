@@ -202,6 +202,29 @@ class Repository {
 	}
 
 	/**
+	 * Remove the embedding rows of every post type not in the list.
+	 *
+	 * @since 0.3.0
+	 *
+	 * @param string[] $post_types Post types to keep.
+	 * @return void
+	 */
+	public function delete_other_post_types( array $post_types ): void {
+		global $wpdb;
+		$table = $wpdb->prefix . 'mariadb_vector_embeddings';
+
+		if ( empty( $post_types ) ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->query( "DELETE FROM `{$table}`" );
+			return;
+		}
+
+		$placeholders = implode( ',', array_fill( 0, count( $post_types ), '%s' ) );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->query( $wpdb->prepare( "DELETE FROM `{$table}` WHERE post_type NOT IN ({$placeholders})", ...$post_types ) );
+	}
+
+	/**
 	 * Return the stored content hash for a post, or null if not indexed.
 	 *
 	 * @param int $post_id Post ID.

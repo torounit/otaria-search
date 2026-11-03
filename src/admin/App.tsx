@@ -6,6 +6,7 @@ import { Page } from '@wordpress/admin-ui';
 import { Stack } from '@wordpress/ui';
 import { IndexSettingsSection } from './IndexSettingsSection';
 import { ModelSelector } from './ModelSelector';
+import { PostTypesSection } from './PostTypesSection';
 import { ReindexSection } from './ReindexSection';
 import { SearchSection } from './SearchSection';
 import { StatusSection } from './StatusSection';
@@ -44,6 +45,8 @@ function normalizeStatusResponse( raw: unknown ): StatusResponse {
 		hybrid: resolved?.hybrid ?? true,
 		exclude_password_protected:
 			resolved?.exclude_password_protected ?? true,
+		post_types: resolved?.post_types ?? [],
+		available_post_types: resolved?.available_post_types ?? [],
 	};
 }
 
@@ -153,6 +156,27 @@ export function VectorSearchApp() {
 								}
 							/>
 						) }
+
+						<PostTypesSection
+							availablePostTypes={
+								status.data.available_post_types
+							}
+							postTypes={ status.data.post_types }
+							onSaved={ ( added ) => {
+								setSuccessMessage(
+									added.length > 0
+										? __(
+												'Post types saved. Please run Reindex all posts to index the added post types.',
+												'wp-mariadb-vector-search'
+											)
+										: __(
+												'Post types saved.',
+												'wp-mariadb-vector-search'
+											)
+								);
+								void loadStatus();
+							} }
+						/>
 
 						<IndexSettingsSection
 							excludePasswordProtected={

@@ -69,6 +69,24 @@ class Repository_Test extends \WP_UnitTestCase {
 	// replace_post_chunks
 	// -----------------------------------------------------------------------
 
+	/** Rows of post types not in the list are deleted. */
+	public function test_delete_other_post_types_keeps_listed_types(): void {
+		$chunk = array(
+			'chunk_index' => 0,
+			'chunk_text'  => 'A',
+			'vector'      => array( 1.0, 0.0, 0.0, 0.0 ),
+		);
+		$this->repository->replace_post_chunks( 1, 'post', 'h1', array( $chunk ) );
+		$this->repository->replace_post_chunks( 2, 'page', 'h2', array( $chunk ) );
+		$this->repository->replace_post_chunks( 3, 'product', 'h3', array( $chunk ) );
+
+		$this->repository->delete_other_post_types( array( 'post', 'product' ) );
+
+		$this->assertSame( 'h1', $this->repository->get_content_hash( 1 ) );
+		$this->assertNull( $this->repository->get_content_hash( 2 ) );
+		$this->assertSame( 'h3', $this->repository->get_content_hash( 3 ) );
+	}
+
 	/** Chunks are stored after replace_post_chunks(). */
 	public function test_replace_post_chunks_inserts_rows(): void {
 		global $wpdb;

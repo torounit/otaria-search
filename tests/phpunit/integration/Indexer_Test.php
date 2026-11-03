@@ -301,6 +301,16 @@ class Indexer_Test extends \WP_UnitTestCase {
 		$this->assertNull( $this->repository->get_content_hash( $post_id ) );
 	}
 
+	/** Post types left out of the saved list are not indexed. */
+	public function test_index_post_skips_post_type_not_in_settings(): void {
+		update_option( Settings::OPTION_NAME, array( 'post_types' => array( 'page' ) ) );
+		$post_id = self::factory()->post->create( array( 'post_status' => 'publish' ) );
+
+		$this->indexer->index_post( $post_id );
+
+		$this->assertNull( $this->repository->get_content_hash( $post_id ) );
+	}
+
 	/** Non-indexable post types (e.g. nav_menu_item) are not indexed. */
 	public function test_index_post_skips_non_indexable_post_type(): void {
 		global $wpdb;

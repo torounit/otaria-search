@@ -164,6 +164,47 @@ class Settings_Test extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Without a saved list, all public, searchable post types are indexed.
+	 */
+	public function test_get_post_types_defaults_to_available_types(): void {
+		$this->assertSame( Settings::available_post_types(), Settings::get_post_types() );
+		$this->assertContains( 'post', Settings::get_post_types() );
+		$this->assertContains( 'page', Settings::get_post_types() );
+		$this->assertNotContains( 'nav_menu_item', Settings::get_post_types() );
+	}
+
+	/**
+	 * Attachments are never published, so they cannot be indexed.
+	 */
+	public function test_available_post_types_exclude_attachments(): void {
+		$this->assertNotContains( 'attachment', Settings::available_post_types() );
+	}
+
+	/**
+	 * A saved list is used, minus post types that are no longer available.
+	 */
+	public function test_get_post_types_uses_saved_available_types(): void {
+		update_option( self::SETTINGS_OPTION, array( 'post_types' => array( 'page', 'unregistered' ) ) );
+
+		$this->assertSame( array( 'page' ), Settings::get_post_types() );
+	}
+
+	/**
+	 * Post types are stored as a list of keys; omitted, the saved list is kept.
+	 */
+	public function test_settings_sanitize_stores_or_preserves_post_types(): void {
+		$this->assertSame(
+			array( 'post', 'page' ),
+			Settings::sanitize_settings( array( 'post_types' => array( 'post', 'Page', 'post' ) ) )['post_types']
+		);
+		$this->assertArrayNotHasKey( 'post_types', Settings::sanitize_settings( array( 'post_types' => 'post' ) ) );
+
+		update_option( self::SETTINGS_OPTION, array( 'post_types' => array( 'page' ) ) );
+
+		$this->assertSame( array( 'page' ), Settings::sanitize_settings( array( 'model' => 'm' ) )['post_types'] );
+	}
+
+	/**
 	 * Partial updates preserve existing provider, model, and dimensions.
 	 */
 	public function test_settings_sanitize_preserves_existing_on_partial_update(): void {

@@ -33,6 +33,13 @@ class Abilities {
 	const ABILITY_SEARCH_SETTINGS = 'wp-mariadb-vector-search/save-search-settings';
 
 	/**
+	 * Ability that saves the indexed post types.
+	 *
+	 * @since 0.3.0
+	 */
+	const ABILITY_POST_TYPES = 'wp-mariadb-vector-search/save-post-types';
+
+	/**
 	 * Ability that lists the posts nearest to a query with their distances.
 	 *
 	 * @since 0.2.0
@@ -200,6 +207,33 @@ class Abilities {
 			)
 		);
 
+		// Register save-post-types ability.
+		wp_register_ability(
+			self::ABILITY_POST_TYPES,
+			array(
+				'label'               => __( 'Save Post Types', 'wp-mariadb-vector-search' ),
+				'description'         => __( 'Saves the post types that are indexed and searched, and removes the indexed posts of the other post types.', 'wp-mariadb-vector-search' ),
+				'category'            => self::CATEGORY_SLUG,
+				'meta'                => array( 'show_in_rest' => true ),
+				'input_schema'        => array(
+					'type'       => 'object',
+					'required'   => array( 'post_types' ),
+					'properties' => array(
+						'post_types' => array(
+							'type'        => 'array',
+							'minItems'    => 1,
+							'items'       => array( 'type' => 'string' ),
+							'description' => __( 'Public, searchable post types to index.', 'wp-mariadb-vector-search' ),
+						),
+					),
+				),
+				'execute_callback'    => array( __CLASS__, 'execute_save_post_types' ),
+				'permission_callback' => function () {
+					return current_user_can( 'manage_options' );
+				},
+			)
+		);
+
 		// Register preview-search ability.
 		wp_register_ability(
 			self::ABILITY_PREVIEW,
@@ -305,6 +339,50 @@ class Abilities {
 			'default_thresholds'         => Settings::DEFAULT_THRESHOLDS,
 			'hybrid'                     => Settings::is_hybrid(),
 			'exclude_password_protected' => Settings::excludes_password_protected(),
+			'post_types'                 => Settings::get_post_types(),
+			'available_post_types'       => array_map(
+				static fn( string $name ): array => array(
+					'name'  => $name,
+					'label' => (string) get_post_type_object( $name )->labels->name,
+				),
+				Settings::available_post_types()
+			),
+		);
+	}
+
+	/**
+	 * Callback for save-post-types ability.
+	 *
+	 * Rows of post types left out are deleted; post types added need a
+	 * Reindex, so they are returned for the admin page to say so.
+	 *
+	 * @since 0.3.0
+	 *
+	 * @param array|null $input Ability input with 'post_types'.
+	 * @return array|\WP_Error The post types now indexed and the ones added, or an error for unavailable post types.
+	 */
+	public static function execute_save_post_types( ?array $input = null ): array|\WP_Error {
+		$post_types = array_values( array_unique( array_map( 'sanitize_key', (array) ( $input['post_types'] ?? array() ) ) ) );
+		$invalid    = array_diff( $post_types, Settings::available_post_types() );
+		if ( empty( $post_types ) || ! empty( $invalid ) ) {
+			return new \WP_Error(
+				'invalid_post_types',
+				/* translators: %s: Comma-separated post type names. */
+				sprintf( __( 'These post types cannot be indexed: %s', 'wp-mariadb-vector-search' ), implode( ', ', $invalid ) ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$before = Settings::get_post_types();
+		update_option( Settings::OPTION_NAME, array( 'post_types' => $post_types ) );
+
+		if ( Schema::is_installed() ) {
+			( new Repository() )->delete_other_post_types( $post_types );
+		}
+
+		return array(
+			'post_types' => Settings::get_post_types(),
+			'added'      => array_values( array_diff( $post_types, $before ) ),
 		);
 	}
 
@@ -366,7 +444,7 @@ class Abilities {
 			}
 		}
 
-		$distances = ( new Repository() )->nearest_posts( $result[0]->getValues(), Search::default_post_types(), self::PREVIEW_LIMIT );
+		$distances = ( new Repository() )->nearest_posts( $result[0]->getValues(), Settings::get_post_types(), self::PREVIEW_LIMIT );
 		$kept      = Repository::filter_by_distance( $distances, $thresholds['max_distance'], $thresholds['max_relative_distance'] );
 
 		$results = array();

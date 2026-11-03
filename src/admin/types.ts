@@ -27,11 +27,23 @@ export interface StatusResponse {
 	thresholds: Thresholds;
 	default_thresholds: Thresholds;
 	hybrid: boolean;
+	post_types: string[];
+	available_post_types: AvailablePostType[];
 	exclude_password_protected: boolean;
 }
 
 export interface IndexSettings {
 	exclude_password_protected: boolean;
+}
+
+export interface AvailablePostType {
+	name: string;
+	label: string;
+}
+
+export interface SavePostTypesResponse {
+	post_types: string[];
+	added: string[];
 }
 
 export interface Thresholds {

@@ -35,6 +35,8 @@ Displays MariaDB VECTOR support status, indexed post count, table dimensions, an
 
 **Search** — *Hybrid search* fuses the vector results with WordPress's standard search (on by default); turn it off for vector-only results. The thresholds are the maximum cosine distance a post may have from the query (`0` = identical, smaller = more similar), and the maximum distance it may fall behind the closest post, which drops generic matches such as the default "Hello world!" post. Suitable values depend on the model, so they are set here per model. The preview embeds a query and lists the nearest posts with their cosine distances and whether the entered (unsaved) thresholds keep them. Posts containing the search term are still added by hybrid search.
 
+**Post Types** — The post types that are indexed and searched: public, searchable ones except attachments (all of them until saved). Unchecking a post type removes its posts from the index; a checked post type that was not indexed before needs a Reindex.
+
 **Indexing** — *Do not index password-protected posts* (on by default). Run Reindex after changing it: posts that are now excluded are removed from the index, and posts that are now allowed are embedded.
 
 **Reindex** — Schedules a background cron job to embed all existing posts. Behaviour depends on the current state:
@@ -72,6 +74,7 @@ Stored in the `wp_mariadb_vector_search_settings` option (array). Values are wri
 | `max_relative_distance` | Search threshold set on the admin page. Default `0.25`. |
 | `hybrid` | Whether hybrid search is on, set on the admin page. Default `true`. |
 | `exclude_password_protected` | Leave password-protected posts out of the index. Set on the admin page. Default `true`. |
+| `post_types` | Post types to index and search, set on the admin page. Default all public, searchable post types except attachments. |
 
 Chunk settings are code-level defaults in `Chunker.php` and are not stored in the option:
 
@@ -81,19 +84,6 @@ Chunk settings are code-level defaults in `Chunker.php` and are not stored in th
 | `chunk_overlap_chars`| 300     | Overlap between adjacent chunks in characters. |
 
 ## Filters
-
-### `wp_mariadb_vector_search_post_types`
-
-Control which post types are indexed and searched.
-
-```php
-add_filter(
-    'wp_mariadb_vector_search_post_types',
-    function ( array $types ): array {
-        return [ 'post', 'page', 'product' ];
-    }
-);
-```
 
 ### Core AI Client filters
 

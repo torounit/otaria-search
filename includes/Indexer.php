@@ -47,8 +47,7 @@ class Indexer {
 			return;
 		}
 
-		$indexable_post_types = $this->get_indexable_post_types();
-		if ( ! in_array( $post->post_type, $indexable_post_types, true ) ) {
+		if ( ! in_array( $post->post_type, Settings::get_post_types(), true ) ) {
 			wp_mariadb_vector_search_log( "index_post({$post_id}): post_type={$post->post_type}, skipping (not indexable)." );
 			return;
 		}
@@ -137,27 +136,5 @@ class Indexer {
 		}
 
 		return ( $settings['provider'] ?? '' ) . ':' . ( $settings['model'] ?? '' );
-	}
-
-	/**
-	 * Determine post types that are eligible for indexing.
-	 *
-	 * Defaults to public searchable post types and is filterable via
-	 * wp_mariadb_vector_search_post_types.
-	 *
-	 * @return string[]
-	 */
-	private function get_indexable_post_types(): array {
-		$post_types = array_keys(
-			get_post_types(
-				array(
-					'public'              => true,
-					'exclude_from_search' => false,
-				)
-			)
-		);
-
-		/** This filter is documented in includes/Search.php */
-		return (array) apply_filters( 'wp_mariadb_vector_search_post_types', $post_types );
 	}
 }

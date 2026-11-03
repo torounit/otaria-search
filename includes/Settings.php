@@ -86,6 +86,47 @@ class Settings {
 	}
 
 	/**
+	 * Post types that can be indexed: the public, searchable ones.
+	 *
+	 * Attachments are left out: only published posts are indexed, and
+	 * attachments are never published (their status is "inherit").
+	 *
+	 * @since 0.3.0
+	 *
+	 * @return string[] Post type slugs.
+	 */
+	public static function available_post_types(): array {
+		$post_types = get_post_types(
+			array(
+				'public'              => true,
+				'exclude_from_search' => false,
+			)
+		);
+		unset( $post_types['attachment'] );
+
+		return array_values( $post_types );
+	}
+
+	/**
+	 * Post types that are indexed and searched.
+	 *
+	 * @since 0.3.0
+	 *
+	 * @return string[] The saved post types that are still available; without a
+	 *                  saved list, all available post types.
+	 */
+	public static function get_post_types(): array {
+		$settings  = get_option( self::OPTION_NAME, array() );
+		$available = self::available_post_types();
+
+		if ( ! is_array( $settings ) || ! isset( $settings['post_types'] ) || ! is_array( $settings['post_types'] ) ) {
+			return $available;
+		}
+
+		return array_values( array_intersect( $settings['post_types'], $available ) );
+	}
+
+	/**
 	 * Register settings.
 	 *
 	 * @return void
@@ -127,6 +168,12 @@ class Settings {
 							),
 							'hybrid'                     => array(
 								'type' => 'boolean',
+							),
+							'post_types'                 => array(
+								'type'  => 'array',
+								'items' => array(
+									'type' => 'string',
+								),
 							),
 						),
 					),
@@ -192,6 +239,14 @@ class Settings {
 			$sanitized['hybrid'] = $input['hybrid'];
 		} elseif ( isset( $existing['hybrid'] ) && is_bool( $existing['hybrid'] ) ) {
 			$sanitized['hybrid'] = $existing['hybrid'];
+		}
+
+		if ( isset( $input['post_types'] ) && is_array( $input['post_types'] ) ) {
+			$sanitized['post_types'] = array_values(
+				array_unique( array_map( 'sanitize_key', array_filter( $input['post_types'], 'is_string' ) ) )
+			);
+		} elseif ( isset( $existing['post_types'] ) && is_array( $existing['post_types'] ) ) {
+			$sanitized['post_types'] = $existing['post_types'];
 		}
 
 		return $sanitized;
