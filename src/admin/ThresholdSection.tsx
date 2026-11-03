@@ -91,7 +91,7 @@ export function ThresholdSection( { thresholds, defaults, onSaved }: Props ) {
 		>
 			<Text render={ <p /> }>
 				{ __(
-					'Suitable values depend on the embedding model; they are reset to the defaults when the model changes. Use the preview to check them. Posts that contain the search term are still added by hybrid search, and code filters override these values.',
+					'Suitable values depend on the embedding model; they are reset to the defaults when the model changes. Use the preview to check them. Posts that contain the search term are still added by hybrid search.',
 					'wp-mariadb-vector-search'
 				) }
 			</Text>
