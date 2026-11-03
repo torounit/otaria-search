@@ -13,9 +13,22 @@ use WP_MariaDB_Vector_Search\Admin;
 use WP_UnitTestCase;
 
 /**
- * Tests for the Tools > Vector Search page.
+ * Tests for the Settings > Vector Search page.
  */
 class Admin_Test extends WP_UnitTestCase {
+
+	/**
+	 * The page is registered under Settings, next to Connectors.
+	 */
+	public function test_page_is_registered_under_settings(): void {
+		global $submenu;
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+
+		( new Admin() )->add_menu();
+
+		$this->assertContains( Admin::PAGE_SLUG, array_column( $submenu['options-general.php'] ?? array(), 2 ) );
+		$this->assertArrayNotHasKey( 'tools.php', $submenu ?? array() );
+	}
 
 	/**
 	 * The page mounts the app with Core's boot module, without a plugin-local copy.
@@ -37,7 +50,7 @@ class Admin_Test extends WP_UnitTestCase {
 	 * Clean up the simulated admin page request.
 	 */
 	public function tear_down(): void {
-		unset( $GLOBALS['title'] );
+		unset( $GLOBALS['title'], $GLOBALS['submenu'] );
 		parent::tear_down();
 	}
 }
