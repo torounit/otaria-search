@@ -1,12 +1,9 @@
 import apiFetch from '@wordpress/api-fetch';
-import {
-	Button,
-	CheckboxControl,
-	Notice,
-	Spinner,
-} from '@wordpress/components';
+import { Button, CheckboxControl, Notice } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
+import { Stack, Text } from '@wordpress/ui';
+import { Section } from './Section';
 import { unwrapAbilityResponse } from './ability';
 import type { ReindexResponse } from './types';
 
@@ -67,15 +64,14 @@ export function ReindexSection( {
 	}
 
 	return (
-		<>
-			<h2>{ __( 'Reindex', 'wp-mariadb-vector-search' ) }</h2>
+		<Section title={ __( 'Reindex', 'wp-mariadb-vector-search' ) }>
 			{ error && (
 				<Notice status="error" onRemove={ () => setError( null ) }>
 					{ error }
 				</Notice>
 			) }
 			{ dimChanged && (
-				<>
+				<Stack direction="column" gap="md">
 					<Notice status="warning" isDismissible={ false }>
 						{ __(
 							'Selected model is',
@@ -90,6 +86,7 @@ export function ReindexSection( {
 						) }
 					</Notice>
 					<CheckboxControl
+						__nextHasNoMarginBottom
 						label={ __(
 							'I understand that all existing vectors will be deleted.',
 							'wp-mariadb-vector-search'
@@ -97,18 +94,19 @@ export function ReindexSection( {
 						checked={ confirmRebuild }
 						onChange={ setConfirmRebuild }
 					/>
-				</>
+				</Stack>
 			) }
 			{ ! dimChanged && ! installed && (
-				<p className="description">
+				<Text render={ <p /> }>
 					{ __(
 						'The embeddings table will be created and a full reindex will be scheduled.',
 						'wp-mariadb-vector-search'
 					) }
-				</p>
+				</Text>
 			) }
 			{ ! dimChanged && installed && (
 				<CheckboxControl
+					__nextHasNoMarginBottom
 					label={ __(
 						'Force reindex (re-embed even unchanged posts)',
 						'wp-mariadb-vector-search'
@@ -117,18 +115,21 @@ export function ReindexSection( {
 					onChange={ setForce }
 				/>
 			) }
-			<Button
-				variant={ dimChanged ? 'secondary' : 'primary' }
-				isDestructive={ dimChanged }
-				onClick={ () => void handleSubmit() }
-				disabled={ isSubmitting || ( dimChanged && ! confirmRebuild ) }
-			>
-				{ isSubmitting ? (
-					<Spinner />
-				) : (
-					__( 'Reindex all posts', 'wp-mariadb-vector-search' )
-				) }
-			</Button>
-		</>
+			<Stack direction="row" gap="sm">
+				<Button
+					__next40pxDefaultSize
+					variant={ dimChanged ? 'secondary' : 'primary' }
+					isDestructive={ dimChanged }
+					onClick={ () => void handleSubmit() }
+					isBusy={ isSubmitting }
+					disabled={
+						isSubmitting || ( dimChanged && ! confirmRebuild )
+					}
+					accessibleWhenDisabled
+				>
+					{ __( 'Reindex all posts', 'wp-mariadb-vector-search' ) }
+				</Button>
+			</Stack>
+		</Section>
 	);
 }

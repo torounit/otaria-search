@@ -1,4 +1,5 @@
 import { __ } from '@wordpress/i18n';
+import { Section } from './Section';
 import type { Progress, StatusResponse } from './types';
 
 interface Props {
@@ -17,9 +18,8 @@ export function StatusSection( {
 	progress,
 }: Props ) {
 	return (
-		<>
-			<h2>{ __( 'Status', 'wp-mariadb-vector-search' ) }</h2>
-			<table className="widefat striped" style={ { maxWidth: '600px' } }>
+		<Section title={ __( 'Status', 'wp-mariadb-vector-search' ) }>
+			<table className="widefat striped">
 				<tbody>
 					<tr>
 						<td>
@@ -81,6 +81,6 @@ export function StatusSection( {
 					</tr>
 				</tbody>
 			</table>
-		</>
+		</Section>
 	);
 }
