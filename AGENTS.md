@@ -285,7 +285,8 @@ Test file naming convention: `*_Test.php`.
   fields, then Description, Installation, FAQ and Changelog for site owners.
   Developer documentation belongs here in AGENTS.md, not in the README.
   Record user-visible changes under `### Unreleased` in the Changelog.
-- A husky pre-commit hook runs lint-staged (set up by `npm install`): PHPCBF
+- A husky pre-commit hook runs lint-staged sequentially (set up by
+  `npm install`; the tasks overlap on the same files): PHPCBF
   and PHPCS on PHP, Prettier on JS/TS/JSON/YAML, ESLint and the whole-project
   `tsc` on JS/TS, and `lint:pkg-json` on `package.json`. PHP runs on the host
   (`vendor/bin`), so it needs PHP and `composer install` locally.
@@ -312,8 +313,11 @@ Test file naming convention: `*_Test.php`.
   must have entries. It runs on `release/*` PRs (`release-check.yml`; make
   "Check Release Version" a required check to block the merge), when the
   draft is created, and when a release is published (with the release's own
-  prerelease flag, before lint and tests). A version with a `-` suffix is a
-  prerelease, in this script and in `bin/bump-version.sh`.
+  prerelease flag, before lint and tests). `bin/release-lib.sh` holds what the
+  scripts share: the semver rule, a `-` suffix meaning prerelease (drafted as
+  a GitHub pre-release), and where a changelog section ends
+  (`check-version.sh --notes <version>` prints it for the release notes).
+  Bumping a stable version merges its prereleases' changelog sections.
 
 ## Manual verification
 

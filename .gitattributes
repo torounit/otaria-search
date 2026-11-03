@@ -1,6 +1,7 @@
 * text=auto
 
 .gitattributes export-ignore
+.distignore export-ignore
 .gitignore export-ignore
 .editorconfig export-ignore
 .prettierignore export-ignore
@@ -9,6 +10,7 @@
 .node-version export-ignore
 .wp-env.json export-ignore
 .wp-env.test.json export-ignore
+composer.json export-ignore
 composer.lock export-ignore
 phpunit.xml.dist export-ignore
 phpcs.xml.dist export-ignore
