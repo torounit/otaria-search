@@ -33,6 +33,23 @@ class Search {
 	const QUERY_VAR = 'wp_mariadb_vector_search';
 
 	/**
+	 * Safety cap on the posts returned by the vector search.
+	 *
+	 * Also the basis for the inner LIMIT, so the VECTOR INDEX is used, and
+	 * the limit of the LIKE search fused in hybrid mode.
+	 *
+	 * @since 0.3.0
+	 */
+	const MAX_RESULTS = 200;
+
+	/**
+	 * Reciprocal Rank Fusion constant. Higher values flatten the weight of top ranks.
+	 *
+	 * @since 0.3.0
+	 */
+	const RRF_K = 60;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param Repository $repository Embeddings table wrapper.
@@ -74,20 +91,8 @@ class Search {
 			return;
 		}
 
-		/**
-		 * Filters the maximum number of posts returned by the vector search.
-		 *
-		 * Also the basis for the inner LIMIT, so the VECTOR INDEX is used, and
-		 * the limit of the LIKE search fused in hybrid mode.
-		 *
-		 * @since 0.1.0
-		 *
-		 * @param int $max_results Maximum number of posts. Default 200.
-		 */
-		$max_results = (int) apply_filters( 'wp_mariadb_vector_search_max_results', 200 );
-
 		$thresholds = Settings::get_thresholds();
-		$ids        = $this->repository->search_similar( $result[0]->getValues(), $post_types, $thresholds['max_distance'], $max_results, $thresholds['max_relative_distance'] );
+		$ids        = $this->repository->search_similar( $result[0]->getValues(), $post_types, $thresholds['max_distance'], self::MAX_RESULTS, $thresholds['max_relative_distance'] );
 
 		/**
 		 * Filters whether vector results are fused with WordPress's LIKE search results.
@@ -97,17 +102,7 @@ class Search {
 		 * @param bool $hybrid True to fuse via Reciprocal Rank Fusion, false for vector-only. Default true.
 		 */
 		if ( apply_filters( 'wp_mariadb_vector_search_hybrid', true ) ) {
-			/**
-			 * Filters the Reciprocal Rank Fusion constant.
-			 *
-			 * Higher values flatten the weight of top ranks.
-			 *
-			 * @since 0.2.0
-			 *
-			 * @param int $rrf_k RRF constant. Negative values are treated as 0. Default 60.
-			 */
-			$rrf_k = (int) apply_filters( 'wp_mariadb_vector_search_rrf_k', 60 );
-			$ids   = Rank_Fusion::fuse( array( $ids, $this->search_like( $search_term, $post_types, $max_results ) ), $rrf_k );
+			$ids = Rank_Fusion::fuse( array( $ids, $this->search_like( $search_term, $post_types, self::MAX_RESULTS ) ), self::RRF_K );
 		}
 
 		if ( empty( $ids ) ) {

@@ -94,21 +94,6 @@ add_filter(
 );
 ```
 
-### `wp_mariadb_vector_search_max_results`
-
-Safety cap on the number of posts returned by a single search. Also controls the inner
-`LIMIT` passed to the database query so the VECTOR INDEX is used, and the number of
-`LIKE` results fused in. Default `200`.
-
-```php
-add_filter(
-    'wp_mariadb_vector_search_max_results',
-    function (): int {
-        return 50;
-    }
-);
-```
-
 ### `wp_mariadb_vector_search_hybrid`
 
 Whether to fuse the vector results with WordPress's `LIKE` search results. Default `true`.
@@ -116,20 +101,6 @@ Return `false` for vector-only search.
 
 ```php
 add_filter( 'wp_mariadb_vector_search_hybrid', '__return_false' );
-```
-
-### `wp_mariadb_vector_search_rrf_k`
-
-The RRF constant `k`: each post scores `1 / (k + rank)` per result list it appears in.
-Higher values flatten the weight of top ranks. Default `60`.
-
-```php
-add_filter(
-    'wp_mariadb_vector_search_rrf_k',
-    function (): int {
-        return 20;
-    }
-);
 ```
 
 ### Core AI Client filters

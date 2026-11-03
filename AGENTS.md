@@ -161,12 +161,13 @@ LIMIT  %d;
 The default `overscan` of 5 covers typical content. `max_distance` (default
 0.65) excludes posts that are too dissimilar; `max_relative_distance` (default
 0.25) excludes posts far behind the best match (e.g. the default "Hello world!"
-post); `max_results` (default 200) caps the result set and ensures the VECTOR
-INDEX is engaged.
+post); `max_results` (`Search::MAX_RESULTS`, 200) caps the result set and
+ensures the VECTOR INDEX is engaged.
 
 With hybrid search on, the vector ranking and the LIKE ranking (up to
 `max_results` posts) are fused: each post scores `Σ 1 / (k + rank)` over the
-lists it appears in, so posts found by both rank first. Ties keep vector order.
+lists it appears in (`k` = `Search::RRF_K`, 60), so posts found by both rank
+first. Ties keep vector order.
 
 ## Chunking
 
@@ -198,9 +199,7 @@ Other options:
 ## Extension points (filters/actions)
 
 - `wp_mariadb_vector_search_post_types` (`string[]`) — override indexed post types.
-- `wp_mariadb_vector_search_max_results` (`int`, default `200`) — safety cap on returned posts; also the basis for the inner `LIMIT` so the VECTOR INDEX is used, and the LIKE sub-query's limit.
 - `wp_mariadb_vector_search_hybrid` (`bool`, default `true`) — fuse vector results with the LIKE search. `false` = vector-only.
-- `wp_mariadb_vector_search_rrf_k` (`int`, default `60`) — RRF constant; higher values flatten the weight of top ranks. Negative values are treated as `0`.
 
 Embedding requests also honor core's AI Client filters, e.g.
 `wp_ai_client_default_request_timeout` (HTTP timeout, core default 30 s; it
