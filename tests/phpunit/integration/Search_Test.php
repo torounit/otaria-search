@@ -214,8 +214,7 @@ class Search_Test extends \WP_UnitTestCase {
 	 * @return void
 	 */
 	private function allow_password_protected_in_index(): void {
-		// Settings::sanitize_settings() keeps the other settings.
-		update_option( Settings::OPTION_NAME, array( 'exclude_password_protected' => false ) );
+		Settings::update( array( 'exclude_password_protected' => false ) );
 	}
 
 	/**
