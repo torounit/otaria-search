@@ -58,14 +58,14 @@ jobs:
 
             # Until the plugin is approved on WordPress.org, its SVN repository does not exist
             # and the deploy action cannot even check it out (dry-run included). Build the
-            # zip the same way instead: the files .distignore does not list, in a squirrel-search/
+            # zip the same way instead: the files .distignore does not list, in a otaria-search/
             # directory. Set the WPORG_DEPLOY repository variable to "true" to deploy.
             - name: Build plugin zip
               if: vars.WPORG_DEPLOY != 'true'
               run: |
-                  mkdir -p "$RUNNER_TEMP/squirrel-search"
-                  rsync -rc --exclude-from=.distignore ./ "$RUNNER_TEMP/squirrel-search/"
-                  (cd "$RUNNER_TEMP" && zip -r "$GITHUB_WORKSPACE/squirrel-search.zip" squirrel-search)
+                  mkdir -p "$RUNNER_TEMP/otaria-search"
+                  rsync -rc --exclude-from=.distignore ./ "$RUNNER_TEMP/otaria-search/"
+                  (cd "$RUNNER_TEMP" && zip -r "$GITHUB_WORKSPACE/otaria-search.zip" otaria-search)
 
             - name: WordPress Plugin Deploy
               if: vars.WPORG_DEPLOY == 'true'
@@ -75,11 +75,11 @@ jobs:
               env:
                   SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
                   SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
-                  SLUG: squirrel-search
+                  SLUG: otaria-search
 
             - name: Upload release asset
               uses: softprops/action-gh-release@v3
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
-                  files: ${{ github.workspace }}/squirrel-search.zip
+                  files: ${{ github.workspace }}/otaria-search.zip

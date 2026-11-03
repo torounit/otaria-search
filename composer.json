@@ -1,5 +1,5 @@
 {
-	"name": "torounit/squirrel-search",
+	"name": "torounit/otaria-search",
 	"description": "Semantic and hybrid search for WordPress, backed by MariaDB's VECTOR type.",
 	"type": "wordpress-plugin",
 	"license": "GPL-2.0-or-later",
@@ -17,13 +17,13 @@
 	},
 	"autoload": {
 		"psr-4": {
-			"Squirrel_Search\\": "includes/"
+			"Otaria_Search\\": "includes/"
 		}
 	},
 	"autoload-dev": {
 		"psr-4": {
-			"Squirrel_Search\\Tests\\Integration\\": "tests/phpunit/integration/",
-			"Squirrel_Search\\Tests\\Unit\\": "tests/phpunit/unit/"
+			"Otaria_Search\\Tests\\Integration\\": "tests/phpunit/integration/",
+			"Otaria_Search\\Tests\\Unit\\": "tests/phpunit/unit/"
 		}
 	},
 	"config": {

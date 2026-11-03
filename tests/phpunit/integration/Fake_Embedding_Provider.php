@@ -2,12 +2,12 @@
 /**
  * In-memory AI provider for tests.
  *
- * @package Squirrel_Search
+ * @package Otaria_Search
  */
 
 declare(strict_types=1);
 
-namespace Squirrel_Search\Tests\Integration;
+namespace Otaria_Search\Tests\Integration;
 
 use WordPress\AiClient\AiClient;
 use WordPress\AiClient\Providers\Contracts\ModelMetadataDirectoryInterface;
@@ -21,7 +21,7 @@ use WordPress\AiClient\Providers\Models\DTO\ModelMetadata;
 use WordPress\AiClient\Providers\Models\DTO\SupportedOption;
 use WordPress\AiClient\Providers\Models\Enums\CapabilityEnum;
 use WordPress\AiClient\Providers\Models\Enums\OptionEnum;
-use Squirrel_Search\Settings;
+use Otaria_Search\Settings;
 
 /**
  * AI provider with a single embedding model that returns a fixed vector.

@@ -2,12 +2,12 @@
 /**
  * Content hash utility.
  *
- * @package Squirrel_Search
+ * @package Otaria_Search
  */
 
 declare(strict_types=1);
 
-namespace Squirrel_Search;
+namespace Otaria_Search;
 
 /**
  * Produces a stable fingerprint for a post's indexable content.

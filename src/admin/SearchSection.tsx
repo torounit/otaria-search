@@ -28,7 +28,7 @@ interface Props {
 function errorMessage( err: unknown ): string {
 	return (
 		( err as { message?: string } )?.message ??
-		__( 'Unknown error.', 'squirrel-search' )
+		__( 'Unknown error.', 'otaria-search' )
 	);
 }
 
@@ -61,7 +61,7 @@ export function SearchSection( { settings, defaults, onSaved }: Props ) {
 		setError( null );
 		try {
 			const raw = await apiFetch( {
-				path: '/wp-abilities/v1/abilities/squirrel-search/update-settings/run',
+				path: '/wp-abilities/v1/abilities/otaria-search/update-settings/run',
 				method: 'POST',
 				data: { input },
 			} );
@@ -85,7 +85,7 @@ export function SearchSection( { settings, defaults, onSaved }: Props ) {
 			// preview-search is read-only, so the Abilities API requires GET.
 			const raw = await apiFetch( {
 				path: addQueryArgs(
-					'/wp-abilities/v1/abilities/squirrel-search/preview-search/run',
+					'/wp-abilities/v1/abilities/otaria-search/preview-search/run',
 					{ input: { query, ...values } }
 				),
 			} );
@@ -100,7 +100,7 @@ export function SearchSection( { settings, defaults, onSaved }: Props ) {
 	}
 
 	return (
-		<Section title={ __( 'Search', 'squirrel-search' ) }>
+		<Section title={ __( 'Search', 'otaria-search' ) }>
 			{ error && (
 				<Notice status="error" onRemove={ () => setError( null ) }>
 					{ error }
@@ -108,27 +108,27 @@ export function SearchSection( { settings, defaults, onSaved }: Props ) {
 			) }
 
 			<ToggleControl
-				label={ __( 'Hybrid search', 'squirrel-search' ) }
+				label={ __( 'Hybrid search', 'otaria-search' ) }
 				help={ __(
 					"Also include posts that WordPress's standard search finds (posts containing the search term), ranked together with the vector results. Catches exact terms such as product codes and names.",
-					'squirrel-search'
+					'otaria-search'
 				) }
 				checked={ hybrid }
 				onChange={ setHybrid }
 			/>
 
 			<Text variant="heading-md" render={ <h3 /> }>
-				{ __( 'Thresholds', 'squirrel-search' ) }
+				{ __( 'Thresholds', 'otaria-search' ) }
 			</Text>
 			<Text render={ <p /> }>
 				{ hybrid
 					? __(
 							'Suitable values depend on the embedding model; they are reset to the defaults when the model changes. Use the preview to check them. The thresholds apply to the vector results; posts that contain the search term are still added by hybrid search.',
-							'squirrel-search'
+							'otaria-search'
 						)
 					: __(
 							'Suitable values depend on the embedding model; they are reset to the defaults when the model changes. Use the preview to check them.',
-							'squirrel-search'
+							'otaria-search'
 						) }
 			</Text>
 
@@ -137,10 +137,10 @@ export function SearchSection( { settings, defaults, onSaved }: Props ) {
 				min={ 0 }
 				max={ 2 }
 				step={ 0.01 }
-				label={ __( 'Maximum distance', 'squirrel-search' ) }
+				label={ __( 'Maximum distance', 'otaria-search' ) }
 				help={ `${ __(
 					'Posts farther than this cosine distance from the query are excluded (0 = identical, 2 = opposite). Default:',
-					'squirrel-search'
+					'otaria-search'
 				) } ${ defaults.max_distance }` }
 				value={ maxDistance }
 				onChange={ setMaxDistance }
@@ -152,11 +152,11 @@ export function SearchSection( { settings, defaults, onSaved }: Props ) {
 				step={ 0.01 }
 				label={ __(
 					'Maximum distance behind the best match',
-					'squirrel-search'
+					'otaria-search'
 				) }
 				help={ `${ __(
 					'Posts more than this behind the closest post are excluded. 2 disables it. Default:',
-					'squirrel-search'
+					'otaria-search'
 				) } ${ defaults.max_relative_distance }` }
 				value={ maxRelative }
 				onChange={ setMaxRelative }
@@ -170,7 +170,7 @@ export function SearchSection( { settings, defaults, onSaved }: Props ) {
 					disabled={ isSaving || ! isValid }
 					accessibleWhenDisabled
 				>
-					{ __( 'Save', 'squirrel-search' ) }
+					{ __( 'Save', 'otaria-search' ) }
 				</Button>
 				<Button
 					__next40pxDefaultSize
@@ -184,7 +184,7 @@ export function SearchSection( { settings, defaults, onSaved }: Props ) {
 					disabled={ isSaving }
 					accessibleWhenDisabled
 				>
-					{ __( 'Reset thresholds to defaults', 'squirrel-search' ) }
+					{ __( 'Reset thresholds to defaults', 'otaria-search' ) }
 				</Button>
 			</Stack>
 
@@ -201,13 +201,13 @@ export function SearchSection( { settings, defaults, onSaved }: Props ) {
 				}
 			>
 				<Text variant="heading-md" render={ <h3 /> }>
-					{ __( 'Preview', 'squirrel-search' ) }
+					{ __( 'Preview', 'otaria-search' ) }
 				</Text>
 				<TextControl
-					label={ __( 'Search query', 'squirrel-search' ) }
+					label={ __( 'Search query', 'otaria-search' ) }
 					help={ __(
 						'Lists the nearest posts using the thresholds above, before saving.',
-						'squirrel-search'
+						'otaria-search'
 					) }
 					value={ query }
 					onChange={ setQuery }
@@ -221,23 +221,23 @@ export function SearchSection( { settings, defaults, onSaved }: Props ) {
 						disabled={ isPreviewing || query === '' || ! isValid }
 						accessibleWhenDisabled
 					>
-						{ __( 'Preview', 'squirrel-search' ) }
+						{ __( 'Preview', 'otaria-search' ) }
 					</Button>
 				</Stack>
 			</Stack>
 
 			{ results && results.length === 0 && (
 				<Text render={ <p /> }>
-					{ __( 'No indexed posts.', 'squirrel-search' ) }
+					{ __( 'No indexed posts.', 'otaria-search' ) }
 				</Text>
 			) }
 			{ results && results.length > 0 && (
 				<table className="widefat striped">
 					<thead>
 						<tr>
-							<th>{ __( 'Post', 'squirrel-search' ) }</th>
-							<th>{ __( 'Distance', 'squirrel-search' ) }</th>
-							<th>{ __( 'In results', 'squirrel-search' ) }</th>
+							<th>{ __( 'Post', 'otaria-search' ) }</th>
+							<th>{ __( 'Distance', 'otaria-search' ) }</th>
+							<th>{ __( 'In results', 'otaria-search' ) }</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -254,8 +254,8 @@ export function SearchSection( { settings, defaults, onSaved }: Props ) {
 								<td>{ result.distance.toFixed( 3 ) }</td>
 								<td>
 									{ result.included
-										? __( 'Yes', 'squirrel-search' )
-										: __( 'No', 'squirrel-search' ) }
+										? __( 'Yes', 'otaria-search' )
+										: __( 'No', 'otaria-search' ) }
 								</td>
 							</tr>
 						) ) }

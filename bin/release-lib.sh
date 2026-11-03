@@ -3,7 +3,7 @@
 # Shared by bin/bump-version.sh and bin/check-version.sh.
 
 # The main plugin file, which carries the "Version:" header.
-PLUGIN_FILE=squirrel-search.php
+PLUGIN_FILE=otaria-search.php
 
 # Whether $1 is a release version: 1.2.3, without leading zeros. Prereleases
 # (1.2.3-rc.1) are not supported.

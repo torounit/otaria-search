@@ -2,28 +2,28 @@
 /**
  * Abilities registration for the plugin.
  *
- * @package Squirrel_Search
+ * @package Otaria_Search
  */
 
 declare(strict_types=1);
 
-namespace Squirrel_Search;
+namespace Otaria_Search;
 
 /**
  * Handles registration of Abilities and Categories.
  */
 class Abilities {
 
-	const CATEGORY_SLUG      = 'squirrel-search';
-	const ABILITY_GET_STATUS = 'squirrel-search/get-status';
-	const ABILITY_REINDEX    = 'squirrel-search/reindex';
+	const CATEGORY_SLUG      = 'otaria-search';
+	const ABILITY_GET_STATUS = 'otaria-search/get-status';
+	const ABILITY_REINDEX    = 'otaria-search/reindex';
 
 	/**
 	 * Ability that probes a model's dimensions and saves it as the embedding model.
 	 *
 	 * @since 0.2.0
 	 */
-	const ABILITY_SELECT = 'squirrel-search/select-model';
+	const ABILITY_SELECT = 'otaria-search/select-model';
 
 	/**
 	 * Ability that changes any settings except the model: search thresholds,
@@ -31,14 +31,14 @@ class Abilities {
 	 *
 	 * @since 0.3.0
 	 */
-	const ABILITY_UPDATE_SETTINGS = 'squirrel-search/update-settings';
+	const ABILITY_UPDATE_SETTINGS = 'otaria-search/update-settings';
 
 	/**
 	 * Ability that lists the posts nearest to a query with their distances.
 	 *
 	 * @since 0.2.0
 	 */
-	const ABILITY_PREVIEW = 'squirrel-search/preview-search';
+	const ABILITY_PREVIEW = 'otaria-search/preview-search';
 
 	/**
 	 * Number of posts listed by the search preview.
@@ -66,8 +66,8 @@ class Abilities {
 		wp_register_ability_category(
 			self::CATEGORY_SLUG,
 			array(
-				'label'       => __( 'Squirrel Search', 'squirrel-search' ),
-				'description' => __( 'Abilities for Squirrel Search.', 'squirrel-search' ),
+				'label'       => __( 'Otaria Search', 'otaria-search' ),
+				'description' => __( 'Abilities for Otaria Search.', 'otaria-search' ),
 			)
 		);
 	}
@@ -82,8 +82,8 @@ class Abilities {
 		wp_register_ability(
 			self::ABILITY_GET_STATUS,
 			array(
-				'label'               => __( 'Get Status', 'squirrel-search' ),
-				'description'         => __( 'Retrieves the current plugin status.', 'squirrel-search' ),
+				'label'               => __( 'Get Status', 'otaria-search' ),
+				'description'         => __( 'Retrieves the current plugin status.', 'otaria-search' ),
 				'category'            => self::CATEGORY_SLUG,
 				'meta'                => array(
 					'show_in_rest' => true,
@@ -103,8 +103,8 @@ class Abilities {
 		wp_register_ability(
 			self::ABILITY_REINDEX,
 			array(
-				'label'               => __( 'Reindex', 'squirrel-search' ),
-				'description'         => __( 'Triggers a full reindex of all posts.', 'squirrel-search' ),
+				'label'               => __( 'Reindex', 'otaria-search' ),
+				'description'         => __( 'Triggers a full reindex of all posts.', 'otaria-search' ),
 				'category'            => self::CATEGORY_SLUG,
 				'meta'                => array( 'show_in_rest' => true ),
 				'input_schema'        => array(
@@ -112,12 +112,12 @@ class Abilities {
 					'properties' => array(
 						'force'           => array(
 							'type'        => 'boolean',
-							'description' => __( 'Force a full rebuild.', 'squirrel-search' ),
+							'description' => __( 'Force a full rebuild.', 'otaria-search' ),
 							'default'     => false,
 						),
 						'confirm_rebuild' => array(
 							'type'        => 'boolean',
-							'description' => __( 'Confirm the rebuild process.', 'squirrel-search' ),
+							'description' => __( 'Confirm the rebuild process.', 'otaria-search' ),
 							'default'     => false,
 						),
 					),
@@ -133,8 +133,8 @@ class Abilities {
 		wp_register_ability(
 			self::ABILITY_SELECT,
 			array(
-				'label'               => __( 'Select Model', 'squirrel-search' ),
-				'description'         => __( 'Selects the embedding model, detecting its dimensions with a probe request.', 'squirrel-search' ),
+				'label'               => __( 'Select Model', 'otaria-search' ),
+				'description'         => __( 'Selects the embedding model, detecting its dimensions with a probe request.', 'otaria-search' ),
 				'category'            => self::CATEGORY_SLUG,
 				'meta'                => array( 'show_in_rest' => true ),
 				'input_schema'        => array(
@@ -143,11 +143,11 @@ class Abilities {
 					'properties' => array(
 						'provider' => array(
 							'type'        => 'string',
-							'description' => __( 'AI provider id.', 'squirrel-search' ),
+							'description' => __( 'AI provider id.', 'otaria-search' ),
 						),
 						'model'    => array(
 							'type'        => 'string',
-							'description' => __( 'Embedding model id.', 'squirrel-search' ),
+							'description' => __( 'Embedding model id.', 'otaria-search' ),
 						),
 					),
 				),
@@ -162,8 +162,8 @@ class Abilities {
 		wp_register_ability(
 			self::ABILITY_UPDATE_SETTINGS,
 			array(
-				'label'               => __( 'Update Settings', 'squirrel-search' ),
-				'description'         => __( 'Changes the given settings and keeps the others: search thresholds, hybrid search, indexed post types, embedding prefixes and whether password-protected posts are indexed. Null resets a setting to its default. Deselected post types are removed from the index. Returns the settings in effect, the added post types, and reindex_required when a Reindex is needed to apply the change.', 'squirrel-search' ),
+				'label'               => __( 'Update Settings', 'otaria-search' ),
+				'description'         => __( 'Changes the given settings and keeps the others: search thresholds, hybrid search, indexed post types, embedding prefixes and whether password-protected posts are indexed. Null resets a setting to its default. Deselected post types are removed from the index. Returns the settings in effect, the added post types, and reindex_required when a Reindex is needed to apply the change.', 'otaria-search' ),
 				'category'            => self::CATEGORY_SLUG,
 				'meta'                => array(
 					'show_in_rest' => true,
@@ -190,8 +190,8 @@ class Abilities {
 		wp_register_ability(
 			self::ABILITY_PREVIEW,
 			array(
-				'label'               => __( 'Preview Search', 'squirrel-search' ),
-				'description'         => __( 'Lists the posts nearest to a query with their cosine distances and whether the thresholds keep them.', 'squirrel-search' ),
+				'label'               => __( 'Preview Search', 'otaria-search' ),
+				'description'         => __( 'Lists the posts nearest to a query with their cosine distances and whether the thresholds keep them.', 'otaria-search' ),
 				'category'            => self::CATEGORY_SLUG,
 				'meta'                => array(
 					'show_in_rest' => true,
@@ -207,13 +207,13 @@ class Abilities {
 						'query'                 => array(
 							'type'        => 'string',
 							'minLength'   => 1,
-							'description' => __( 'Search query.', 'squirrel-search' ),
+							'description' => __( 'Search query.', 'otaria-search' ),
 						),
 						'max_distance'          => self::distance_schema() + array(
-							'description' => __( 'Threshold to preview; defaults to the saved value.', 'squirrel-search' ),
+							'description' => __( 'Threshold to preview; defaults to the saved value.', 'otaria-search' ),
 						),
 						'max_relative_distance' => self::distance_schema() + array(
-							'description' => __( 'Threshold to preview; defaults to the saved value.', 'squirrel-search' ),
+							'description' => __( 'Threshold to preview; defaults to the saved value.', 'otaria-search' ),
 						),
 					),
 				),
@@ -254,32 +254,32 @@ class Abilities {
 	private static function update_settings_properties(): array {
 		return array(
 			'max_distance'               => self::distance_schema() + array(
-				'description' => __( 'Maximum cosine distance from the query.', 'squirrel-search' ),
+				'description' => __( 'Maximum cosine distance from the query.', 'otaria-search' ),
 			),
 			'max_relative_distance'      => self::distance_schema() + array(
-				'description' => __( 'Maximum distance behind the best match.', 'squirrel-search' ),
+				'description' => __( 'Maximum distance behind the best match.', 'otaria-search' ),
 			),
 			'hybrid'                     => array(
 				'type'        => array( 'boolean', 'null' ),
-				'description' => __( 'Fuse vector results with the LIKE search results.', 'squirrel-search' ),
+				'description' => __( 'Fuse vector results with the LIKE search results.', 'otaria-search' ),
 			),
 			'post_types'                 => array(
 				'type'        => array( 'array', 'null' ),
 				'minItems'    => 1,
 				'items'       => array( 'type' => 'string' ),
-				'description' => __( 'Public, searchable post types to index. Null indexes all of them, including ones registered later.', 'squirrel-search' ),
+				'description' => __( 'Public, searchable post types to index. Null indexes all of them, including ones registered later.', 'otaria-search' ),
 			),
 			'query_prefix'               => array(
 				'type'        => array( 'string', 'null' ),
-				'description' => __( 'Prepended to search terms before embedding.', 'squirrel-search' ),
+				'description' => __( 'Prepended to search terms before embedding.', 'otaria-search' ),
 			),
 			'document_prefix'            => array(
 				'type'        => array( 'string', 'null' ),
-				'description' => __( 'Prepended to post chunks before embedding. Changing it requires a Reindex.', 'squirrel-search' ),
+				'description' => __( 'Prepended to post chunks before embedding. Changing it requires a Reindex.', 'otaria-search' ),
 			),
 			'exclude_password_protected' => array(
 				'type'        => array( 'boolean', 'null' ),
-				'description' => __( 'Leave password-protected posts out of the index. Changing it requires a Reindex.', 'squirrel-search' ),
+				'description' => __( 'Leave password-protected posts out of the index. Changing it requires a Reindex.', 'otaria-search' ),
 			),
 		);
 	}
@@ -362,7 +362,7 @@ class Abilities {
 				return new \WP_Error(
 					'invalid_post_types',
 					/* translators: %s: Comma-separated post type names. */
-					sprintf( __( 'These post types cannot be indexed: %s', 'squirrel-search' ), implode( ', ', $invalid ) ),
+					sprintf( __( 'These post types cannot be indexed: %s', 'otaria-search' ), implode( ', ', $invalid ) ),
 					array( 'status' => 400 )
 				);
 			}
@@ -399,7 +399,7 @@ class Abilities {
 	 * @return array|\WP_Error Nearest posts, or the embedding error.
 	 */
 	public static function execute_preview_search( ?array $input = null ): array|\WP_Error {
-		$result = squirrel_search_embedding( Settings::get_prefixes()['query_prefix'] . ( $input['query'] ?? '' ) )->generate_embeddings();
+		$result = otaria_search_embedding( Settings::get_prefixes()['query_prefix'] . ( $input['query'] ?? '' ) )->generate_embeddings();
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
@@ -458,7 +458,7 @@ class Abilities {
 			if ( ! $confirm_rebuild ) {
 				return new \WP_Error(
 					'confirm_required',
-					__( 'Please confirm before rebuilding.', 'squirrel-search' ),
+					__( 'Please confirm before rebuilding.', 'otaria-search' ),
 					array( 'status' => 400 )
 				);
 			}

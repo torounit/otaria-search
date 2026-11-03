@@ -2,12 +2,12 @@
 /**
  * Embedding model catalog — enumerates available embedding models.
  *
- * @package Squirrel_Search
+ * @package Otaria_Search
  */
 
 declare(strict_types=1);
 
-namespace Squirrel_Search;
+namespace Otaria_Search;
 
 use WordPress\AiClient\AiClient;
 use WordPress\AiClient\Providers\Models\DTO\ModelRequirements;

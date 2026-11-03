@@ -6,18 +6,18 @@
  * Embeddings come from Fake_Embedding_Provider through the core AI Client
  * (no real HTTP calls).
  *
- * @package Squirrel_Search
+ * @package Otaria_Search
  */
 
 declare(strict_types=1);
 
-namespace Squirrel_Search\Tests\Integration;
+namespace Otaria_Search\Tests\Integration;
 
-use Squirrel_Search\Indexer;
-use Squirrel_Search\Repository;
-use Squirrel_Search\Schema;
-use Squirrel_Search\Search;
-use Squirrel_Search\Settings;
+use Otaria_Search\Indexer;
+use Otaria_Search\Repository;
+use Otaria_Search\Schema;
+use Otaria_Search\Search;
+use Otaria_Search\Settings;
 
 /**
  * Class Search_Test

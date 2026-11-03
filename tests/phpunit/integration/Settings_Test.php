@@ -2,14 +2,14 @@
 /**
  * Integration tests for Settings API.
  *
- * @package Squirrel_Search
+ * @package Otaria_Search
  */
 
 declare(strict_types=1);
 
-namespace Squirrel_Search\Tests\Integration;
+namespace Otaria_Search\Tests\Integration;
 
-use Squirrel_Search\Settings;
+use Otaria_Search\Settings;
 use WP_UnitTestCase;
 
 /**

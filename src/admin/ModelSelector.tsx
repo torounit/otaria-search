@@ -34,7 +34,7 @@ export function ModelSelector( {
 	const [ isSaving, setIsSaving ] = useState( false );
 	const [ error, setError ] = useState< string | null >( null );
 
-	const title = __( 'Embedding Model', 'squirrel-search' );
+	const title = __( 'Embedding Model', 'otaria-search' );
 
 	if ( availableModels.length === 0 ) {
 		return (
@@ -42,7 +42,7 @@ export function ModelSelector( {
 				<Text render={ <p /> }>
 					{ __(
 						'No embedding models available. Configure an embedding-capable AI provider in Settings › Connectors.',
-						'squirrel-search'
+						'otaria-search'
 					) }
 				</Text>
 			</Section>
@@ -60,7 +60,7 @@ export function ModelSelector( {
 	if ( currentValue === '' ) {
 		options.unshift( {
 			value: '',
-			label: __( 'Select a model…', 'squirrel-search' ),
+			label: __( 'Select a model…', 'otaria-search' ),
 		} );
 	}
 
@@ -77,7 +77,7 @@ export function ModelSelector( {
 			// The ability probes the model to detect its dimensions and saves
 			// provider, model and dimensions together.
 			const raw = await apiFetch( {
-				path: '/wp-abilities/v1/abilities/squirrel-search/select-model/run',
+				path: '/wp-abilities/v1/abilities/otaria-search/select-model/run',
 				method: 'POST',
 				data: {
 					input: {
@@ -95,7 +95,7 @@ export function ModelSelector( {
 		} catch ( err ) {
 			const message =
 				( err as { message?: string } )?.message ??
-				__( 'Unknown error.', 'squirrel-search' );
+				__( 'Unknown error.', 'otaria-search' );
 			setError( message );
 		} finally {
 			setIsSaving( false );
@@ -110,7 +110,7 @@ export function ModelSelector( {
 				</Notice>
 			) }
 			<SelectControl
-				label={ __( 'Model', 'squirrel-search' ) }
+				label={ __( 'Model', 'otaria-search' ) }
 				value={ selected }
 				options={ options }
 				onChange={ setSelected }
@@ -118,14 +118,14 @@ export function ModelSelector( {
 					currentDims
 						? `${ __(
 								'Current embedding dimensions:',
-								'squirrel-search'
+								'otaria-search'
 							) } ${ currentDims }. ${ __(
 								'Saving sends a short probe request to the model to detect its dimensions.',
-								'squirrel-search'
+								'otaria-search'
 							) }`
 						: __(
 								'Saving sends a short probe request to the model to detect its dimensions.',
-								'squirrel-search'
+								'otaria-search'
 							)
 				}
 			/>
@@ -138,7 +138,7 @@ export function ModelSelector( {
 					disabled={ isSaving || selected === '' }
 					accessibleWhenDisabled
 				>
-					{ __( 'Save model', 'squirrel-search' ) }
+					{ __( 'Save model', 'otaria-search' ) }
 				</Button>
 			</Stack>
 		</Section>

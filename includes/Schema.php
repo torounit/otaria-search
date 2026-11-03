@@ -2,12 +2,12 @@
 /**
  * Database schema management.
  *
- * @package Squirrel_Search
+ * @package Otaria_Search
  */
 
 declare(strict_types=1);
 
-namespace Squirrel_Search;
+namespace Otaria_Search;
 
 /**
  * Creates, upgrades, and drops the embeddings table.
@@ -18,7 +18,7 @@ namespace Squirrel_Search;
 class Schema {
 
 	const DB_VERSION        = '2';
-	const DB_VERSION_OPTION = 'squirrel_search_db_version';
+	const DB_VERSION_OPTION = 'otaria_search_db_version';
 
 	/**
 	 * Name of the embeddings table, under the site's table prefix.
@@ -30,7 +30,7 @@ class Schema {
 	public static function table_name(): string {
 		global $wpdb;
 
-		return $wpdb->prefix . 'squirrel_search_embeddings';
+		return $wpdb->prefix . 'otaria_search_embeddings';
 	}
 
 	/**

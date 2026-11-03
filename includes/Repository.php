@@ -2,12 +2,12 @@
 /**
  * Database repository for vector embeddings.
  *
- * @package Squirrel_Search
+ * @package Otaria_Search
  */
 
 declare(strict_types=1);
 
-namespace Squirrel_Search;
+namespace Otaria_Search;
 
 /**
  * Wraps $wpdb operations for the embeddings table and provides
@@ -135,10 +135,10 @@ class Repository {
 
 		$declared = $this->get_column_dimensions();
 		if ( null !== $declared && $declared !== $dims ) {
-			squirrel_search_log(
+			otaria_search_log(
 				sprintf(
 					'replace_post_chunks(%d): dimension mismatch — embedding is %d-dim but table column is VECTOR(%d). ' .
-					'Save the model again on Settings > Squirrel Search to detect its dimensions, then run Reindex to recreate the table.',
+					'Save the model again on Settings > Otaria Search to detect its dimensions, then run Reindex to recreate the table.',
 					$post_id,
 					$dims,
 					$declared
@@ -150,7 +150,7 @@ class Repository {
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$del = $wpdb->query( $wpdb->prepare( "DELETE FROM `{$table}` WHERE post_id = %d", $post_id ) );
 		if ( false === $del ) {
-			squirrel_search_log(
+			otaria_search_log(
 				sprintf( 'replace_post_chunks(%d): DELETE failed: %s', $post_id, $wpdb->last_error )
 			);
 		}
@@ -175,7 +175,7 @@ class Repository {
 			);
 			// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 			if ( false === $ok ) {
-				squirrel_search_log(
+				otaria_search_log(
 					sprintf(
 						'replace_post_chunks(%d): INSERT chunk %d failed (dims=%d): %s',
 						$post_id,
