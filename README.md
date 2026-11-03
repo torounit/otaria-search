@@ -25,15 +25,19 @@ Posts are indexed (or removed from the index) automatically whenever they are pu
 
 ### Search
 
-Front-end searches embed the search term and look up the closest posts in the index. By default the results are combined with WordPress's standard `LIKE` search using Reciprocal Rank Fusion (RRF): posts found by both rank first, and posts that only contain the exact term (product codes, names) still appear. If nothing matches, the search shows no results.
+Front-end searches embed the search term and look up the closest posts in the index. By default (*Hybrid search* on the admin page) the results are combined with WordPress's standard `LIKE` search using Reciprocal Rank Fusion (RRF): posts found by both rank first, and posts that only contain the exact term (product codes, names) still appear. If nothing matches, the search shows no results.
 
 ### Admin page (Settings > Vector Search)
 
 Displays MariaDB VECTOR support status, indexed post count, table dimensions, and backfill progress.
 
-**Embedding Model** — Select one of the models that configured providers report as embedding-capable. Saving runs the `wp-mariadb-vector-search/select-model` ability, which embeds a short probe text with the model to detect its native vector dimension, then stores provider, model and dimensions together. If the probe fails, the error is shown and the saved settings are left unchanged. The embeddings table is not changed at this point. Switching to another model resets the search thresholds to their defaults.
+**Embedding Model** — Select one of the models that configured providers report as embedding-capable. Saving runs the `wp-mariadb-vector-search/select-model` ability, which embeds a short probe text with the model to detect its native vector dimension, then stores provider, model and dimensions together. If the probe fails, the error is shown and the saved settings are left unchanged. The embeddings table is not changed at this point. Switching to another model resets the search thresholds to their defaults and clears the prefixes.
 
-**Search Thresholds** — The maximum distance and the maximum distance behind the best match (see the filters below). Suitable values depend on the model, so they are set here per model. The preview embeds a query and lists the nearest posts with their cosine distances and whether the entered (unsaved) thresholds keep them. Posts containing the search term are still added by hybrid search, and the filters override the saved values.
+**Prefixes** — Texts prepended before embedding: the query prefix to search terms, the document prefix to post content. Some models are trained with them (e.g. `query: ` / `passage: ` for E5 and Nemotron) and lose accuracy without; their model card gives the exact strings, including trailing spaces, which are kept. Empty by default. The query prefix takes effect immediately; a changed document prefix needs a Reindex, which re-embeds every post.
+
+**Search** — *Hybrid search* fuses the vector results with WordPress's standard search (on by default); turn it off for vector-only results. The thresholds are the maximum cosine distance a post may have from the query (`0` = identical, smaller = more similar), and the maximum distance it may fall behind the closest post, which drops generic matches such as the default "Hello world!" post. Suitable values depend on the model, so they are set here per model. The preview embeds a query and lists the nearest posts with their cosine distances and whether the entered (unsaved) thresholds keep them. Posts containing the search term are still added by hybrid search.
+
+**Post Types** — The post types that are indexed and searched: public, searchable ones except attachments (all of them until saved). Unchecking a post type removes its posts from the index; a checked post type that was not indexed before needs a Reindex.
 
 **Indexing** — *Do not index password-protected posts* (on by default). Run Reindex after changing it: posts that are now excluded are removed from the index, and posts that are now allowed are embedded.
 
@@ -61,7 +65,7 @@ wp mariadb-vector reindex --batch=100
 
 ## Configuration
 
-Stored in the `wp_mariadb_vector_search_settings` option (array). Values are written automatically by the **Save model** action in the admin UI.
+Stored in the `wp_mariadb_vector_search_settings` option (array). Values are written by the admin page; missing keys fall back to their defaults.
 
 | Key          | Description |
 |--------------|-------------|
@@ -70,7 +74,11 @@ Stored in the `wp_mariadb_vector_search_settings` option (array). Values are wri
 | `dimensions` | Vector dimensions — auto-detected by probing the API when a model is saved. Fixed at table creation; changing to a different dimension requires a Reindex (which recreates the table). |
 | `max_distance` | Search threshold set on the admin page. Default `0.65`. |
 | `max_relative_distance` | Search threshold set on the admin page. Default `0.25`. |
+| `hybrid` | Whether hybrid search is on, set on the admin page. Default `true`. |
 | `exclude_password_protected` | Leave password-protected posts out of the index. Set on the admin page. Default `true`. |
+| `post_types` | Post types to index and search, set on the admin page. Default all public, searchable post types except attachments. |
+| `query_prefix` | Prepended to search terms before embedding, set on the admin page. Default empty. |
+| `document_prefix` | Prepended to post chunks before embedding, set on the admin page. Default empty. |
 
 Chunk settings are code-level defaults in `Chunker.php` and are not stored in the option:
 
@@ -80,89 +88,6 @@ Chunk settings are code-level defaults in `Chunker.php` and are not stored in th
 | `chunk_overlap_chars`| 300     | Overlap between adjacent chunks in characters. |
 
 ## Filters
-
-### `wp_mariadb_vector_search_post_types`
-
-Control which post types are indexed and searched.
-
-```php
-add_filter(
-    'wp_mariadb_vector_search_post_types',
-    function ( array $types ): array {
-        return [ 'post', 'page', 'product' ];
-    }
-);
-```
-
-### `wp_mariadb_vector_search_max_distance`
-
-Maximum cosine distance a post may have from the query to appear in results.
-`0` = identical, smaller = more similar, `~1` = unrelated. The filter receives the
-value saved on the admin page (default `0.65`); the optimal value depends on the
-embedding model.
-
-```php
-add_filter(
-    'wp_mariadb_vector_search_max_distance',
-    function (): float {
-        return 0.5; // stricter: only closely related posts
-    }
-);
-```
-
-### `wp_mariadb_vector_search_max_relative_distance`
-
-Maximum distance a post may fall behind the closest post. Excludes weak matches
-that are within `max_distance` only because they are generic (e.g. the default
-"Hello world!" post). The filter receives the value saved on the admin page
-(default `0.25`). Return `INF` to disable.
-
-```php
-add_filter(
-    'wp_mariadb_vector_search_max_relative_distance',
-    function (): float {
-        return 0.15;
-    }
-);
-```
-
-### `wp_mariadb_vector_search_max_results`
-
-Safety cap on the number of posts returned by a single search. Also controls the inner
-`LIMIT` passed to the database query so the VECTOR INDEX is used, and the number of
-`LIKE` results fused in. Default `200`.
-
-```php
-add_filter(
-    'wp_mariadb_vector_search_max_results',
-    function (): int {
-        return 50;
-    }
-);
-```
-
-### `wp_mariadb_vector_search_hybrid`
-
-Whether to fuse the vector results with WordPress's `LIKE` search results. Default `true`.
-Return `false` for vector-only search.
-
-```php
-add_filter( 'wp_mariadb_vector_search_hybrid', '__return_false' );
-```
-
-### `wp_mariadb_vector_search_rrf_k`
-
-The RRF constant `k`: each post scores `1 / (k + rank)` per result list it appears in.
-Higher values flatten the weight of top ranks. Default `60`.
-
-```php
-add_filter(
-    'wp_mariadb_vector_search_rrf_k',
-    function (): int {
-        return 20;
-    }
-);
-```
 
 ### Core AI Client filters
 

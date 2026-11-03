@@ -18,11 +18,10 @@ namespace WP_MariaDB_Vector_Search;
  * - the 's' parameter is non-empty.
  *
  * On embedding failure the query falls through to default WP search.
- * Vector results are filtered by cosine distance (wp_mariadb_vector_search_max_distance)
- * and by distance behind the best match (wp_mariadb_vector_search_max_relative_distance),
- * both defaulting to the saved settings (Settings::get_thresholds()), then fused with
- * WordPress's LIKE search results via Reciprocal Rank Fusion
- * (opt out with wp_mariadb_vector_search_hybrid).
+ * Vector results are filtered by cosine distance and by distance behind the
+ * best match, both from the saved settings (Settings::get_thresholds()), then
+ * fused with WordPress's LIKE search results via Reciprocal Rank Fusion
+ * unless hybrid search is turned off (Settings::is_hybrid()).
  */
 class Search {
 
@@ -32,6 +31,23 @@ class Search {
 	 * @since 0.2.0
 	 */
 	const QUERY_VAR = 'wp_mariadb_vector_search';
+
+	/**
+	 * Safety cap on the posts returned by the vector search.
+	 *
+	 * Also the basis for the inner LIMIT, so the VECTOR INDEX is used, and
+	 * the limit of the LIKE search fused in hybrid mode.
+	 *
+	 * @since 0.3.0
+	 */
+	const MAX_RESULTS = 200;
+
+	/**
+	 * Reciprocal Rank Fusion constant. Higher values flatten the weight of top ranks.
+	 *
+	 * @since 0.3.0
+	 */
+	const RRF_K = 60;
 
 	/**
 	 * Constructor.
@@ -69,71 +85,17 @@ class Search {
 		}
 
 		$post_types = $this->get_post_types( $query );
-		$result     = wp_mariadb_vector_search_embedding( $search_term )->generate_embeddings();
+		$result     = wp_mariadb_vector_search_embedding( Settings::get_prefixes()['query_prefix'] . $search_term )->generate_embeddings();
 
 		if ( is_wp_error( $result ) || empty( $result[0] ) ) {
 			return;
 		}
 
 		$thresholds = Settings::get_thresholds();
+		$ids        = $this->repository->search_similar( $result[0]->getValues(), $post_types, $thresholds['max_distance'], self::MAX_RESULTS, $thresholds['max_relative_distance'] );
 
-		/**
-		 * Filters the maximum cosine distance of posts included in search results.
-		 *
-		 * 0 is identical; smaller is more similar. The best value depends on the model.
-		 *
-		 * @since 0.1.0
-		 * @since 0.2.0 Defaults to the saved setting.
-		 *
-		 * @param float $max_distance Maximum cosine distance (0–2). Default the saved setting, else 0.65.
-		 */
-		$max_distance = (float) apply_filters( 'wp_mariadb_vector_search_max_distance', $thresholds['max_distance'] );
-
-		/**
-		 * Filters the maximum number of posts returned by the vector search.
-		 *
-		 * Also the basis for the inner LIMIT, so the VECTOR INDEX is used, and
-		 * the limit of the LIKE search fused in hybrid mode.
-		 *
-		 * @since 0.1.0
-		 *
-		 * @param int $max_results Maximum number of posts. Default 200.
-		 */
-		$max_results = (int) apply_filters( 'wp_mariadb_vector_search_max_results', 200 );
-
-		/**
-		 * Filters the maximum distance behind the best vector match.
-		 *
-		 * Posts farther than this from the closest post are excluded.
-		 *
-		 * @since 0.2.0
-		 *
-		 * @param float $max_relative Maximum distance behind the best match. INF disables.
-		 *                            Default the saved setting, else 0.25.
-		 */
-		$max_relative = (float) apply_filters( 'wp_mariadb_vector_search_max_relative_distance', $thresholds['max_relative_distance'] );
-
-		$ids = $this->repository->search_similar( $result[0]->getValues(), $post_types, $max_distance, $max_results, $max_relative );
-
-		/**
-		 * Filters whether vector results are fused with WordPress's LIKE search results.
-		 *
-		 * @since 0.2.0
-		 *
-		 * @param bool $hybrid True to fuse via Reciprocal Rank Fusion, false for vector-only. Default true.
-		 */
-		if ( apply_filters( 'wp_mariadb_vector_search_hybrid', true ) ) {
-			/**
-			 * Filters the Reciprocal Rank Fusion constant.
-			 *
-			 * Higher values flatten the weight of top ranks.
-			 *
-			 * @since 0.2.0
-			 *
-			 * @param int $rrf_k RRF constant. Negative values are treated as 0. Default 60.
-			 */
-			$rrf_k = (int) apply_filters( 'wp_mariadb_vector_search_rrf_k', 60 );
-			$ids   = Rank_Fusion::fuse( array( $ids, $this->search_like( $search_term, $post_types, $max_results ) ), $rrf_k );
+		if ( Settings::is_hybrid() ) {
+			$ids = Rank_Fusion::fuse( array( $ids, $this->search_like( $search_term, $post_types, self::MAX_RESULTS ) ), self::RRF_K );
 		}
 
 		if ( empty( $ids ) ) {
@@ -199,7 +161,7 @@ class Search {
 	 * Determine the post types to search.
 	 *
 	 * Uses the query's post_type parameter when set; otherwise falls back to
-	 * default_post_types().
+	 * the post types set on the admin page (Settings::get_post_types()).
 	 *
 	 * @param \WP_Query $query The query.
 	 * @return string[] Post type slugs.
@@ -211,34 +173,6 @@ class Search {
 			return (array) $from_query;
 		}
 
-		return self::default_post_types();
-	}
-
-	/**
-	 * All public, searchable post types, filtered by
-	 * wp_mariadb_vector_search_post_types.
-	 *
-	 * @since 0.2.0
-	 *
-	 * @return string[] Post type slugs.
-	 */
-	public static function default_post_types(): array {
-		$types = array_keys(
-			get_post_types(
-				array(
-					'public'              => true,
-					'exclude_from_search' => false,
-				)
-			)
-		);
-
-		/**
-		 * Filters the post types that are indexed and searched.
-		 *
-		 * @since 0.1.0
-		 *
-		 * @param string[] $types Post type slugs. Default public, searchable post types.
-		 */
-		return apply_filters( 'wp_mariadb_vector_search_post_types', $types );
+		return Settings::get_post_types();
 	}
 }

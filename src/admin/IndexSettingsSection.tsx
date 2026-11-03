@@ -5,7 +5,7 @@ import { __ } from '@wordpress/i18n';
 import { Stack } from '@wordpress/ui';
 import { Section } from './Section';
 import { unwrapAbilityResponse } from './ability';
-import type { IndexSettings } from './types';
+import type { UpdateSettingsResponse } from './types';
 
 interface Props {
 	excludePasswordProtected: boolean;
@@ -25,12 +25,12 @@ export function IndexSettingsSection( {
 		setError( null );
 		try {
 			const raw = await apiFetch( {
-				path: '/wp-abilities/v1/abilities/wp-mariadb-vector-search/save-index-settings/run',
+				path: '/wp-abilities/v1/abilities/wp-mariadb-vector-search/update-settings/run',
 				method: 'POST',
 				data: { input: { exclude_password_protected: exclude } },
 			} );
 			setExclude(
-				unwrapAbilityResponse< IndexSettings >( raw )
+				unwrapAbilityResponse< UpdateSettingsResponse >( raw )
 					.exclude_password_protected
 			);
 			onSaved();

@@ -68,7 +68,7 @@ class Rank_Fusion_Test extends \WP_UnitTestCase {
 		$this->assertSame( array( 1, 2 ), Rank_Fusion::fuse( array( array( '1', '2' ) ) ) );
 	}
 
-	/** A negative k (e.g. from the rrf_k filter) is clamped to 0 instead of dividing by zero. */
+	/** A negative k is clamped to 0 instead of dividing by zero. */
 	public function test_negative_k_is_clamped_to_zero(): void {
 		$this->assertSame(
 			array(

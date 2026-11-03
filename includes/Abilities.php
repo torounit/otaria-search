@@ -26,11 +26,12 @@ class Abilities {
 	const ABILITY_SELECT = 'wp-mariadb-vector-search/select-model';
 
 	/**
-	 * Ability that saves the search distance thresholds.
+	 * Ability that changes any settings except the model: search thresholds,
+	 * hybrid search, post types, prefixes and the password-protected exclusion.
 	 *
-	 * @since 0.2.0
+	 * @since 0.3.0
 	 */
-	const ABILITY_THRESHOLDS = 'wp-mariadb-vector-search/save-thresholds';
+	const ABILITY_UPDATE_SETTINGS = 'wp-mariadb-vector-search/update-settings';
 
 	/**
 	 * Ability that lists the posts nearest to a query with their distances.
@@ -38,13 +39,6 @@ class Abilities {
 	 * @since 0.2.0
 	 */
 	const ABILITY_PREVIEW = 'wp-mariadb-vector-search/preview-search';
-
-	/**
-	 * Ability that saves which posts are indexed.
-	 *
-	 * @since 0.3.0
-	 */
-	const ABILITY_INDEX_SETTINGS = 'wp-mariadb-vector-search/save-index-settings';
 
 	/**
 	 * Number of posts listed by the search preview.
@@ -164,32 +158,28 @@ class Abilities {
 			)
 		);
 
-		$distance_schema = array(
-			'type'    => array( 'number', 'null' ),
-			'minimum' => 0,
-			'maximum' => 2,
-		);
-
-		// Register save-thresholds ability.
+		// Register update-settings ability.
 		wp_register_ability(
-			self::ABILITY_THRESHOLDS,
+			self::ABILITY_UPDATE_SETTINGS,
 			array(
-				'label'               => __( 'Save Thresholds', 'wp-mariadb-vector-search' ),
-				'description'         => __( 'Saves the cosine distance thresholds for search results. Null resets a threshold to its default.', 'wp-mariadb-vector-search' ),
+				'label'               => __( 'Update Settings', 'wp-mariadb-vector-search' ),
+				'description'         => __( 'Changes the given settings and keeps the others: search thresholds, hybrid search, indexed post types, embedding prefixes and whether password-protected posts are indexed. Null resets a setting to its default. Deselected post types are removed from the index. Returns the settings in effect, the added post types, and reindex_required when a Reindex is needed to apply the change.', 'wp-mariadb-vector-search' ),
 				'category'            => self::CATEGORY_SLUG,
-				'meta'                => array( 'show_in_rest' => true ),
-				'input_schema'        => array(
-					'type'       => 'object',
-					'properties' => array(
-						'max_distance'          => $distance_schema + array(
-							'description' => __( 'Maximum cosine distance from the query.', 'wp-mariadb-vector-search' ),
-						),
-						'max_relative_distance' => $distance_schema + array(
-							'description' => __( 'Maximum distance behind the best match.', 'wp-mariadb-vector-search' ),
-						),
+				'meta'                => array(
+					'show_in_rest' => true,
+					'annotations'  => array(
+						'readonly'    => false,
+						// Deselecting post types deletes their embeddings.
+						'destructive' => true,
+						'idempotent'  => true,
 					),
 				),
-				'execute_callback'    => array( __CLASS__, 'execute_save_thresholds' ),
+				'input_schema'        => array(
+					'type'                 => 'object',
+					'additionalProperties' => false,
+					'properties'           => self::update_settings_properties(),
+				),
+				'execute_callback'    => array( __CLASS__, 'execute_update_settings' ),
 				'permission_callback' => function () {
 					return current_user_can( 'manage_options' );
 				},
@@ -219,10 +209,10 @@ class Abilities {
 							'minLength'   => 1,
 							'description' => __( 'Search query.', 'wp-mariadb-vector-search' ),
 						),
-						'max_distance'          => $distance_schema + array(
+						'max_distance'          => self::distance_schema() + array(
 							'description' => __( 'Threshold to preview; defaults to the saved value.', 'wp-mariadb-vector-search' ),
 						),
-						'max_relative_distance' => $distance_schema + array(
+						'max_relative_distance' => self::distance_schema() + array(
 							'description' => __( 'Threshold to preview; defaults to the saved value.', 'wp-mariadb-vector-search' ),
 						),
 					),
@@ -233,30 +223,64 @@ class Abilities {
 				},
 			)
 		);
+	}
 
-		// Register save-index-settings ability.
-		wp_register_ability(
-			self::ABILITY_INDEX_SETTINGS,
-			array(
-				'label'               => __( 'Save Index Settings', 'wp-mariadb-vector-search' ),
-				'description'         => __( 'Saves which posts are indexed. Run Reindex to apply it to existing posts.', 'wp-mariadb-vector-search' ),
-				'category'            => self::CATEGORY_SLUG,
-				'meta'                => array( 'show_in_rest' => true ),
-				'input_schema'        => array(
-					'type'       => 'object',
-					'required'   => array( 'exclude_password_protected' ),
-					'properties' => array(
-						'exclude_password_protected' => array(
-							'type'        => 'boolean',
-							'description' => __( 'Leave password-protected posts out of the index.', 'wp-mariadb-vector-search' ),
-						),
-					),
-				),
-				'execute_callback'    => array( __CLASS__, 'execute_save_index_settings' ),
-				'permission_callback' => function () {
-					return current_user_can( 'manage_options' );
-				},
-			)
+	/**
+	 * Input schema of a cosine distance threshold: 0–2, or null for the default.
+	 *
+	 * @since 0.3.0
+	 *
+	 * @return array
+	 */
+	private static function distance_schema(): array {
+		return array(
+			'type'    => array( 'number', 'null' ),
+			'minimum' => 0,
+			'maximum' => 2,
+		);
+	}
+
+	/**
+	 * Input schema properties of update-settings: every setting but the
+	 * model, which select-model changes after probing it.
+	 *
+	 * The keys are also the ones execute_update_settings() accepts. A new
+	 * setting is added here.
+	 *
+	 * @since 0.3.0
+	 *
+	 * @return array<string, array>
+	 */
+	private static function update_settings_properties(): array {
+		return array(
+			'max_distance'               => self::distance_schema() + array(
+				'description' => __( 'Maximum cosine distance from the query.', 'wp-mariadb-vector-search' ),
+			),
+			'max_relative_distance'      => self::distance_schema() + array(
+				'description' => __( 'Maximum distance behind the best match.', 'wp-mariadb-vector-search' ),
+			),
+			'hybrid'                     => array(
+				'type'        => array( 'boolean', 'null' ),
+				'description' => __( 'Fuse vector results with the LIKE search results.', 'wp-mariadb-vector-search' ),
+			),
+			'post_types'                 => array(
+				'type'        => array( 'array', 'null' ),
+				'minItems'    => 1,
+				'items'       => array( 'type' => 'string' ),
+				'description' => __( 'Public, searchable post types to index. Null indexes all of them, including ones registered later.', 'wp-mariadb-vector-search' ),
+			),
+			'query_prefix'               => array(
+				'type'        => array( 'string', 'null' ),
+				'description' => __( 'Prepended to search terms before embedding.', 'wp-mariadb-vector-search' ),
+			),
+			'document_prefix'            => array(
+				'type'        => array( 'string', 'null' ),
+				'description' => __( 'Prepended to post chunks before embedding. Changing it requires a Reindex.', 'wp-mariadb-vector-search' ),
+			),
+			'exclude_password_protected' => array(
+				'type'        => array( 'boolean', 'null' ),
+				'description' => __( 'Leave password-protected posts out of the index. Changing it requires a Reindex.', 'wp-mariadb-vector-search' ),
+			),
 		);
 	}
 
@@ -299,45 +323,71 @@ class Abilities {
 			'dim_changed'                => $dim_changed,
 			'thresholds'                 => Settings::get_thresholds(),
 			'default_thresholds'         => Settings::DEFAULT_THRESHOLDS,
+			'hybrid'                     => Settings::is_hybrid(),
 			'exclude_password_protected' => Settings::excludes_password_protected(),
+			'post_types'                 => Settings::get_post_types(),
+			'prefixes'                   => Settings::get_prefixes(),
+			'available_post_types'       => array_map(
+				static fn( string $name ): array => array(
+					'name'  => $name,
+					'label' => (string) get_post_type_object( $name )->labels->name,
+				),
+				Settings::available_post_types()
+			),
 		);
 	}
 
 	/**
-	 * Callback for save-index-settings ability.
+	 * Callback for update-settings ability.
+	 *
+	 * Deselected post types are removed from the index by the option update
+	 * (Indexer::remove_deselected_post_types()). A Reindex is required, and
+	 * enough without forcing it, when post types are added, when the
+	 * embedding key in the content hash changes (e.g. the document prefix),
+	 * or when the password-protected exclusion changes.
 	 *
 	 * @since 0.3.0
 	 *
-	 * @param array|null $input Ability input with 'exclude_password_protected'.
-	 * @return array The index settings now in effect.
+	 * @param array|null $input Settings to change; see update_settings_properties().
+	 * @return array|\WP_Error The settings now in effect plus added_post_types and
+	 *                         reindex_required, or an error for unavailable post types.
 	 */
-	public static function execute_save_index_settings( ?array $input = null ): array {
-		// Settings::sanitize_settings() keeps the other settings.
-		update_option(
-			Settings::OPTION_NAME,
-			array( 'exclude_password_protected' => (bool) ( $input['exclude_password_protected'] ?? true ) )
+	public static function execute_update_settings( ?array $input = null ): array|\WP_Error {
+		$changes = array_intersect_key( (array) $input, self::update_settings_properties() );
+
+		if ( isset( $changes['post_types'] ) ) {
+			$post_types = Settings::sanitize_settings( array( 'post_types' => $changes['post_types'] ) )['post_types'] ?? array();
+			$invalid    = array_diff( $post_types, Settings::available_post_types() );
+			if ( empty( $post_types ) || ! empty( $invalid ) ) {
+				return new \WP_Error(
+					'invalid_post_types',
+					/* translators: %s: Comma-separated post type names. */
+					sprintf( __( 'These post types cannot be indexed: %s', 'wp-mariadb-vector-search' ), implode( ', ', $invalid ) ),
+					array( 'status' => 400 )
+				);
+			}
+			$changes['post_types'] = $post_types;
+		}
+
+		$post_types_before    = Settings::get_post_types();
+		$embedding_key_before = Settings::get_embedding_key();
+		$exclude_before       = Settings::excludes_password_protected();
+
+		Settings::update( $changes );
+
+		$post_types = Settings::get_post_types();
+		$added      = array_values( array_diff( $post_types, $post_types_before ) );
+		$exclude    = Settings::excludes_password_protected();
+
+		return Settings::get_thresholds() + Settings::get_prefixes() + array(
+			'hybrid'                     => Settings::is_hybrid(),
+			'post_types'                 => $post_types,
+			'exclude_password_protected' => $exclude,
+			'added_post_types'           => $added,
+			'reindex_required'           => array() !== $added
+				|| Settings::get_embedding_key() !== $embedding_key_before
+				|| $exclude !== $exclude_before,
 		);
-
-		return array( 'exclude_password_protected' => Settings::excludes_password_protected() );
-	}
-
-	/**
-	 * Callback for save-thresholds ability.
-	 *
-	 * @since 0.2.0
-	 *
-	 * @param array|null $input Ability input with optional 'max_distance' and 'max_relative_distance'.
-	 * @return array The thresholds now in effect.
-	 */
-	public static function execute_save_thresholds( ?array $input = null ): array {
-		// Settings::sanitize_settings() keeps the model settings and any
-		// threshold omitted from the input.
-		update_option(
-			Settings::OPTION_NAME,
-			array_intersect_key( (array) $input, array_flip( Settings::THRESHOLD_KEYS ) )
-		);
-
-		return Settings::get_thresholds();
 	}
 
 	/**
@@ -349,7 +399,7 @@ class Abilities {
 	 * @return array|\WP_Error Nearest posts, or the embedding error.
 	 */
 	public static function execute_preview_search( ?array $input = null ): array|\WP_Error {
-		$result = wp_mariadb_vector_search_embedding( (string) ( $input['query'] ?? '' ) )->generate_embeddings();
+		$result = wp_mariadb_vector_search_embedding( Settings::get_prefixes()['query_prefix'] . ( $input['query'] ?? '' ) )->generate_embeddings();
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
@@ -361,7 +411,7 @@ class Abilities {
 			}
 		}
 
-		$distances = ( new Repository() )->nearest_posts( $result[0]->getValues(), Search::default_post_types(), self::PREVIEW_LIMIT );
+		$distances = ( new Repository() )->nearest_posts( $result[0]->getValues(), Settings::get_post_types(), self::PREVIEW_LIMIT );
 		$kept      = Repository::filter_by_distance( $distances, $thresholds['max_distance'], $thresholds['max_relative_distance'] );
 
 		$results = array();
@@ -461,14 +511,14 @@ class Abilities {
 			'dimensions' => $result->getDimensions(),
 		);
 
-		// Distances are model-specific: thresholds tuned for another model
-		// are cleared back to the defaults.
+		// Distances and prefixes are model-specific: those set for another
+		// model are cleared back to the defaults.
 		$saved = get_option( Settings::OPTION_NAME, array() );
 		if ( ! is_array( $saved ) || ( $saved['provider'] ?? '' ) !== $provider || ( $saved['model'] ?? '' ) !== $model ) {
-			$settings += array_fill_keys( Settings::THRESHOLD_KEYS, null );
+			$settings += array_fill_keys( array( ...Settings::THRESHOLD_KEYS, ...Settings::PREFIX_KEYS ), null );
 		}
 
-		update_option( Settings::OPTION_NAME, $settings );
+		Settings::update( $settings );
 
 		return get_option( Settings::OPTION_NAME );
 	}

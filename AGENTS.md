@@ -114,10 +114,15 @@ CREATE TABLE {$prefix}mariadb_vector_embeddings (
 Changing the model to one with a different dimension requires dropping and
 re-creating the table; the Admin page handles this automatically.
 
-`content_hash` is a SHA-256 of the selected model (`provider:model`), title and
-raw content (length-prefixed) — used by the indexer to skip work when neither
-the post body nor the embedding model has changed. Including the model means a
-model switch at the same dimension is re-embedded by a normal (non-force) Reindex.
+`content_hash` is a SHA-256 of the embedding key (`Settings::get_embedding_key()`:
+`provider:model`, plus the document prefix when one is set), title and raw
+content (length-prefixed) —
+used by the indexer to skip work when neither the post body nor the embedding
+model has changed. Including the model means a model switch at the same
+dimension is re-embedded by a normal (non-force) Reindex; the same goes for a
+changed document prefix. A setting that changes how chunks are embedded goes
+into the embedding key, so both the hash and `update-settings`'
+`reindex_required` follow it.
 
 ## Components
 
@@ -126,17 +131,18 @@ model switch at the same dimension is re-embedded by a normal (non-force) Reinde
 | `wp-mariadb-vector-search.php`    | Bootstrap. Registers activation hooks. `wp_mariadb_vector_search_embedding()` (core builder bound to the selected model). |
 | `includes/Plugin.php`             | Composition root. Instantiates components and registers hooks.                                     |
 | `includes/Schema.php`             | Install/upgrade table. Verify MariaDB version. Admin notice on incompatibility.                    |
-| `includes/Repository.php`         | `$wpdb` wrapper. `replace_post_chunks()`, `delete_post()`, `search_similar()`. Vector text serialization. |
+| `includes/Settings.php`           | The settings option: getters with defaults (`get_thresholds()`, `is_hybrid()`, `get_post_types()`, `get_prefixes()`, `excludes_password_protected()`), `get_embedding_key()` (content hash input), `update()` for partial writes, `sanitize_settings()`. |
+| `includes/Repository.php`         | `$wpdb` wrapper. `replace_post_chunks()`, `delete_post()`, `delete_other_post_types()`, `search_similar()`. Vector text serialization. |
 | `includes/Model_Catalog.php`      | Enumerates models the AI Client registry reports as embedding-capable.                             |
-| `includes/Abilities.php`          | Abilities for the admin UI: `get-status`, `reindex`, `select-model` (probes the model's dimensions, then saves settings; clears thresholds when the model changes), `save-thresholds`, `preview-search` (nearest posts with distances and whether the thresholds keep them), `save-index-settings`. |
+| `includes/Abilities.php`          | Abilities for the admin UI: `get-status`, `reindex`, `select-model` (probes the model's dimensions, then saves settings; clears thresholds and prefixes when the model changes), `update-settings` (every other setting: thresholds, hybrid, post types, prefixes, `exclude_password_protected`; the input schema properties are the accepted keys, `null` resets any of them; changes only the given keys via `Settings::update()`, rejecting the whole call on an unavailable post type; annotated destructive, since deselected post types lose their rows; returns the settings in effect plus `added_post_types` and `reindex_required` for added post types, a changed embedding key or a changed password-protected exclusion — a non-force Reindex applies all three), `preview-search` (nearest posts with distances and whether the thresholds keep them). |
 | `includes/Content_Hash.php`       | SHA-256 hash of post title + content.                                                              |
 | `includes/Chunker.php`            | Block strip + paragraph/sentence/char splitting with overlap. Title prepended to each chunk.       |
-| `includes/Indexer.php`            | `save_post`/`delete_post`/`trashed_post` hooks. Cron worker that embeds chunks and stores them via the repository. Removes password-protected posts from the index unless the setting allows them. |
+| `includes/Indexer.php`            | `save_post`/`delete_post`/`trashed_post` hooks. Cron worker that embeds chunks and stores them via the repository. Removes password-protected posts from the index unless the setting allows them. `remove_deselected_post_types()`, hooked to the settings option update, deletes the rows of post types a change deselected, however the option is written. |
 | `includes/Search.php`             | `pre_get_posts` rewrite to `post__in` + `orderby=post__in`; hybrid fusion with the LIKE search. Safe fallback to default search. |
 | `includes/Rank_Fusion.php`        | Reciprocal Rank Fusion of ranked post ID lists. Pure PHP.                                          |
 | `includes/CLI.php`                | `wp mariadb-vector reindex [--post-type=] [--force] [--batch=]`. Loaded only if `WP_CLI`.          |
 | `includes/Cron_Backfill.php`      | Batched cron-driven reindex of all posts. Progress in transient.                                   |
-| `includes/Admin.php`              | Settings page: status, model selector, search thresholds with preview, indexing settings, unified Reindex button (auto-detects dimension diff). |
+| `includes/Admin.php`              | Settings page: status, model selector, prefixes, search settings (hybrid toggle, thresholds with preview), post types, indexing settings, unified Reindex button (auto-detects dimension diff). |
 | `uninstall.php`                   | `DROP TABLE`, delete all `wp_mariadb_vector_search_*` options.                                     |
 
 ## Similarity search query
@@ -161,12 +167,13 @@ LIMIT  %d;
 The default `overscan` of 5 covers typical content. `max_distance` (default
 0.65) excludes posts that are too dissimilar; `max_relative_distance` (default
 0.25) excludes posts far behind the best match (e.g. the default "Hello world!"
-post); `max_results` (default 200) caps the result set and ensures the VECTOR
-INDEX is engaged.
+post); `max_results` (`Search::MAX_RESULTS`, 200) caps the result set and
+ensures the VECTOR INDEX is engaged.
 
 With hybrid search on, the vector ranking and the LIKE ranking (up to
 `max_results` posts) are fused: each post scores `Σ 1 / (k + rank)` over the
-lists it appears in, so posts found by both rank first. Ties keep vector order.
+lists it appears in (`k` = `Search::RRF_K`, 60), so posts found by both rank
+first. Ties keep vector order.
 
 ## Chunking
 
@@ -187,9 +194,28 @@ lists it appears in, so posts found by both rank first. Ties keep vector order.
 | `provider`   | —       | AI provider id (e.g. `openai`, `lm_studio`).                |
 | `model`      | —       | Embedding model id (e.g. `text-embedding-3-small`).         |
 | `dimensions` | 1536    | Detected by probing the model in `select-model` (`EmbeddingResult::getDimensions()`); never entered manually. Schema's `VECTOR(N)`. Changing to a different dimension requires Reindex. |
-| `max_distance` | 0.65 | Search threshold (cosine distance, 0–2). Set on the admin page; absent = default. Cleared when `select-model` switches to another model, since distances are model-specific. |
+| `max_distance` | 0.65 | Search threshold (cosine distance, 0–2). Set on the admin page; absent = default. Removed (`null`) when `select-model` switches to another model, since distances are model-specific. |
 | `max_relative_distance` | 0.25 | Search threshold behind the best match (0–2). Same lifecycle as `max_distance`. |
+| `hybrid` | `true` | Fuse vector results with the LIKE search (`Settings::is_hybrid()`). Set on the admin page; `false` = vector-only. Kept across model changes. |
 | `exclude_password_protected` | true | Leave password-protected posts out of the index, since indexing sends their content to the provider. Set on the admin page; kept across model changes. Existing posts follow a change on the next Reindex. |
+| `query_prefix` / `document_prefix` | `''` | Prepended before embedding to search terms (Search, preview) and to chunks (Indexer; `chunk_text` is stored without it). Models such as E5/Nemotron need `query: ` / `passage: `. Entered by hand from the model card (no presets; no API reports them); spaces are kept, control characters removed. Cleared by `select-model` on a model change, like the thresholds. |
+| `post_types` | all available | Post types to index and search (`Settings::get_post_types()`). Available = public, searchable, minus `attachment` (never published). Saved types that become unavailable are ignored. Set on the admin page. Deselecting a type deletes its rows on the option update (`Indexer::remove_deselected_post_types()`); `null` restores all available types, including ones registered later. |
+
+Writing the option:
+
+- **Use `Settings::update( $changes )`** for partial writes. It merges the
+  changes into the saved option (`null` removes a key, restoring its default),
+  then sanitizes and saves. Abilities write settings only through it:
+  `select-model` for the model (it probes the model first), `update-settings`
+  for everything else. A new setting is added to `update-settings`, not given
+  an ability of its own.
+- **`sanitize_settings()` is pure.** It validates and normalizes the given
+  array and drops invalid values and unknown keys; it never reads the saved
+  option. It is the `register_setting()` callback, so a raw
+  `update_option()` replaces the whole option.
+- Read settings through the `Settings` getters, which apply the defaults.
+- The option is not exposed in the REST settings endpoint (`show_in_rest`
+  off): the admin page goes through abilities.
 
 Other options:
 
@@ -197,14 +223,8 @@ Other options:
 
 ## Extension points (filters/actions)
 
-- `wp_mariadb_vector_search_post_types` (`string[]`) — override indexed post types.
-- `wp_mariadb_vector_search_max_distance` (`float`, default: saved setting, else `0.65`) — maximum cosine distance to include in results. `0` = identical, smaller = more similar. Optimal value is model-dependent.
-- `wp_mariadb_vector_search_max_relative_distance` (`float`, default: saved setting, else `0.25`) — maximum distance behind the best vector match. `INF` disables.
-- `wp_mariadb_vector_search_max_results` (`int`, default `200`) — safety cap on returned posts; also the basis for the inner `LIMIT` so the VECTOR INDEX is used, and the LIKE sub-query's limit.
-- `wp_mariadb_vector_search_hybrid` (`bool`, default `true`) — fuse vector results with the LIKE search. `false` = vector-only.
-- `wp_mariadb_vector_search_rrf_k` (`int`, default `60`) — RRF constant; higher values flatten the weight of top ranks. Negative values are treated as `0`.
-
-Embedding requests also honor core's AI Client filters, e.g.
+The plugin defines no filters of its own; settings live on the admin page.
+Embedding requests honor core's AI Client filters, e.g.
 `wp_ai_client_default_request_timeout` (HTTP timeout, core default 30 s; it
 receives the builder class, so raise it only for `WP_AI_Client_Embedding_Builder`
 when slow local models need longer) and `wp_ai_client_prevent_embedding`. The

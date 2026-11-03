@@ -47,8 +47,7 @@ class Indexer {
 			return;
 		}
 
-		$indexable_post_types = $this->get_indexable_post_types();
-		if ( ! in_array( $post->post_type, $indexable_post_types, true ) ) {
+		if ( ! in_array( $post->post_type, Settings::get_post_types(), true ) ) {
 			wp_mariadb_vector_search_log( "index_post({$post_id}): post_type={$post->post_type}, skipping (not indexable)." );
 			return;
 		}
@@ -65,14 +64,17 @@ class Indexer {
 			return;
 		}
 
-		$hash = Content_Hash::compute( $post->post_title, $post->post_content, $this->get_model_key() );
+		$hash = Content_Hash::compute( $post->post_title, $post->post_content, Settings::get_embedding_key() );
 		if ( $this->repository->get_content_hash( $post_id ) === $hash ) {
 			wp_mariadb_vector_search_log( "index_post({$post_id}): content hash unchanged, skipping." );
 			return;
 		}
 
 		$texts  = $this->chunker->chunk( $post->post_content, $post->post_title );
-		$result = wp_mariadb_vector_search_embedding( $texts )->generate_embeddings();
+		$prefix = Settings::get_prefixes()['document_prefix'];
+		$result = wp_mariadb_vector_search_embedding(
+			array_map( static fn( string $text ): string => $prefix . $text, $texts )
+		)->generate_embeddings();
 
 		if ( is_wp_error( $result ) ) {
 			wp_mariadb_vector_search_log(
@@ -124,40 +126,23 @@ class Indexer {
 	}
 
 	/**
-	 * Identify the embedding model selected in settings, as "provider:model".
+	 * Remove the rows of post types that a settings change deselected.
 	 *
-	 * @since 0.2.0
+	 * Hooked to the option update, so it runs however the settings are
+	 * written. Added post types are left to a Reindex.
 	 *
-	 * @return string
+	 * @since 0.3.0
+	 *
+	 * @param mixed $old_value Previous settings.
+	 * @param mixed $value     New settings.
+	 * @return void
 	 */
-	private function get_model_key(): string {
-		$settings = get_option( Settings::OPTION_NAME, array() );
-		if ( ! is_array( $settings ) ) {
-			return '';
+	public function remove_deselected_post_types( mixed $old_value, mixed $value ): void {
+		$before = Settings::get_post_types( is_array( $old_value ) ? $old_value : array() );
+		$after  = Settings::get_post_types( is_array( $value ) ? $value : array() );
+
+		if ( array() !== array_diff( $before, $after ) && Schema::is_installed() ) {
+			$this->repository->delete_other_post_types( $after );
 		}
-
-		return ( $settings['provider'] ?? '' ) . ':' . ( $settings['model'] ?? '' );
-	}
-
-	/**
-	 * Determine post types that are eligible for indexing.
-	 *
-	 * Defaults to public searchable post types and is filterable via
-	 * wp_mariadb_vector_search_post_types.
-	 *
-	 * @return string[]
-	 */
-	private function get_indexable_post_types(): array {
-		$post_types = array_keys(
-			get_post_types(
-				array(
-					'public'              => true,
-					'exclude_from_search' => false,
-				)
-			)
-		);
-
-		/** This filter is documented in includes/Search.php */
-		return (array) apply_filters( 'wp_mariadb_vector_search_post_types', $post_types );
 	}
 }

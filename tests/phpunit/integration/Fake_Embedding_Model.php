@@ -73,6 +73,10 @@ class Fake_Embedding_Model implements ModelInterface, EmbeddingGenerationModelIn
 	 * @param array $inputs Message parts to embed.
 	 */
 	public function generateEmbeddingResult( array $inputs ): EmbeddingResult {
+		foreach ( $inputs as $input ) {
+			Fake_Embedding_Provider::$inputs[] = $input->getText();
+		}
+
 		$vector     = Fake_Embedding_Provider::$vector;
 		$dimensions = count( $vector );
 		$embeddings = array_map( static fn() => new Embedding( $vector, $dimensions ), $inputs );

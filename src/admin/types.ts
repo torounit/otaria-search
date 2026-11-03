@@ -26,16 +26,38 @@ export interface StatusResponse {
 	dim_changed: boolean;
 	thresholds: Thresholds;
 	default_thresholds: Thresholds;
+	hybrid: boolean;
+	post_types: string[];
+	available_post_types: AvailablePostType[];
+	prefixes: Prefixes;
 	exclude_password_protected: boolean;
 }
 
-export interface IndexSettings {
-	exclude_password_protected: boolean;
+export interface Prefixes {
+	query_prefix: string;
+	document_prefix: string;
+}
+
+export interface AvailablePostType {
+	name: string;
+	label: string;
 }
 
 export interface Thresholds {
 	max_distance: number;
 	max_relative_distance: number;
+}
+
+export interface SearchSettings extends Thresholds {
+	hybrid: boolean;
+}
+
+// Response of the update-settings ability: the settings now in effect.
+export interface UpdateSettingsResponse extends SearchSettings, Prefixes {
+	post_types: string[];
+	exclude_password_protected: boolean;
+	added_post_types: string[];
+	reindex_required: boolean;
 }
 
 export interface PreviewResult {

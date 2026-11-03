@@ -1,6 +1,6 @@
 <?php
 /**
- * Integration tests for the threshold abilities.
+ * Integration tests for the search settings abilities.
  *
  * Requires MariaDB 11.7+ with VECTOR support.
  *
@@ -17,9 +17,9 @@ use WP_MariaDB_Vector_Search\Schema;
 use WP_MariaDB_Vector_Search\Settings;
 
 /**
- * Class Threshold_Abilities_Test
+ * Class Search_Settings_Abilities_Test
  */
-class Threshold_Abilities_Test extends \WP_UnitTestCase {
+class Search_Settings_Abilities_Test extends \WP_UnitTestCase {
 
 	/**
 	 * IDs of posts created by the test.
@@ -103,7 +103,7 @@ class Threshold_Abilities_Test extends \WP_UnitTestCase {
 
 	/** The get-status ability reports the saved thresholds and the defaults. */
 	public function test_get_status_reports_thresholds(): void {
-		update_option( Settings::OPTION_NAME, array( 'max_distance' => 0.4 ) );
+		Settings::update( array( 'max_distance' => 0.4 ) );
 
 		$status = $this->run_ability( 'get-status' );
 
@@ -117,10 +117,19 @@ class Threshold_Abilities_Test extends \WP_UnitTestCase {
 		$this->assertSame( Settings::DEFAULT_THRESHOLDS, $status['default_thresholds'] );
 	}
 
+	/** The get-status ability reports whether hybrid search is on. */
+	public function test_get_status_reports_hybrid(): void {
+		$this->assertTrue( $this->run_ability( 'get-status' )['hybrid'] );
+
+		Settings::update( array( 'hybrid' => false ) );
+
+		$this->assertFalse( $this->run_ability( 'get-status' )['hybrid'] );
+	}
+
 	/** Saving thresholds stores the values and keeps the model settings. */
 	public function test_save_thresholds_stores_values(): void {
 		$result = $this->run_ability(
-			'save-thresholds',
+			'update-settings',
 			array(
 				'max_distance'          => 0.4,
 				'max_relative_distance' => 0.1,
@@ -131,30 +140,56 @@ class Threshold_Abilities_Test extends \WP_UnitTestCase {
 			'max_distance'          => 0.4,
 			'max_relative_distance' => 0.1,
 		);
-		$this->assertSame( $expected, $result );
+		$this->assertSame( $expected, array_intersect_key( $result, $expected ) );
+		$this->assertTrue( $result['hybrid'] );
+		$this->assertFalse( $result['reindex_required'] );
 		$this->assertSame( $expected, Settings::get_thresholds() );
 		$this->assertSame( Fake_Embedding_Provider::MODEL, get_option( Settings::OPTION_NAME )['model'] );
 	}
 
+	/** Saving hybrid stores it and keeps the saved thresholds. */
+	public function test_save_hybrid_keeps_thresholds(): void {
+		Settings::update( array( 'max_distance' => 0.4 ) );
+
+		$result = $this->run_ability( 'update-settings', array( 'hybrid' => false ) );
+
+		$this->assertFalse( $result['hybrid'] );
+		$this->assertFalse( Settings::is_hybrid() );
+		$this->assertSame( 0.4, $result['max_distance'] );
+	}
+
+	/** Null resets hybrid search to its default, on. */
+	public function test_update_settings_null_resets_hybrid(): void {
+		Settings::update( array( 'hybrid' => false ) );
+
+		$this->assertTrue( $this->run_ability( 'update-settings', array( 'hybrid' => null ) )['hybrid'] );
+	}
+
 	/** Null resets a threshold to its default. */
 	public function test_save_thresholds_null_resets_to_default(): void {
-		update_option( Settings::OPTION_NAME, array( 'max_distance' => 0.4 ) );
+		Settings::update( array( 'max_distance' => 0.4 ) );
 
-		$result = $this->run_ability( 'save-thresholds', array( 'max_distance' => null ) );
+		$result = $this->run_ability( 'update-settings', array( 'max_distance' => null ) );
 
 		$this->assertSame( 0.65, $result['max_distance'] );
 	}
 
 	/** Values outside the cosine distance range are rejected by the input schema. */
 	public function test_save_thresholds_rejects_out_of_range(): void {
-		$this->assertWPError( $this->run_ability( 'save-thresholds', array( 'max_distance' => 3 ) ) );
+		$this->assertWPError( $this->run_ability( 'update-settings', array( 'max_distance' => 3 ) ) );
 	}
 
-	/** Editors cannot change thresholds. */
-	public function test_save_thresholds_requires_manage_options(): void {
+	/** The model cannot be changed here: select-model probes it first. */
+	public function test_update_settings_rejects_model(): void {
+		$this->assertWPError( $this->run_ability( 'update-settings', array( 'model' => 'another-model' ) ) );
+		$this->assertSame( Fake_Embedding_Provider::MODEL, get_option( Settings::OPTION_NAME )['model'] );
+	}
+
+	/** Editors cannot change search settings. */
+	public function test_save_search_settings_requires_manage_options(): void {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
 
-		$this->assertWPError( $this->run_ability( 'save-thresholds', array( 'max_distance' => 0.4 ) ) );
+		$this->assertWPError( $this->run_ability( 'update-settings', array( 'max_distance' => 0.4 ) ) );
 	}
 
 	/** The search preview lists the nearest posts with distances and whether the thresholds keep them. */
@@ -181,7 +216,7 @@ class Threshold_Abilities_Test extends \WP_UnitTestCase {
 	public function test_preview_search_uses_saved_thresholds_by_default(): void {
 		$this->create_indexed_post( 'Best', array( 1.0, 0.0, 0.0, 0.0 ) );
 		$this->create_indexed_post( 'Near', array( 0.8, 0.6, 0.0, 0.0 ) );
-		update_option( Settings::OPTION_NAME, array( 'max_relative_distance' => 0.1 ) );
+		Settings::update( array( 'max_relative_distance' => 0.1 ) );
 
 		$result = $this->run_ability( 'preview-search', array( 'query' => 'anything' ) );
 

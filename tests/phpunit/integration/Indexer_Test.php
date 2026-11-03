@@ -160,6 +160,48 @@ class Indexer_Test extends \WP_UnitTestCase {
 		$this->assertNotSame( $old_hash, $this->repository->get_content_hash( $post_id ) );
 	}
 
+	/** Chunks are embedded with the document prefix but stored without it. */
+	public function test_index_post_embeds_chunks_with_document_prefix(): void {
+		global $wpdb;
+		Settings::update( array( 'document_prefix' => 'passage: ' ) );
+		Fake_Embedding_Provider::$inputs = array();
+
+		// Saving the post may already index it.
+		$post_id = $this->factory->post->create(
+			array(
+				'post_title'   => 'Cats',
+				'post_content' => 'Cats are small animals.',
+				'post_status'  => 'publish',
+			)
+		);
+		$this->indexer->index_post( $post_id );
+
+		$this->assertSame( array( "passage: Cats\n\nCats are small animals." ), Fake_Embedding_Provider::$inputs );
+		$table = $wpdb->prefix . 'mariadb_vector_embeddings';
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$chunk_text = $wpdb->get_var( $wpdb->prepare( "SELECT chunk_text FROM `{$table}` WHERE post_id = %d", $post_id ) );
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$this->assertSame( "Cats\n\nCats are small animals.", $chunk_text );
+	}
+
+	/** Changing the document prefix re-embeds unchanged posts. */
+	public function test_index_post_reindexes_after_document_prefix_change(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_title'   => 'Stable',
+				'post_content' => 'Content that does not change.',
+				'post_status'  => 'publish',
+			)
+		);
+		$this->indexer->index_post( $post_id );
+		$old_hash = $this->repository->get_content_hash( $post_id );
+
+		Settings::update( array( 'document_prefix' => 'passage: ' ) );
+		$this->indexer->index_post( $post_id );
+
+		$this->assertNotSame( $old_hash, $this->repository->get_content_hash( $post_id ) );
+	}
+
 	/** A post with changed content is re-indexed with a new hash. */
 	public function test_index_post_reindexes_changed_content(): void {
 		global $wpdb;
@@ -264,7 +306,7 @@ class Indexer_Test extends \WP_UnitTestCase {
 
 	/** Password-protected posts are indexed when the exclusion is turned off. */
 	public function test_index_post_indexes_password_protected_when_allowed(): void {
-		update_option( Settings::OPTION_NAME, array( 'exclude_password_protected' => false ) + get_option( Settings::OPTION_NAME ) );
+		Settings::update( array( 'exclude_password_protected' => false ) );
 		$post_id = $this->factory->post->create(
 			array(
 				'post_title'    => 'Protected',
@@ -296,6 +338,16 @@ class Indexer_Test extends \WP_UnitTestCase {
 				'post_password' => 'secret',
 			)
 		);
+		$this->indexer->index_post( $post_id );
+
+		$this->assertNull( $this->repository->get_content_hash( $post_id ) );
+	}
+
+	/** Post types left out of the saved list are not indexed. */
+	public function test_index_post_skips_post_type_not_in_settings(): void {
+		Settings::update( array( 'post_types' => array( 'page' ) ) );
+		$post_id = self::factory()->post->create( array( 'post_status' => 'publish' ) );
+
 		$this->indexer->index_post( $post_id );
 
 		$this->assertNull( $this->repository->get_content_hash( $post_id ) );

@@ -214,8 +214,7 @@ class Search_Test extends \WP_UnitTestCase {
 	 * @return void
 	 */
 	private function allow_password_protected_in_index(): void {
-		// Settings::sanitize_settings() keeps the other settings.
-		update_option( Settings::OPTION_NAME, array( 'exclude_password_protected' => false ) );
+		Settings::update( array( 'exclude_password_protected' => false ) );
 	}
 
 	/**
@@ -297,32 +296,26 @@ class Search_Test extends \WP_UnitTestCase {
 	/** A saved max_relative_distance replaces the default. */
 	public function test_search_uses_saved_max_relative_distance(): void {
 		$far = $this->create_indexed_post( 'Far', array( 0.5, 0.8660254038, 0.0, 0.0 ) );
-		update_option( Settings::OPTION_NAME, array( 'max_relative_distance' => 0.6 ) );
+		Settings::update( array( 'max_relative_distance' => 0.6 ) );
 
 		$this->assertContains( $far, $this->search_ids( 'animals' ) );
 	}
 
 	/** A saved max_distance replaces the default. */
 	public function test_search_uses_saved_max_distance(): void {
-		add_filter( 'wp_mariadb_vector_search_hybrid', '__return_false' );
 		// Cosine distance 0.1 from the query; posts A and B are at 0.
 		$near = $this->create_indexed_post( 'Near', array( 0.9, 0.4358898944, 0.0, 0.0 ) );
-		update_option( Settings::OPTION_NAME, array( 'max_distance' => 0.05 ) );
+		Settings::update(
+			array(
+				'max_distance' => 0.05,
+				'hybrid'       => false,
+			)
+		);
 
 		$found_ids = $this->search_ids( 'animals' );
 
 		$this->assertNotContains( $near, $found_ids );
 		$this->assertContains( $this->post_a, $found_ids );
-	}
-
-	/** Filters still override the saved thresholds. */
-	public function test_max_distance_filter_overrides_saved_value(): void {
-		add_filter( 'wp_mariadb_vector_search_hybrid', '__return_false' );
-		$near = $this->create_indexed_post( 'Near', array( 0.9, 0.4358898944, 0.0, 0.0 ) );
-		update_option( Settings::OPTION_NAME, array( 'max_distance' => 0.05 ) );
-		add_filter( 'wp_mariadb_vector_search_max_distance', static fn() => 0.65 );
-
-		$this->assertContains( $near, $this->search_ids( 'animals' ) );
 	}
 
 	/** Hybrid search adds posts that only the LIKE search finds. */
@@ -347,10 +340,21 @@ class Search_Test extends \WP_UnitTestCase {
 		$this->assertSame( $both, $found_ids[0] );
 	}
 
-	/** Disabling hybrid search leaves vector results only. */
-	public function test_hybrid_filter_false_excludes_lexical_only_match(): void {
+	/** The query prefix is added to the search term before embedding it. */
+	public function test_search_embeds_query_with_prefix(): void {
+		Settings::update( array( 'query_prefix' => 'query: ' ) );
+		Fake_Embedding_Provider::$inputs = array();
+
+		$this->search_ids( 'animals' );
+
+		// The plugin's own Search instance runs too, so the term is embedded twice.
+		$this->assertSame( array( 'query: animals' ), array_values( array_unique( Fake_Embedding_Provider::$inputs ) ) );
+	}
+
+	/** Turning hybrid search off leaves vector results only. */
+	public function test_hybrid_off_excludes_lexical_only_match(): void {
 		$lexical = $this->create_indexed_post( 'Zorbex Gadget Guide', array( 0.0, 0.0, 0.0, 1.0 ) );
-		add_filter( 'wp_mariadb_vector_search_hybrid', '__return_false' );
+		Settings::update( array( 'hybrid' => false ) );
 
 		$found_ids = $this->search_ids( 'Zorbex' );
 
@@ -360,7 +364,7 @@ class Search_Test extends \WP_UnitTestCase {
 
 	/** Without matches, the search returns nothing rather than falling back to LIKE. */
 	public function test_no_vector_match_does_not_fall_back_to_like(): void {
-		add_filter( 'wp_mariadb_vector_search_hybrid', '__return_false' );
+		Settings::update( array( 'hybrid' => false ) );
 		// Orthogonal to every indexed post; "Cats" still matches post A lexically.
 		Fake_Embedding_Provider::$vector = array( 0.0, 0.0, 0.0, 1.0 );
 
