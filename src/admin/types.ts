@@ -26,6 +26,11 @@ export interface StatusResponse {
 	dim_changed: boolean;
 	thresholds: Thresholds;
 	default_thresholds: Thresholds;
+	exclude_password_protected: boolean;
+}
+
+export interface IndexSettings {
+	exclude_password_protected: boolean;
 }
 
 export interface Thresholds {

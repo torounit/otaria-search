@@ -4,6 +4,7 @@ import { useEffect, useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { Page } from '@wordpress/admin-ui';
 import { Stack } from '@wordpress/ui';
+import { IndexSettingsSection } from './IndexSettingsSection';
 import { ModelSelector } from './ModelSelector';
 import { ReindexSection } from './ReindexSection';
 import { StatusSection } from './StatusSection';
@@ -40,6 +41,8 @@ function normalizeStatusResponse( raw: unknown ): StatusResponse {
 		dim_changed: resolved?.dim_changed ?? false,
 		thresholds: resolved?.thresholds ?? DEFAULT_THRESHOLDS,
 		default_thresholds: resolved?.default_thresholds ?? DEFAULT_THRESHOLDS,
+		exclude_password_protected:
+			resolved?.exclude_password_protected ?? true,
 	};
 }
 
@@ -146,6 +149,20 @@ export function VectorSearchApp() {
 								}
 							/>
 						) }
+
+						<IndexSettingsSection
+							excludePasswordProtected={
+								status.data.exclude_password_protected
+							}
+							onSaved={ () =>
+								setSuccessMessage(
+									__(
+										'Index settings saved. Run Reindex all posts to apply them to existing posts.',
+										'wp-mariadb-vector-search'
+									)
+								)
+							}
+						/>
 
 						<ReindexSection
 							isSupported={ status.data.is_supported }
