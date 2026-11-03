@@ -3,7 +3,7 @@
  * Plugin Name:       Squirrel Search
  * Plugin URI:        https://github.com/torounit/squirrel-search
  * Description:       Semantic and hybrid search for WordPress, backed by MariaDB's VECTOR type.
- * Version:           0.2.0
+ * Version:           0.3.0
  * Requires at least: 7.2
  * Requires PHP:      8.2
  * Author:            Toro_Unit

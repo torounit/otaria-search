@@ -1,6 +1,6 @@
 {
 	"name": "squirrel-search",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"description": "Semantic and hybrid search for WordPress, backed by MariaDB's VECTOR type.",
 	"author": "Toro_Unit",
 	"license": "GPL-2.0-or-later",
