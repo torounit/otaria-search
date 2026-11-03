@@ -70,6 +70,8 @@ class Indexer_Test extends \WP_UnitTestCase {
 	 */
 	public function tear_down(): void {
 		Fake_Embedding_Provider::reset();
+		// Schema::drop() commits the test transaction (DDL); clean up before it.
+		delete_option( Settings::OPTION_NAME );
 		Schema::drop();
 		delete_option( 'wp_mariadb_vector_search_db_version' );
 		add_filter( 'query', array( $this, '_create_temporary_tables' ) );
@@ -242,6 +244,61 @@ class Indexer_Test extends \WP_UnitTestCase {
 		);
 		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$this->assertSame( 0, $count );
+	}
+
+	/** Password-protected posts are not indexed by default. */
+	public function test_index_post_skips_password_protected(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_title'    => 'Protected',
+				'post_content'  => 'Secret content.',
+				'post_status'   => 'publish',
+				'post_password' => 'secret',
+			)
+		);
+
+		$this->indexer->index_post( $post_id );
+
+		$this->assertNull( $this->repository->get_content_hash( $post_id ) );
+	}
+
+	/** Password-protected posts are indexed when the exclusion is turned off. */
+	public function test_index_post_indexes_password_protected_when_allowed(): void {
+		update_option( Settings::OPTION_NAME, array( 'exclude_password_protected' => false ) + get_option( Settings::OPTION_NAME ) );
+		$post_id = $this->factory->post->create(
+			array(
+				'post_title'    => 'Protected',
+				'post_content'  => 'Secret content.',
+				'post_status'   => 'publish',
+				'post_password' => 'secret',
+			)
+		);
+
+		$this->indexer->index_post( $post_id );
+
+		$this->assertNotNull( $this->repository->get_content_hash( $post_id ) );
+	}
+
+	/** Adding a password to an indexed post removes its rows. */
+	public function test_index_post_removes_post_given_a_password(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_title'   => 'Soon protected',
+				'post_content' => 'Content.',
+				'post_status'  => 'publish',
+			)
+		);
+		$this->indexer->index_post( $post_id );
+
+		wp_update_post(
+			array(
+				'ID'            => $post_id,
+				'post_password' => 'secret',
+			)
+		);
+		$this->indexer->index_post( $post_id );
+
+		$this->assertNull( $this->repository->get_content_hash( $post_id ) );
 	}
 
 	/** Non-indexable post types (e.g. nav_menu_item) are not indexed. */

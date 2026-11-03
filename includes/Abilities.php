@@ -40,6 +40,13 @@ class Abilities {
 	const ABILITY_PREVIEW = 'wp-mariadb-vector-search/preview-search';
 
 	/**
+	 * Ability that saves which posts are indexed.
+	 *
+	 * @since 0.3.0
+	 */
+	const ABILITY_INDEX_SETTINGS = 'wp-mariadb-vector-search/save-index-settings';
+
+	/**
 	 * Number of posts listed by the search preview.
 	 *
 	 * @since 0.2.0
@@ -226,6 +233,31 @@ class Abilities {
 				},
 			)
 		);
+
+		// Register save-index-settings ability.
+		wp_register_ability(
+			self::ABILITY_INDEX_SETTINGS,
+			array(
+				'label'               => __( 'Save Index Settings', 'wp-mariadb-vector-search' ),
+				'description'         => __( 'Saves which posts are indexed. Run Reindex to apply it to existing posts.', 'wp-mariadb-vector-search' ),
+				'category'            => self::CATEGORY_SLUG,
+				'meta'                => array( 'show_in_rest' => true ),
+				'input_schema'        => array(
+					'type'       => 'object',
+					'required'   => array( 'exclude_password_protected' ),
+					'properties' => array(
+						'exclude_password_protected' => array(
+							'type'        => 'boolean',
+							'description' => __( 'Leave password-protected posts out of the index.', 'wp-mariadb-vector-search' ),
+						),
+					),
+				),
+				'execute_callback'    => array( __CLASS__, 'execute_save_index_settings' ),
+				'permission_callback' => function () {
+					return current_user_can( 'manage_options' );
+				},
+			)
+		);
 	}
 
 	/**
@@ -253,21 +285,40 @@ class Abilities {
 		$progress    = get_transient( Cron_Backfill::PROGRESS_KEY );
 
 		return array(
-			'is_supported'       => $is_supported,
-			'installed'          => $installed,
-			'indexed'            => $schema_ready ? $repository->count_indexed() : 0,
-			'table_dims'         => $table_dims,
-			'progress'           => $progress ? $progress : null,
-			'settings'           => array(
+			'is_supported'               => $is_supported,
+			'installed'                  => $installed,
+			'indexed'                    => $schema_ready ? $repository->count_indexed() : 0,
+			'table_dims'                 => $table_dims,
+			'progress'                   => $progress ? $progress : null,
+			'settings'                   => array(
 				'provider'   => $cur_provider,
 				'model'      => $cur_model,
 				'dimensions' => $cur_dims,
 			),
-			'available_models'   => $catalog->get_available_models(),
-			'dim_changed'        => $dim_changed,
-			'thresholds'         => Settings::get_thresholds(),
-			'default_thresholds' => Settings::DEFAULT_THRESHOLDS,
+			'available_models'           => $catalog->get_available_models(),
+			'dim_changed'                => $dim_changed,
+			'thresholds'                 => Settings::get_thresholds(),
+			'default_thresholds'         => Settings::DEFAULT_THRESHOLDS,
+			'exclude_password_protected' => Settings::excludes_password_protected(),
 		);
+	}
+
+	/**
+	 * Callback for save-index-settings ability.
+	 *
+	 * @since 0.3.0
+	 *
+	 * @param array|null $input Ability input with 'exclude_password_protected'.
+	 * @return array The index settings now in effect.
+	 */
+	public static function execute_save_index_settings( ?array $input = null ): array {
+		// Settings::sanitize_settings() keeps the other settings.
+		update_option(
+			Settings::OPTION_NAME,
+			array( 'exclude_password_protected' => (bool) ( $input['exclude_password_protected'] ?? true ) )
+		);
+
+		return array( 'exclude_password_protected' => Settings::excludes_password_protected() );
 	}
 
 	/**

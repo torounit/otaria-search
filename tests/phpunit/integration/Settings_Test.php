@@ -119,6 +119,28 @@ class Settings_Test extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Password-protected posts are excluded from the index unless the setting says otherwise.
+	 */
+	public function test_excludes_password_protected_by_default(): void {
+		$this->assertTrue( Settings::excludes_password_protected() );
+
+		update_option( self::SETTINGS_OPTION, array( 'exclude_password_protected' => false ) );
+
+		$this->assertFalse( Settings::excludes_password_protected() );
+	}
+
+	/**
+	 * The exclusion flag is stored as a boolean and kept when omitted.
+	 */
+	public function test_settings_sanitize_stores_or_preserves_exclude_password_protected(): void {
+		$this->assertFalse( Settings::sanitize_settings( array( 'exclude_password_protected' => '0' ) )['exclude_password_protected'] );
+
+		update_option( self::SETTINGS_OPTION, array( 'exclude_password_protected' => false ) );
+
+		$this->assertFalse( Settings::sanitize_settings( array( 'model' => 'm' ) )['exclude_password_protected'] );
+	}
+
+	/**
 	 * Partial updates preserve existing provider, model, and dimensions.
 	 */
 	public function test_settings_sanitize_preserves_existing_on_partial_update(): void {

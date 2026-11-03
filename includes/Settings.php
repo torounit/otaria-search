@@ -59,6 +59,22 @@ class Settings {
 	}
 
 	/**
+	 * Whether password-protected posts are left out of the index.
+	 *
+	 * Their content is otherwise sent to the embedding provider. Defaults to true.
+	 *
+	 * @since 0.3.0
+	 *
+	 * @return bool
+	 */
+	public static function excludes_password_protected(): bool {
+		$settings = get_option( self::OPTION_NAME, array() );
+
+		return ! is_array( $settings ) || ! isset( $settings['exclude_password_protected'] )
+			|| (bool) $settings['exclude_password_protected'];
+	}
+
+	/**
 	 * Register settings.
 	 *
 	 * @return void
@@ -76,24 +92,27 @@ class Settings {
 						'type'                 => 'object',
 						'additionalProperties' => false,
 						'properties'           => array(
-							'provider'              => array(
+							'provider'                   => array(
 								'type' => 'string',
 							),
-							'model'                 => array(
+							'model'                      => array(
 								'type' => 'string',
 							),
-							'dimensions'            => array(
+							'dimensions'                 => array(
 								'type' => 'integer',
 							),
-							'max_distance'          => array(
+							'max_distance'               => array(
 								'type'    => 'number',
 								'minimum' => 0,
 								'maximum' => 2,
 							),
-							'max_relative_distance' => array(
+							'max_relative_distance'      => array(
 								'type'    => 'number',
 								'minimum' => 0,
 								'maximum' => 2,
+							),
+							'exclude_password_protected' => array(
+								'type' => 'boolean',
 							),
 						),
 					),
@@ -147,6 +166,12 @@ class Settings {
 			} elseif ( isset( $existing[ $key ] ) && self::is_valid_distance( $existing[ $key ] ) ) {
 				$sanitized[ $key ] = (float) $existing[ $key ];
 			}
+		}
+
+		if ( isset( $input['exclude_password_protected'] ) ) {
+			$sanitized['exclude_password_protected'] = rest_sanitize_boolean( $input['exclude_password_protected'] );
+		} elseif ( isset( $existing['exclude_password_protected'] ) ) {
+			$sanitized['exclude_password_protected'] = (bool) $existing['exclude_password_protected'];
 		}
 
 		return $sanitized;

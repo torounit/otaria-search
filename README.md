@@ -21,7 +21,7 @@ Embeddings are generated via the **WordPress 7.2 core AI Client embedding API** 
 
 ### Automatic indexing
 
-Posts are indexed (or removed from the index) automatically whenever they are published, updated, or deleted.
+Posts are indexed (or removed from the index) automatically whenever they are published, updated, or deleted. Password-protected posts are left out by default, since indexing sends their content to the embedding provider; this can be changed on the admin page.
 
 ### Search
 
@@ -34,6 +34,8 @@ Displays MariaDB VECTOR support status, indexed post count, table dimensions, an
 **Embedding Model** — Select one of the models that configured providers report as embedding-capable. Saving runs the `wp-mariadb-vector-search/select-model` ability, which embeds a short probe text with the model to detect its native vector dimension, then stores provider, model and dimensions together. If the probe fails, the error is shown and the saved settings are left unchanged. The embeddings table is not changed at this point. Switching to another model resets the search thresholds to their defaults.
 
 **Search Thresholds** — The maximum distance and the maximum distance behind the best match (see the filters below). Suitable values depend on the model, so they are set here per model. The preview embeds a query and lists the nearest posts with their cosine distances and whether the entered (unsaved) thresholds keep them. Posts containing the search term are still added by hybrid search, and the filters override the saved values.
+
+**Indexing** — *Do not index password-protected posts* (on by default). Run Reindex after changing it: posts that are now excluded are removed from the index, and posts that are now allowed are embedded.
 
 **Reindex** — Schedules a background cron job to embed all existing posts. Behaviour depends on the current state:
 
@@ -68,6 +70,7 @@ Stored in the `wp_mariadb_vector_search_settings` option (array). Values are wri
 | `dimensions` | Vector dimensions — auto-detected by probing the API when a model is saved. Fixed at table creation; changing to a different dimension requires a Reindex (which recreates the table). |
 | `max_distance` | Search threshold set on the admin page. Default `0.65`. |
 | `max_relative_distance` | Search threshold set on the admin page. Default `0.25`. |
+| `exclude_password_protected` | Leave password-protected posts out of the index. Set on the admin page. Default `true`. |
 
 Chunk settings are code-level defaults in `Chunker.php` and are not stored in the option:
 
