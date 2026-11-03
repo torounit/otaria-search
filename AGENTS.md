@@ -285,6 +285,10 @@ Test file naming convention: `*_Test.php`.
   fields, then Description, Installation, FAQ and Changelog for site owners.
   Developer documentation belongs here in AGENTS.md, not in the README.
   Record user-visible changes under `### Unreleased` in the Changelog.
+- A husky pre-commit hook runs lint-staged (set up by `npm install`): PHPCBF
+  and PHPCS on PHP, Prettier on JS/TS/JSON/YAML, ESLint and the whole-project
+  `tsc` on JS/TS, and `lint:pkg-json` on `package.json`. PHP runs on the host
+  (`vendor/bin`), so it needs PHP and `composer install` locally.
 - `.github/workflows/lint.yml` (ESLint, `lint:pkg-json`, PHPCS, `tsc`) and
   `test.yml` (PHPUnit on wp-env) run on pull requests and pushes to `main`,
   skipping Markdown-only changes.
