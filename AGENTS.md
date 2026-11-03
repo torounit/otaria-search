@@ -295,7 +295,8 @@ Test file naming convention: `*_Test.php`.
   skipping Markdown-only changes.
 - Releases follow the `bump-version` skill (`.claude/skills/bump-version`):
   `bin/bump-version.sh <version>` on a `release/<version>` branch updates the
-  plugin header, `Stable tag`, the changelog heading and `package.json`. Merging
+  plugin header, `Stable tag`, the changelog heading, `package.json` and
+  `package-lock.json`. Merging
   that PR makes `draft-release.yml` draft a GitHub release from the changelog;
   publishing the draft runs `release.yml`, which lints, tests, builds and
   attaches the plugin zip to the GitHub release. It deploys to WordPress.org
@@ -309,13 +310,16 @@ Test file naming convention: `*_Test.php`.
   GitHub source archives; keep the two lists in step when adding files.
 - `bin/check-version.sh <version> [stable|prerelease]` is the one place that
   checks a release: `package.json`, the plugin header `Version` and (for stable
-  releases) the `Stable tag` must equal the version, and its changelog section
-  must have entries. It runs on `release/*` PRs (`release-check.yml`; make
+  releases) the `Stable tag` must equal the version, its changelog section
+  must have entries, and a release's pre-release flag must agree with the
+  version. With `--untagged` it also refuses a version whose tag already exists
+  (used before the tag is created). It runs on `release/*` PRs (`release-check.yml`; make
   "Check Release Version" a required check to block the merge), when the
   draft is created, and when a release is published (with the release's own
   prerelease flag, before lint and tests). `bin/release-lib.sh` holds what the
   scripts share: the semver rule, a `-` suffix meaning prerelease (drafted as
-  a GitHub pre-release), and where a changelog section ends
+  a GitHub pre-release), and where a changelog section ends: at the next `#` to
+  `###` heading, so `####` subheadings belong to the section
   (`check-version.sh --notes <version>` prints it for the release notes).
   Bumping a stable version merges its prereleases' changelog sections.
 
