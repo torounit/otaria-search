@@ -18,9 +18,9 @@ namespace WP_MariaDB_Vector_Search;
  * - the 's' parameter is non-empty.
  *
  * On embedding failure the query falls through to default WP search.
- * Vector results are filtered by cosine distance (wp_mariadb_vector_search_max_distance,
- * default 0.65) and by distance behind the best match
- * (wp_mariadb_vector_search_max_relative_distance, default 0.25), then fused with
+ * Vector results are filtered by cosine distance (wp_mariadb_vector_search_max_distance)
+ * and by distance behind the best match (wp_mariadb_vector_search_max_relative_distance),
+ * both defaulting to the saved settings (Settings::get_thresholds()), then fused with
  * WordPress's LIKE search results via Reciprocal Rank Fusion
  * (opt out with wp_mariadb_vector_search_hybrid).
  */
@@ -73,9 +73,10 @@ class Search {
 			return;
 		}
 
-		$max_distance = (float) apply_filters( 'wp_mariadb_vector_search_max_distance', 0.65 );
+		$thresholds   = Settings::get_thresholds();
+		$max_distance = (float) apply_filters( 'wp_mariadb_vector_search_max_distance', $thresholds['max_distance'] );
 		$max_results  = (int) apply_filters( 'wp_mariadb_vector_search_max_results', 200 );
-		$max_relative = (float) apply_filters( 'wp_mariadb_vector_search_max_relative_distance', 0.25 );
+		$max_relative = (float) apply_filters( 'wp_mariadb_vector_search_max_relative_distance', $thresholds['max_relative_distance'] );
 		$ids          = $this->repository->search_similar( $result[0]->getValues(), $post_types, $max_distance, $max_results, $max_relative );
 
 		if ( apply_filters( 'wp_mariadb_vector_search_hybrid', true ) ) {

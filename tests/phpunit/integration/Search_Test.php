@@ -17,6 +17,7 @@ use WP_MariaDB_Vector_Search\Indexer;
 use WP_MariaDB_Vector_Search\Repository;
 use WP_MariaDB_Vector_Search\Schema;
 use WP_MariaDB_Vector_Search\Search;
+use WP_MariaDB_Vector_Search\Settings;
 
 /**
  * Class Search_Test
@@ -134,6 +135,10 @@ class Search_Test extends \WP_UnitTestCase {
 		foreach ( $this->extra_posts as $post_id ) {
 			wp_delete_post( $post_id, true );
 		}
+
+		// Schema::drop() commits the test transaction (DDL), so saved thresholds
+		// would leak into later tests unless removed before it.
+		delete_option( Settings::OPTION_NAME );
 
 		Schema::drop();
 		delete_option( 'wp_mariadb_vector_search_db_version' );
@@ -254,6 +259,37 @@ class Search_Test extends \WP_UnitTestCase {
 
 		$this->assertContains( $this->post_a, $found_ids );
 		$this->assertNotContains( $far, $found_ids );
+	}
+
+	/** A saved max_relative_distance replaces the default. */
+	public function test_search_uses_saved_max_relative_distance(): void {
+		$far = $this->create_indexed_post( 'Far', array( 0.5, 0.8660254038, 0.0, 0.0 ) );
+		update_option( Settings::OPTION_NAME, array( 'max_relative_distance' => 0.6 ) );
+
+		$this->assertContains( $far, $this->search_ids( 'animals' ) );
+	}
+
+	/** A saved max_distance replaces the default. */
+	public function test_search_uses_saved_max_distance(): void {
+		add_filter( 'wp_mariadb_vector_search_hybrid', '__return_false' );
+		// Cosine distance 0.1 from the query; posts A and B are at 0.
+		$near = $this->create_indexed_post( 'Near', array( 0.9, 0.4358898944, 0.0, 0.0 ) );
+		update_option( Settings::OPTION_NAME, array( 'max_distance' => 0.05 ) );
+
+		$found_ids = $this->search_ids( 'animals' );
+
+		$this->assertNotContains( $near, $found_ids );
+		$this->assertContains( $this->post_a, $found_ids );
+	}
+
+	/** Filters still override the saved thresholds. */
+	public function test_max_distance_filter_overrides_saved_value(): void {
+		add_filter( 'wp_mariadb_vector_search_hybrid', '__return_false' );
+		$near = $this->create_indexed_post( 'Near', array( 0.9, 0.4358898944, 0.0, 0.0 ) );
+		update_option( Settings::OPTION_NAME, array( 'max_distance' => 0.05 ) );
+		add_filter( 'wp_mariadb_vector_search_max_distance', static fn() => 0.65 );
+
+		$this->assertContains( $near, $this->search_ids( 'animals' ) );
 	}
 
 	/** Hybrid search adds posts that only the LIKE search finds. */

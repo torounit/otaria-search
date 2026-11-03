@@ -22,6 +22,37 @@ class Settings {
 	const THRESHOLD_KEYS = array( 'max_distance', 'max_relative_distance' );
 
 	/**
+	 * Default thresholds, used until the admin saves model-specific values.
+	 */
+	const DEFAULT_THRESHOLDS = array(
+		'max_distance'          => 0.65,
+		'max_relative_distance' => 0.25,
+	);
+
+	/**
+	 * Saved distance thresholds, falling back to the defaults.
+	 *
+	 * Filters are not applied here; see Search::rewrite_search_query().
+	 *
+	 * @return array{max_distance: float, max_relative_distance: float}
+	 */
+	public static function get_thresholds(): array {
+		$settings = get_option( self::OPTION_NAME, array() );
+		if ( ! is_array( $settings ) ) {
+			$settings = array();
+		}
+
+		$thresholds = array();
+		foreach ( self::DEFAULT_THRESHOLDS as $key => $default ) {
+			$thresholds[ $key ] = isset( $settings[ $key ] ) && self::is_valid_distance( $settings[ $key ] )
+				? (float) $settings[ $key ]
+				: $default;
+		}
+
+		return $thresholds;
+	}
+
+	/**
 	 * Register settings.
 	 *
 	 * @return void
