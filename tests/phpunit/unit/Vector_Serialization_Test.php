@@ -2,14 +2,14 @@
 /**
  * Unit tests for vector literal serialization.
  *
- * @package Squirrel_Search
+ * @package Otaria_Search
  */
 
 declare(strict_types=1);
 
-namespace Squirrel_Search\Tests\Unit;
+namespace Otaria_Search\Tests\Unit;
 
-use Squirrel_Search\Repository;
+use Otaria_Search\Repository;
 
 /**
  * Class Vector_Serialization_Test

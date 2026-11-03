@@ -2,12 +2,12 @@
 /**
  * Text chunker for embedding generation.
  *
- * @package Squirrel_Search
+ * @package Otaria_Search
  */
 
 declare(strict_types=1);
 
-namespace Squirrel_Search;
+namespace Otaria_Search;
 
 /**
  * Splits post body text into overlapping chunks suitable for embedding.

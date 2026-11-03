@@ -1,4 +1,4 @@
-# Squirrel Search
+# Otaria Search
 
 Contributors: Toro_Unit  
 Donate link: https://www.paypal.me/torounit  
@@ -14,13 +14,13 @@ Semantic and hybrid search for WordPress: finds posts by meaning, with embedding
 
 ## Description
 
-Squirrel Search replaces the default WordPress search, which only finds posts containing the exact search term, with semantic search. A search for "cat" also finds posts that only say "kitten" or "feline", because posts and search terms are compared by meaning.
+Otaria Search replaces the default WordPress search, which only finds posts containing the exact search term, with semantic search. A search for "cat" also finds posts that only say "kitten" or "feline", because posts and search terms are compared by meaning.
 
 Meaning is captured by embeddings, created through the AI Client embedding API introduced in WordPress 7.2. It works with any AI provider plugin that supports embeddings, such as AI Provider for OpenAI or AI Provider for LM Studio. The embeddings are stored in a `VECTOR` column of your site's own MariaDB database, so no external vector database is needed.
 
 By default, the results are combined with WordPress's standard keyword search (hybrid search), so exact terms such as product codes and names are still found.
 
-GitHub: [https://github.com/torounit/squirrel-search](https://github.com/torounit/squirrel-search)
+GitHub: [https://github.com/torounit/otaria-search](https://github.com/torounit/otaria-search)
 
 ### Features
 
@@ -51,10 +51,10 @@ Password-protected posts are not sent by default. Which service receives the dat
 
 ## Installation
 
-1. Upload the plugin files to the `/wp-content/plugins/squirrel-search` directory, or install the plugin through the WordPress plugins screen directly.
+1. Upload the plugin files to the `/wp-content/plugins/otaria-search` directory, or install the plugin through the WordPress plugins screen directly.
 2. Activate the plugin through the **Plugins** screen in WordPress. The embeddings table is created on activation.
 3. Configure an AI provider plugin that supports embeddings under **Settings > Connectors**.
-4. On **Settings > Squirrel Search**, select an embedding model and save it.
+4. On **Settings > Otaria Search**, select an embedding model and save it.
 5. Click **Reindex all posts** to index the existing posts. New and updated posts are indexed automatically.
 
 ## Frequently Asked Questions
@@ -69,7 +69,7 @@ Search falls back to the standard WordPress search, and indexing is retried on t
 
 ### How do I tune the search results?
 
-On **Settings > Squirrel Search**, the **Search** section sets two thresholds: the maximum distance of a post from the search term, and the maximum distance behind the best match. Suitable values depend on the model, so enter a search term in the preview to see the nearest posts with their distances before saving. Switching to another model resets the thresholds.
+On **Settings > Otaria Search**, the **Search** section sets two thresholds: the maximum distance of a post from the search term, and the maximum distance behind the best match. Suitable values depend on the model, so enter a search term in the preview to see the nearest posts with their distances before saving. Switching to another model resets the thresholds.
 
 ### What happens when I switch to another embedding model?
 
@@ -90,10 +90,10 @@ Published posts of the post types selected on the settings page (all public, sea
 Yes, with WP-CLI:
 
 ```bash
-wp squirrel-search reindex
-wp squirrel-search reindex --post-type=post
-wp squirrel-search reindex --force      # re-embed unchanged posts too
-wp squirrel-search reindex --batch=100  # posts per batch (default: 50)
+wp otaria-search reindex
+wp otaria-search reindex --post-type=post
+wp otaria-search reindex --force      # re-embed unchanged posts too
+wp otaria-search reindex --batch=100  # posts per batch (default: 50)
 ```
 
 ### Embedding requests to my local model time out. What can I do?

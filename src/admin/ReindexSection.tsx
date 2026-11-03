@@ -39,7 +39,7 @@ export function ReindexSection( {
 
 		try {
 			const result = await apiFetch( {
-				path: '/wp-abilities/v1/abilities/squirrel-search/reindex/run',
+				path: '/wp-abilities/v1/abilities/otaria-search/reindex/run',
 				method: 'POST',
 				data: {
 					input: {
@@ -56,7 +56,7 @@ export function ReindexSection( {
 			const message =
 				err instanceof Error
 					? err.message
-					: __( 'Unknown error.', 'squirrel-search' );
+					: __( 'Unknown error.', 'otaria-search' );
 			setError( message );
 		} finally {
 			setIsSubmitting( false );
@@ -64,7 +64,7 @@ export function ReindexSection( {
 	}
 
 	return (
-		<Section title={ __( 'Reindex', 'squirrel-search' ) }>
+		<Section title={ __( 'Reindex', 'otaria-search' ) }>
 			{ error && (
 				<Notice status="error" onRemove={ () => setError( null ) }>
 					{ error }
@@ -73,19 +73,19 @@ export function ReindexSection( {
 			{ dimChanged && (
 				<Stack direction="column" gap="md">
 					<Notice status="warning" isDismissible={ false }>
-						{ __( 'Selected model is', 'squirrel-search' ) }{ ' ' }
+						{ __( 'Selected model is', 'otaria-search' ) }{ ' ' }
 						{ curDims }
 						{ '-dim but the table is ' }
 						{ tableDims }
 						{ __(
 							'-dim. Reindexing will recreate the table and delete all existing vectors.',
-							'squirrel-search'
+							'otaria-search'
 						) }
 					</Notice>
 					<CheckboxControl
 						label={ __(
 							'I understand that all existing vectors will be deleted.',
-							'squirrel-search'
+							'otaria-search'
 						) }
 						checked={ confirmRebuild }
 						onChange={ setConfirmRebuild }
@@ -96,7 +96,7 @@ export function ReindexSection( {
 				<Text render={ <p /> }>
 					{ __(
 						'The embeddings table will be created and a full reindex will be scheduled.',
-						'squirrel-search'
+						'otaria-search'
 					) }
 				</Text>
 			) }
@@ -104,7 +104,7 @@ export function ReindexSection( {
 				<CheckboxControl
 					label={ __(
 						'Force reindex (re-embed even unchanged posts)',
-						'squirrel-search'
+						'otaria-search'
 					) }
 					checked={ force }
 					onChange={ setForce }
@@ -122,7 +122,7 @@ export function ReindexSection( {
 					}
 					accessibleWhenDisabled
 				>
-					{ __( 'Reindex all posts', 'squirrel-search' ) }
+					{ __( 'Reindex all posts', 'otaria-search' ) }
 				</Button>
 			</Stack>
 		</Section>

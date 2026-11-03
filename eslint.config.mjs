@@ -1,5 +1,5 @@
 /**
- * ESLint flat config for Squirrel Search.
+ * ESLint flat config for Otaria Search.
  *
  * @see https://eslint.org/docs/latest/use/configure/configuration-files
  */
@@ -20,20 +20,20 @@ export default [
 	...wordpress.configs.recommended,
 
 	{
-		name: 'squirrel-search/custom-rules',
+		name: 'otaria-search/custom-rules',
 
 		rules: {
 			'@wordpress/i18n-text-domain': [
 				'error',
 				{
-					allowedTextDomain: 'squirrel-search',
+					allowedTextDomain: 'otaria-search',
 				},
 			],
 		},
 	},
 
 	{
-		name: 'squirrel-search/typescript-overrides',
+		name: 'otaria-search/typescript-overrides',
 		files: [ '**/*.ts?(x)' ],
 
 		rules: {

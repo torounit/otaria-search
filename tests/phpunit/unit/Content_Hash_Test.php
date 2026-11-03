@@ -2,14 +2,14 @@
 /**
  * Unit tests for content hashing.
  *
- * @package Squirrel_Search
+ * @package Otaria_Search
  */
 
 declare(strict_types=1);
 
-namespace Squirrel_Search\Tests\Unit;
+namespace Otaria_Search\Tests\Unit;
 
-use Squirrel_Search\Content_Hash;
+use Otaria_Search\Content_Hash;
 
 /**
  * Class Content_Hash_Test

@@ -2,19 +2,19 @@
 /**
  * Settings registration for the plugin.
  *
- * @package Squirrel_Search
+ * @package Otaria_Search
  */
 
 declare(strict_types=1);
 
-namespace Squirrel_Search;
+namespace Otaria_Search;
 
 /**
  * Handles registration of plugin settings.
  */
 class Settings {
 
-	const OPTION_NAME = 'squirrel_search_settings';
+	const OPTION_NAME = 'otaria_search_settings';
 
 	/**
 	 * Settings keys holding cosine distance thresholds for search.

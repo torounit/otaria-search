@@ -2,12 +2,12 @@
 /**
  * Main plugin class.
  *
- * @package Squirrel_Search
+ * @package Otaria_Search
  */
 
 declare(strict_types=1);
 
-namespace Squirrel_Search;
+namespace Otaria_Search;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -36,13 +36,13 @@ class Plugin {
 	 */
 	public function register_hooks(): void {
 		if ( ! Schema::is_vector_supported() ) {
-			squirrel_search_log( 'register_hooks: VECTOR not supported by this database; indexing hooks NOT registered.' );
+			otaria_search_log( 'register_hooks: VECTOR not supported by this database; indexing hooks NOT registered.' );
 			add_action( 'admin_notices', array( $this, 'notice_no_vector' ) );
 			return;
 		}
 
 		$this->maybe_install_schema();
-		squirrel_search_log( 'register_hooks: schema installed=' . ( Schema::is_installed() ? 'yes' : 'no' ) . '.' );
+		otaria_search_log( 'register_hooks: schema installed=' . ( Schema::is_installed() ? 'yes' : 'no' ) . '.' );
 
 		$repository = new Repository();
 		$indexer    = new Indexer( $repository );
@@ -73,7 +73,7 @@ class Plugin {
 		$admin->register_hooks();
 
 		if ( defined( 'WP_CLI' ) && \WP_CLI ) {
-			\WP_CLI::add_command( 'squirrel-search', new CLI( $indexer ) );
+			\WP_CLI::add_command( 'otaria-search', new CLI( $indexer ) );
 		}
 	}
 
@@ -84,7 +84,7 @@ class Plugin {
 	 */
 	public function notice_no_vector(): void {
 		echo '<div class="notice notice-error"><p>';
-		echo esc_html__( 'Squirrel Search requires MariaDB 11.7 or higher with VECTOR support.', 'squirrel-search' );
+		echo esc_html__( 'Otaria Search requires MariaDB 11.7 or higher with VECTOR support.', 'otaria-search' );
 		echo '</p></div>';
 	}
 

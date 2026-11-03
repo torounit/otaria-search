@@ -1,7 +1,7 @@
 <?php
 /**
- * Plugin Name:       Squirrel Search
- * Plugin URI:        https://github.com/torounit/squirrel-search
+ * Plugin Name:       Otaria Search
+ * Plugin URI:        https://github.com/torounit/otaria-search
  * Description:       Semantic and hybrid search for WordPress, backed by MariaDB's VECTOR type.
  * Version:           0.3.0
  * Requires at least: 7.2
@@ -10,9 +10,9 @@
  * Author URI:        https://torounit.com
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain:       squirrel-search
+ * Text Domain:       otaria-search
  *
- * @package Squirrel_Search
+ * @package Otaria_Search
  */
 
 declare(strict_types=1);
@@ -21,8 +21,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SQUIRREL_SEARCH_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
-define( 'SQUIRREL_SEARCH_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+define( 'OTARIA_SEARCH_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+define( 'OTARIA_SEARCH_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
 if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
 	require_once __DIR__ . '/vendor/autoload.php';
@@ -43,8 +43,8 @@ if ( file_exists( __DIR__ . '/build/build.php' ) ) {
  * @param string|string[] ...$input Text(s) to embed, or a single list of texts.
  * @return WP_AI_Client_Embedding_Builder
  */
-function squirrel_search_embedding( ...$input ): WP_AI_Client_Embedding_Builder {
-	$settings = get_option( Squirrel_Search\Settings::OPTION_NAME, array() );
+function otaria_search_embedding( ...$input ): WP_AI_Client_Embedding_Builder {
+	$settings = get_option( Otaria_Search\Settings::OPTION_NAME, array() );
 	$provider = is_array( $settings ) ? (string) ( $settings['provider'] ?? '' ) : '';
 	$model    = is_array( $settings ) ? (string) ( $settings['model'] ?? '' ) : '';
 	$builder  = wp_ai_client_embedding( ...$input );
@@ -59,13 +59,13 @@ function squirrel_search_embedding( ...$input ): WP_AI_Client_Embedding_Builder 
 /**
  * Write a diagnostic message to the PHP error log when WP_DEBUG is enabled.
  *
- * All messages are prefixed with "[squirrel-search]" so they can be
+ * All messages are prefixed with "[otaria-search]" so they can be
  * grepped from wp-content/debug.log to diagnose indexing failures.
  *
  * @param string $message Human-readable description of the event.
  * @return void
  */
-function squirrel_search_log( string $message ): void {
+function otaria_search_log( string $message ): void {
 	if ( ! defined( 'WP_DEBUG' ) || ! WP_DEBUG ) {
 		return;
 	}
@@ -74,7 +74,7 @@ function squirrel_search_log( string $message ): void {
 		? WP_DEBUG_LOG
 		: ( defined( 'WP_CONTENT_DIR' ) ? WP_CONTENT_DIR . '/debug.log' : '' );
 
-	$line = '[squirrel-search] ' . $message . PHP_EOL;
+	$line = '[otaria-search] ' . $message . PHP_EOL;
 
 	if ( '' !== $log_path ) {
 		$dir = dirname( $log_path );
@@ -90,12 +90,12 @@ function squirrel_search_log( string $message ): void {
 }
 
 
-register_activation_hook( __FILE__, array( 'Squirrel_Search\\Plugin', 'activate' ) );
-register_deactivation_hook( __FILE__, array( 'Squirrel_Search\\Plugin', 'deactivate' ) );
+register_activation_hook( __FILE__, array( 'Otaria_Search\\Plugin', 'activate' ) );
+register_deactivation_hook( __FILE__, array( 'Otaria_Search\\Plugin', 'deactivate' ) );
 
 add_action(
 	'plugins_loaded',
 	static function (): void {
-		( new Squirrel_Search\Plugin() )->init();
+		( new Otaria_Search\Plugin() )->init();
 	}
 );

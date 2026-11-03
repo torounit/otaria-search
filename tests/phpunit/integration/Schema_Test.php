@@ -5,14 +5,14 @@
  * Requires MariaDB 11.7+ (VECTOR type). Tests are skipped on MySQL or
  * older MariaDB versions.
  *
- * @package Squirrel_Search
+ * @package Otaria_Search
  */
 
 declare(strict_types=1);
 
-namespace Squirrel_Search\Tests\Integration;
+namespace Otaria_Search\Tests\Integration;
 
-use Squirrel_Search\Schema;
+use Otaria_Search\Schema;
 
 /**
  * Class Schema_Test

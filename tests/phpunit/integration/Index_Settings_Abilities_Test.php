@@ -2,14 +2,14 @@
 /**
  * Integration tests for the index settings abilities.
  *
- * @package Squirrel_Search
+ * @package Otaria_Search
  */
 
 declare(strict_types=1);
 
-namespace Squirrel_Search\Tests\Integration;
+namespace Otaria_Search\Tests\Integration;
 
-use Squirrel_Search\Settings;
+use Otaria_Search\Settings;
 
 /**
  * Class Index_Settings_Abilities_Test
@@ -33,7 +33,7 @@ class Index_Settings_Abilities_Test extends \WP_UnitTestCase {
 	 * @return mixed
 	 */
 	private function run_ability( string $name, array $input = array() ): mixed {
-		return wp_get_ability( "squirrel-search/{$name}" )->execute( empty( $input ) ? null : $input );
+		return wp_get_ability( "otaria-search/{$name}" )->execute( empty( $input ) ? null : $input );
 	}
 
 	/** The get-status ability reports whether password-protected posts are excluded. */

@@ -18,47 +18,44 @@ export function StatusSection( {
 	progress,
 }: Props ) {
 	return (
-		<Section title={ __( 'Status', 'squirrel-search' ) }>
+		<Section title={ __( 'Status', 'otaria-search' ) }>
 			<table className="widefat striped">
 				<tbody>
 					<tr>
 						<td>
-							{ __(
-								'MariaDB VECTOR support',
-								'squirrel-search'
-							) }
+							{ __( 'MariaDB VECTOR support', 'otaria-search' ) }
 						</td>
 						<td>
 							{ isSupported ? (
 								<span style={ { color: 'green' } }>
 									{ '✓ ' }
-									{ __( 'Available', 'squirrel-search' ) }
+									{ __( 'Available', 'otaria-search' ) }
 								</span>
 							) : (
 								<span style={ { color: 'red' } }>
 									{ '✗ ' }
 									{ __(
 										'Not available (MariaDB 11.7+ required)',
-										'squirrel-search'
+										'otaria-search'
 									) }
 								</span>
 							) }
 						</td>
 					</tr>
 					<tr>
-						<td>{ __( 'Indexed posts', 'squirrel-search' ) }</td>
+						<td>{ __( 'Indexed posts', 'otaria-search' ) }</td>
 						<td>{ installed ? indexed : '—' }</td>
 					</tr>
 					<tr>
-						<td>{ __( 'Table dimensions', 'squirrel-search' ) }</td>
+						<td>{ __( 'Table dimensions', 'otaria-search' ) }</td>
 						<td>{ tableDims ?? '—' }</td>
 					</tr>
 					<tr>
-						<td>{ __( 'Backfill status', 'squirrel-search' ) }</td>
+						<td>{ __( 'Backfill status', 'otaria-search' ) }</td>
 						<td>
 							{ progress
 								? `${ progress.done } / ${ progress.total } posts`
-								: __( 'Idle', 'squirrel-search' ) }
+								: __( 'Idle', 'otaria-search' ) }
 						</td>
 					</tr>
 				</tbody>
