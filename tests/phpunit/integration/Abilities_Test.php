@@ -153,6 +153,28 @@ class Abilities_Test extends WP_UnitTestCase {
 		$this->assertArrayNotHasKey( 'max_distance', get_option( Settings::OPTION_NAME ) );
 	}
 
+	/** Switching to another model clears the prefixes of the previous one. */
+	public function test_select_model_clears_prefixes_when_model_changes(): void {
+		update_option(
+			Settings::OPTION_NAME,
+			array(
+				'provider'     => 'openai',
+				'model'        => 'text-embedding-3-small',
+				'dimensions'   => 1536,
+				'query_prefix' => 'query: ',
+			)
+		);
+
+		$this->select_model(
+			array(
+				'provider' => Fake_Embedding_Provider::ID,
+				'model'    => Fake_Embedding_Provider::MODEL,
+			)
+		);
+
+		$this->assertArrayNotHasKey( 'query_prefix', get_option( Settings::OPTION_NAME ) );
+	}
+
 	/** Re-selecting the current model keeps its thresholds. */
 	public function test_select_model_keeps_thresholds_for_same_model(): void {
 		update_option(

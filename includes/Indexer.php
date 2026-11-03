@@ -64,14 +64,17 @@ class Indexer {
 			return;
 		}
 
-		$hash = Content_Hash::compute( $post->post_title, $post->post_content, $this->get_model_key() );
+		$hash = Content_Hash::compute( $post->post_title, $post->post_content, $this->get_embedding_key() );
 		if ( $this->repository->get_content_hash( $post_id ) === $hash ) {
 			wp_mariadb_vector_search_log( "index_post({$post_id}): content hash unchanged, skipping." );
 			return;
 		}
 
 		$texts  = $this->chunker->chunk( $post->post_content, $post->post_title );
-		$result = wp_mariadb_vector_search_embedding( $texts )->generate_embeddings();
+		$prefix = Settings::get_prefixes()['document_prefix'];
+		$result = wp_mariadb_vector_search_embedding(
+			array_map( static fn( string $text ): string => $prefix . $text, $texts )
+		)->generate_embeddings();
 
 		if ( is_wp_error( $result ) ) {
 			wp_mariadb_vector_search_log(
@@ -123,18 +126,25 @@ class Indexer {
 	}
 
 	/**
-	 * Identify the embedding model selected in settings, as "provider:model".
+	 * Identify how chunks are embedded: the selected model as "provider:model",
+	 * plus the document prefix when one is set.
 	 *
 	 * @since 0.2.0
+	 * @since 0.3.0 Renamed from get_model_key(); includes the document prefix.
 	 *
 	 * @return string
 	 */
-	private function get_model_key(): string {
+	private function get_embedding_key(): string {
 		$settings = get_option( Settings::OPTION_NAME, array() );
 		if ( ! is_array( $settings ) ) {
 			return '';
 		}
 
-		return ( $settings['provider'] ?? '' ) . ':' . ( $settings['model'] ?? '' );
+		$key    = ( $settings['provider'] ?? '' ) . ':' . ( $settings['model'] ?? '' );
+		$prefix = Settings::get_prefixes()['document_prefix'];
+
+		// Without a prefix the key stays "provider:model", so posts indexed
+		// before prefixes existed are not re-embedded.
+		return '' === $prefix ? $key : $key . "\x00" . $prefix;
 	}
 }

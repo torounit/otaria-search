@@ -40,6 +40,13 @@ class Abilities {
 	const ABILITY_POST_TYPES = 'wp-mariadb-vector-search/save-post-types';
 
 	/**
+	 * Ability that saves the embedding prefixes.
+	 *
+	 * @since 0.3.0
+	 */
+	const ABILITY_PREFIXES = 'wp-mariadb-vector-search/save-prefixes';
+
+	/**
 	 * Ability that lists the posts nearest to a query with their distances.
 	 *
 	 * @since 0.2.0
@@ -234,6 +241,34 @@ class Abilities {
 			)
 		);
 
+		// Register save-prefixes ability.
+		wp_register_ability(
+			self::ABILITY_PREFIXES,
+			array(
+				'label'               => __( 'Save Prefixes', 'wp-mariadb-vector-search' ),
+				'description'         => __( 'Saves the texts prepended to search terms and to post chunks before embedding, as the embedding model requires. An empty string or null clears a prefix.', 'wp-mariadb-vector-search' ),
+				'category'            => self::CATEGORY_SLUG,
+				'meta'                => array( 'show_in_rest' => true ),
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(
+						'query_prefix'    => array(
+							'type'        => array( 'string', 'null' ),
+							'description' => __( 'Prepended to search terms.', 'wp-mariadb-vector-search' ),
+						),
+						'document_prefix' => array(
+							'type'        => array( 'string', 'null' ),
+							'description' => __( 'Prepended to post chunks. Changing it requires a Reindex.', 'wp-mariadb-vector-search' ),
+						),
+					),
+				),
+				'execute_callback'    => array( __CLASS__, 'execute_save_prefixes' ),
+				'permission_callback' => function () {
+					return current_user_can( 'manage_options' );
+				},
+			)
+		);
+
 		// Register preview-search ability.
 		wp_register_ability(
 			self::ABILITY_PREVIEW,
@@ -340,6 +375,7 @@ class Abilities {
 			'hybrid'                     => Settings::is_hybrid(),
 			'exclude_password_protected' => Settings::excludes_password_protected(),
 			'post_types'                 => Settings::get_post_types(),
+			'prefixes'                   => Settings::get_prefixes(),
 			'available_post_types'       => array_map(
 				static fn( string $name ): array => array(
 					'name'  => $name,
@@ -348,6 +384,30 @@ class Abilities {
 				Settings::available_post_types()
 			),
 		);
+	}
+
+	/**
+	 * Callback for save-prefixes ability.
+	 *
+	 * @since 0.3.0
+	 *
+	 * @param array|null $input Ability input with optional 'query_prefix' and 'document_prefix'.
+	 * @return array The prefixes now in effect, and whether the document prefix changed,
+	 *               which requires a Reindex.
+	 */
+	public static function execute_save_prefixes( ?array $input = null ): array {
+		$before = Settings::get_prefixes()['document_prefix'];
+
+		// Settings::sanitize_settings() keeps the other settings and any
+		// prefix omitted from the input.
+		update_option(
+			Settings::OPTION_NAME,
+			array_intersect_key( (array) $input, array_flip( Settings::PREFIX_KEYS ) )
+		);
+
+		$prefixes = Settings::get_prefixes();
+
+		return $prefixes + array( 'document_changed' => $prefixes['document_prefix'] !== $before );
 	}
 
 	/**
@@ -432,7 +492,7 @@ class Abilities {
 	 * @return array|\WP_Error Nearest posts, or the embedding error.
 	 */
 	public static function execute_preview_search( ?array $input = null ): array|\WP_Error {
-		$result = wp_mariadb_vector_search_embedding( (string) ( $input['query'] ?? '' ) )->generate_embeddings();
+		$result = wp_mariadb_vector_search_embedding( Settings::get_prefixes()['query_prefix'] . ( $input['query'] ?? '' ) )->generate_embeddings();
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
@@ -544,11 +604,11 @@ class Abilities {
 			'dimensions' => $result->getDimensions(),
 		);
 
-		// Distances are model-specific: thresholds tuned for another model
-		// are cleared back to the defaults.
+		// Distances and prefixes are model-specific: those set for another
+		// model are cleared back to the defaults.
 		$saved = get_option( Settings::OPTION_NAME, array() );
 		if ( ! is_array( $saved ) || ( $saved['provider'] ?? '' ) !== $provider || ( $saved['model'] ?? '' ) !== $model ) {
-			$settings += array_fill_keys( Settings::THRESHOLD_KEYS, null );
+			$settings += array_fill_keys( array( ...Settings::THRESHOLD_KEYS, ...Settings::PREFIX_KEYS ), null );
 		}
 
 		update_option( Settings::OPTION_NAME, $settings );

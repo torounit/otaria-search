@@ -31,7 +31,9 @@ Front-end searches embed the search term and look up the closest posts in the in
 
 Displays MariaDB VECTOR support status, indexed post count, table dimensions, and backfill progress.
 
-**Embedding Model** — Select one of the models that configured providers report as embedding-capable. Saving runs the `wp-mariadb-vector-search/select-model` ability, which embeds a short probe text with the model to detect its native vector dimension, then stores provider, model and dimensions together. If the probe fails, the error is shown and the saved settings are left unchanged. The embeddings table is not changed at this point. Switching to another model resets the search thresholds to their defaults.
+**Embedding Model** — Select one of the models that configured providers report as embedding-capable. Saving runs the `wp-mariadb-vector-search/select-model` ability, which embeds a short probe text with the model to detect its native vector dimension, then stores provider, model and dimensions together. If the probe fails, the error is shown and the saved settings are left unchanged. The embeddings table is not changed at this point. Switching to another model resets the search thresholds to their defaults and clears the prefixes.
+
+**Prefixes** — Texts prepended before embedding: the query prefix to search terms, the document prefix to post content. Some models are trained with them (e.g. `query: ` / `passage: ` for E5 and Nemotron) and lose accuracy without; their model card gives the exact strings, including trailing spaces, which are kept. Empty by default. The query prefix takes effect immediately; a changed document prefix needs a Reindex, which re-embeds every post.
 
 **Search** — *Hybrid search* fuses the vector results with WordPress's standard search (on by default); turn it off for vector-only results. The thresholds are the maximum cosine distance a post may have from the query (`0` = identical, smaller = more similar), and the maximum distance it may fall behind the closest post, which drops generic matches such as the default "Hello world!" post. Suitable values depend on the model, so they are set here per model. The preview embeds a query and lists the nearest posts with their cosine distances and whether the entered (unsaved) thresholds keep them. Posts containing the search term are still added by hybrid search.
 
@@ -75,6 +77,8 @@ Stored in the `wp_mariadb_vector_search_settings` option (array). Values are wri
 | `hybrid` | Whether hybrid search is on, set on the admin page. Default `true`. |
 | `exclude_password_protected` | Leave password-protected posts out of the index. Set on the admin page. Default `true`. |
 | `post_types` | Post types to index and search, set on the admin page. Default all public, searchable post types except attachments. |
+| `query_prefix` | Prepended to search terms before embedding, set on the admin page. Default empty. |
+| `document_prefix` | Prepended to post chunks before embedding, set on the admin page. Default empty. |
 
 Chunk settings are code-level defaults in `Chunker.php` and are not stored in the option:
 

@@ -205,6 +205,52 @@ class Settings_Test extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Prefixes keep their spaces; control characters such as line breaks are removed.
+	 */
+	public function test_settings_sanitize_keeps_prefix_spaces(): void {
+		$result = Settings::sanitize_settings(
+			array(
+				'query_prefix'    => 'query: ',
+				'document_prefix' => "passage:\n ",
+			)
+		);
+
+		$this->assertSame( 'query: ', $result['query_prefix'] );
+		$this->assertSame( 'passage: ', $result['document_prefix'] );
+	}
+
+	/**
+	 * Omitted prefixes keep their saved values; null clears them.
+	 */
+	public function test_settings_sanitize_preserves_or_clears_prefixes(): void {
+		update_option(
+			self::SETTINGS_OPTION,
+			array(
+				'query_prefix'    => 'query: ',
+				'document_prefix' => 'passage: ',
+			)
+		);
+
+		$result = Settings::sanitize_settings( array( 'document_prefix' => null ) );
+
+		$this->assertSame( 'query: ', $result['query_prefix'] );
+		$this->assertArrayNotHasKey( 'document_prefix', $result );
+	}
+
+	/**
+	 * Prefixes are empty until saved.
+	 */
+	public function test_get_prefixes_defaults_to_empty(): void {
+		$this->assertSame(
+			array(
+				'query_prefix'    => '',
+				'document_prefix' => '',
+			),
+			Settings::get_prefixes()
+		);
+	}
+
+	/**
 	 * Partial updates preserve existing provider, model, and dimensions.
 	 */
 	public function test_settings_sanitize_preserves_existing_on_partial_update(): void {

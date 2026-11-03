@@ -44,6 +44,13 @@ class Fake_Embedding_Provider implements ProviderInterface {
 	public static array $vector = self::DEFAULT_VECTOR;
 
 	/**
+	 * Texts embedded since the last reset.
+	 *
+	 * @var string[]
+	 */
+	public static array $inputs = array();
+
+	/**
 	 * Register this provider in the AI Client default registry.
 	 *
 	 * @return void
@@ -71,12 +78,13 @@ class Fake_Embedding_Provider implements ProviderInterface {
 	}
 
 	/**
-	 * Restore the default vector.
+	 * Restore the default vector and forget the embedded texts.
 	 *
 	 * @return void
 	 */
 	public static function reset(): void {
 		self::$vector = self::DEFAULT_VECTOR;
+		self::$inputs = array();
 	}
 
 	/**

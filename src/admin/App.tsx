@@ -7,6 +7,7 @@ import { Stack } from '@wordpress/ui';
 import { IndexSettingsSection } from './IndexSettingsSection';
 import { ModelSelector } from './ModelSelector';
 import { PostTypesSection } from './PostTypesSection';
+import { PrefixSection } from './PrefixSection';
 import { ReindexSection } from './ReindexSection';
 import { SearchSection } from './SearchSection';
 import { StatusSection } from './StatusSection';
@@ -47,6 +48,10 @@ function normalizeStatusResponse( raw: unknown ): StatusResponse {
 			resolved?.exclude_password_protected ?? true,
 		post_types: resolved?.post_types ?? [],
 		available_post_types: resolved?.available_post_types ?? [],
+		prefixes: {
+			query_prefix: resolved?.prefixes?.query_prefix ?? '',
+			document_prefix: resolved?.prefixes?.document_prefix ?? '',
+		},
 	};
 }
 
@@ -136,6 +141,27 @@ export function VectorSearchApp() {
 								void loadStatus();
 							} }
 						/>
+
+						{ status.data.settings.model !== '' && (
+							<PrefixSection
+								// Remount after a model change clears the prefixes.
+								key={ `${ status.data.settings.provider }:${ status.data.settings.model }` }
+								prefixes={ status.data.prefixes }
+								onSaved={ ( documentChanged ) =>
+									setSuccessMessage(
+										documentChanged
+											? __(
+													'Prefixes saved. Please run Reindex all posts to re-embed posts with the new document prefix.',
+													'wp-mariadb-vector-search'
+												)
+											: __(
+													'Prefixes saved.',
+													'wp-mariadb-vector-search'
+												)
+									)
+								}
+							/>
+						) }
 
 						{ status.data.installed && (
 							<SearchSection

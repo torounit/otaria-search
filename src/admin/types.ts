@@ -29,11 +29,21 @@ export interface StatusResponse {
 	hybrid: boolean;
 	post_types: string[];
 	available_post_types: AvailablePostType[];
+	prefixes: Prefixes;
 	exclude_password_protected: boolean;
 }
 
 export interface IndexSettings {
 	exclude_password_protected: boolean;
+}
+
+export interface Prefixes {
+	query_prefix: string;
+	document_prefix: string;
+}
+
+export interface SavePrefixesResponse extends Prefixes {
+	document_changed: boolean;
 }
 
 export interface AvailablePostType {

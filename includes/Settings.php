@@ -34,6 +34,14 @@ class Settings {
 	);
 
 	/**
+	 * Settings keys holding the texts prepended before embedding: to search
+	 * terms and to post chunks. Models that need them document them.
+	 *
+	 * @since 0.3.0
+	 */
+	const PREFIX_KEYS = array( 'query_prefix', 'document_prefix' );
+
+	/**
 	 * Saved distance thresholds, falling back to the defaults.
 	 *
 	 * @since 0.2.0
@@ -70,6 +78,26 @@ class Settings {
 
 		return ! is_array( $settings ) || ! isset( $settings['exclude_password_protected'] )
 			|| (bool) $settings['exclude_password_protected'];
+	}
+
+	/**
+	 * Saved embedding prefixes.
+	 *
+	 * @since 0.3.0
+	 *
+	 * @return array{query_prefix: string, document_prefix: string} Empty strings when not set.
+	 */
+	public static function get_prefixes(): array {
+		$settings = get_option( self::OPTION_NAME, array() );
+
+		$prefixes = array();
+		foreach ( self::PREFIX_KEYS as $key ) {
+			$prefixes[ $key ] = is_array( $settings ) && isset( $settings[ $key ] ) && is_string( $settings[ $key ] )
+				? $settings[ $key ]
+				: '';
+		}
+
+		return $prefixes;
 	}
 
 	/**
@@ -175,6 +203,12 @@ class Settings {
 									'type' => 'string',
 								),
 							),
+							'query_prefix'               => array(
+								'type' => 'string',
+							),
+							'document_prefix'            => array(
+								'type' => 'string',
+							),
 						),
 					),
 				),
@@ -249,7 +283,34 @@ class Settings {
 			$sanitized['post_types'] = $existing['post_types'];
 		}
 
+		foreach ( self::PREFIX_KEYS as $key ) {
+			if ( array_key_exists( $key, $input ) ) {
+				// Present: a non-empty string is stored; null or empty clears it.
+				$prefix = is_string( $input[ $key ] ) ? self::sanitize_prefix( $input[ $key ] ) : '';
+				if ( '' !== $prefix ) {
+					$sanitized[ $key ] = $prefix;
+				}
+			} elseif ( isset( $existing[ $key ] ) && is_string( $existing[ $key ] ) ) {
+				$sanitized[ $key ] = $existing[ $key ];
+			}
+		}
+
 		return $sanitized;
+	}
+
+	/**
+	 * Remove invalid UTF-8 and control characters from a prefix.
+	 *
+	 * Spaces are kept: a trailing space is part of prefixes such as "query: ".
+	 * sanitize_text_field() would trim it.
+	 *
+	 * @since 0.3.0
+	 *
+	 * @param string $prefix Prefix to clean.
+	 * @return string
+	 */
+	private static function sanitize_prefix( string $prefix ): string {
+		return (string) preg_replace( '/[\x00-\x1F\x7F]/u', '', wp_check_invalid_utf8( $prefix ) );
 	}
 
 	/**

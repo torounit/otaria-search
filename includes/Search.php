@@ -85,7 +85,7 @@ class Search {
 		}
 
 		$post_types = $this->get_post_types( $query );
-		$result     = wp_mariadb_vector_search_embedding( $search_term )->generate_embeddings();
+		$result     = wp_mariadb_vector_search_embedding( Settings::get_prefixes()['query_prefix'] . $search_term )->generate_embeddings();
 
 		if ( is_wp_error( $result ) || empty( $result[0] ) ) {
 			return;

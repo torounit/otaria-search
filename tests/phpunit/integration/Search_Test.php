@@ -342,6 +342,19 @@ class Search_Test extends \WP_UnitTestCase {
 		$this->assertSame( $both, $found_ids[0] );
 	}
 
+	/** The query prefix is added to the search term before embedding it. */
+	public function test_search_embeds_query_with_prefix(): void {
+		$settings                 = get_option( Settings::OPTION_NAME );
+		$settings['query_prefix'] = 'query: ';
+		update_option( Settings::OPTION_NAME, $settings );
+		Fake_Embedding_Provider::$inputs = array();
+
+		$this->search_ids( 'animals' );
+
+		// The plugin's own Search instance runs too, so the term is embedded twice.
+		$this->assertSame( array( 'query: animals' ), array_values( array_unique( Fake_Embedding_Provider::$inputs ) ) );
+	}
+
 	/** Turning hybrid search off leaves vector results only. */
 	public function test_hybrid_off_excludes_lexical_only_match(): void {
 		$lexical = $this->create_indexed_post( 'Zorbex Gadget Guide', array( 0.0, 0.0, 0.0, 1.0 ) );
