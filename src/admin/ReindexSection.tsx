@@ -86,7 +86,6 @@ export function ReindexSection( {
 						) }
 					</Notice>
 					<CheckboxControl
-						__nextHasNoMarginBottom
 						label={ __(
 							'I understand that all existing vectors will be deleted.',
 							'wp-mariadb-vector-search'
@@ -106,7 +105,6 @@ export function ReindexSection( {
 			) }
 			{ ! dimChanged && installed && (
 				<CheckboxControl
-					__nextHasNoMarginBottom
 					label={ __(
 						'Force reindex (re-embed even unchanged posts)',
 						'wp-mariadb-vector-search'

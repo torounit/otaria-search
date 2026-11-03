@@ -103,8 +103,6 @@ export function ThresholdSection( { thresholds, defaults, onSaved }: Props ) {
 			) }
 
 			<TextControl
-				__next40pxDefaultSize
-				__nextHasNoMarginBottom
 				type="number"
 				min={ 0 }
 				max={ 2 }
@@ -118,8 +116,6 @@ export function ThresholdSection( { thresholds, defaults, onSaved }: Props ) {
 				onChange={ setMaxDistance }
 			/>
 			<TextControl
-				__next40pxDefaultSize
-				__nextHasNoMarginBottom
 				type="number"
 				min={ 0 }
 				max={ 2 }
@@ -178,8 +174,6 @@ export function ThresholdSection( { thresholds, defaults, onSaved }: Props ) {
 					{ __( 'Preview', 'wp-mariadb-vector-search' ) }
 				</Text>
 				<TextControl
-					__next40pxDefaultSize
-					__nextHasNoMarginBottom
 					label={ __( 'Search query', 'wp-mariadb-vector-search' ) }
 					help={ __(
 						'Lists the nearest posts using the thresholds above, before saving.',

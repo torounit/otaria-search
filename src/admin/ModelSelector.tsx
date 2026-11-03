@@ -110,8 +110,6 @@ export function ModelSelector( {
 				</Notice>
 			) }
 			<SelectControl
-				__next40pxDefaultSize
-				__nextHasNoMarginBottom
 				label={ __( 'Model', 'wp-mariadb-vector-search' ) }
 				value={ selected }
 				options={ options }
