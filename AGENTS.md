@@ -1,4 +1,4 @@
-# AGENTS.md — WP MariaDB Vector Search
+# AGENTS.md — Squirrel Search
 
 Specification for AI agents (and humans) implementing this plugin.
 
@@ -27,7 +27,7 @@ WordPress search.
 
 `dbDelta()` does **not** understand `VECTOR(N)` / `VECTOR INDEX`. Use raw
 `$wpdb->query()` for DDL, gated by a versioned option
-`wp_mariadb_vector_search_db_version`.
+`squirrel_search_db_version`.
 
 ## Architecture
 
@@ -38,13 +38,13 @@ save_post ──► Indexer::enqueue (wp_schedule_single_event)
         Indexer::run_job
                 │  Chunker → string[]
                 ▼
-        wp_mariadb_vector_search_embedding(texts)->generate_embeddings()  ──► core AI Client → provider plugin
+        squirrel_search_embedding(texts)->generate_embeddings()  ──► core AI Client → provider plugin
                 │  Embedding[] → float[][]
                 ▼
         Repository::replace_post_chunks(post_id, chunks)
 
 is_search() ──► Search::pre_get_posts
-                │  query string → wp_mariadb_vector_search_embedding(s)->generate_embeddings()
+                │  query string → squirrel_search_embedding(s)->generate_embeddings()
                 ▼
         Repository::search_similar(query_vec, post_types, max_distance, max_results, max_relative_distance)
                 │  vector ranking                    WP_Query (LIKE, orderby=relevance)
@@ -57,7 +57,7 @@ is_search() ──► Search::pre_get_posts
 
 ### Design decisions
 
-- **All AI calls go through core.** `wp_mariadb_vector_search_embedding()`
+- **All AI calls go through core.** `squirrel_search_embedding()`
   returns core's `WP_AI_Client_Embedding_Builder` (from `wp_ai_client_embedding()`)
   bound via `using_provider_model()` to the model selected in settings. Provider
   resolution, authentication, HTTP and response parsing belong to core and the
@@ -67,7 +67,7 @@ is_search() ──► Search::pre_get_posts
 - **Chunking, one post → N vectors.** Long posts lose information when
   truncated to a model's token limit, so we split them. Storage is per-chunk;
   search aggregates back to posts via `MIN(distance)`.
-- **Separate table.** Embeddings live in `{$prefix}mariadb_vector_embeddings`,
+- **Separate table.** Embeddings live in `{$prefix}squirrel_search_embeddings`,
   not in `wp_posts` or `wp_postmeta`. Avoids autoloading, simplifies uninstall.
 - **Async indexing.** `save_post` only schedules; embedding happens on cron
   to keep editor save fast and to survive AI provider failures.
@@ -84,7 +84,7 @@ is_search() ──► Search::pre_get_posts
   catches them. RRF needs only ranks, since cosine distance and LIKE relevance
   are not comparable. The distance thresholds still apply to the vector side.
 - **LIKE clause removal is scoped to the query.** The rewritten query is marked
-  with the `wp_mariadb_vector_search` query var, and a permanent `posts_search`
+  with the `squirrel_search` query var, and a permanent `posts_search`
   filter empties the clause only for marked queries. A filter added and removed
   around the query would leak: `fields=ids` queries return before `the_posts`.
   Core hides password-protected posts from logged-out visitors inside that
@@ -93,7 +93,7 @@ is_search() ──► Search::pre_get_posts
 ## Schema
 
 ```sql
-CREATE TABLE {$prefix}mariadb_vector_embeddings (
+CREATE TABLE {$prefix}squirrel_search_embeddings (
   id           BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   post_id      BIGINT UNSIGNED NOT NULL,
   chunk_index  SMALLINT UNSIGNED NOT NULL,
@@ -128,9 +128,9 @@ into the embedding key, so both the hash and `update-settings`'
 
 | File                              | Responsibility                                                                                     |
 | --------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `wp-mariadb-vector-search.php`    | Bootstrap. Registers activation hooks. `wp_mariadb_vector_search_embedding()` (core builder bound to the selected model). |
+| `squirrel-search.php`    | Bootstrap. Registers activation hooks. `squirrel_search_embedding()` (core builder bound to the selected model). |
 | `includes/Plugin.php`             | Composition root. Instantiates components and registers hooks.                                     |
-| `includes/Schema.php`             | Install/upgrade table. Verify MariaDB version. Admin notice on incompatibility.                    |
+| `includes/Schema.php`             | Install/upgrade table. Verify MariaDB version. Admin notice on incompatibility. `table_name()` is the only place the table name is spelled out; option names live in `Settings::OPTION_NAME` and `Schema::DB_VERSION_OPTION`. |
 | `includes/Settings.php`           | The settings option: getters with defaults (`get_thresholds()`, `is_hybrid()`, `get_post_types()`, `get_prefixes()`, `excludes_password_protected()`), `get_embedding_key()` (content hash input), `update()` for partial writes, `sanitize_settings()`. |
 | `includes/Repository.php`         | `$wpdb` wrapper. `replace_post_chunks()`, `delete_post()`, `delete_other_post_types()`, `search_similar()`. Vector text serialization. |
 | `includes/Model_Catalog.php`      | Enumerates models the AI Client registry reports as embedding-capable.                             |
@@ -140,10 +140,10 @@ into the embedding key, so both the hash and `update-settings`'
 | `includes/Indexer.php`            | `save_post`/`delete_post`/`trashed_post` hooks. Cron worker that embeds chunks and stores them via the repository. Removes password-protected posts from the index unless the setting allows them. `remove_deselected_post_types()`, hooked to the settings option update, deletes the rows of post types a change deselected, however the option is written. |
 | `includes/Search.php`             | `pre_get_posts` rewrite to `post__in` + `orderby=post__in`; hybrid fusion with the LIKE search. Safe fallback to default search. |
 | `includes/Rank_Fusion.php`        | Reciprocal Rank Fusion of ranked post ID lists. Pure PHP.                                          |
-| `includes/CLI.php`                | `wp mariadb-vector reindex [--post-type=] [--force] [--batch=]`. Loaded only if `WP_CLI`.          |
+| `includes/CLI.php`                | `wp squirrel-search reindex [--post-type=] [--force] [--batch=]`. Loaded only if `WP_CLI`.          |
 | `includes/Cron_Backfill.php`      | Batched cron-driven reindex of all posts. Progress in transient.                                   |
 | `includes/Admin.php`              | Settings page: status, model selector, prefixes, search settings (hybrid toggle, thresholds with preview), post types, indexing settings, unified Reindex button (auto-detects dimension diff). |
-| `uninstall.php`                   | `DROP TABLE`, delete all `wp_mariadb_vector_search_*` options.                                     |
+| `uninstall.php`                   | `DROP TABLE`, delete all `squirrel_search_*` options.                                     |
 
 ## Similarity search query
 
@@ -187,7 +187,7 @@ first. Ties keep vector order.
 - Token-count approximation: `mb_strlen($text) / 2` (close enough for size
   budgeting — actual tokenization is the provider's job).
 
-## Settings (`wp_mariadb_vector_search_settings`, single option, array)
+## Settings (`squirrel_search_settings`, single option, array)
 
 | Key          | Default | Purpose                                                     |
 | ------------ | ------- | ----------------------------------------------------------- |
@@ -219,7 +219,7 @@ Writing the option:
 
 Other options:
 
-- `wp_mariadb_vector_search_db_version` — schema migration marker.
+- `squirrel_search_db_version` — schema migration marker.
 
 ## Extension points (filters/actions)
 
@@ -284,14 +284,14 @@ Test file naming convention: `*_Test.php`.
 1. `wp-env start` (ensure the image is MariaDB 11.7+; check with
    `wp-env run cli wp db query "SELECT VERSION();"`).
 2. Configure an embedding-capable provider plugin (Settings > Connectors) and
-   select its model on Settings > Vector Search.
-3. Activate this plugin; check `SHOW CREATE TABLE wp_mariadb_vector_embeddings`.
+   select its model on Settings > Squirrel Search.
+3. Activate this plugin; check `SHOW CREATE TABLE wp_squirrel_search_embeddings`.
 4. Create posts → `wp cron event run --due-now` → inspect:
-   `wp db query "SELECT post_id, chunk_index, VEC_ToText(embedding) FROM wp_mariadb_vector_embeddings WHERE post_id=N;"`
-5. `wp mariadb-vector reindex` — confirm progress bar and final count.
+   `wp db query "SELECT post_id, chunk_index, VEC_ToText(embedding) FROM wp_squirrel_search_embeddings WHERE post_id=N;"`
+5. `wp squirrel-search reindex` — confirm progress bar and final count.
 6. Search with semantically related but lexically distinct terms
    (e.g. "猫" matching posts that only say "ねこ" / "feline");
    compare ordering vs. default search.
 7. Disable the provider → search → confirm fallback to default behavior + WP_Error in log.
 8. `npm run test:php:base`, `npm run lint:php` and `npm run lint:js`.
-9. Delete the plugin → `SHOW TABLES LIKE 'wp_mariadb_vector_embeddings'` returns empty.
+9. Delete the plugin → `SHOW TABLES LIKE 'wp_squirrel_search_embeddings'` returns empty.

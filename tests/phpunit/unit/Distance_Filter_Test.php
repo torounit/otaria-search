@@ -2,14 +2,14 @@
 /**
  * Unit tests for the distance threshold filter.
  *
- * @package WP_MariaDB_Vector_Search
+ * @package Squirrel_Search
  */
 
 declare(strict_types=1);
 
-namespace WP_MariaDB_Vector_Search\Tests\Unit;
+namespace Squirrel_Search\Tests\Unit;
 
-use WP_MariaDB_Vector_Search\Repository;
+use Squirrel_Search\Repository;
 
 /**
  * Class Distance_Filter_Test

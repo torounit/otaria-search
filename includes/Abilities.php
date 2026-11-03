@@ -2,28 +2,28 @@
 /**
  * Abilities registration for the plugin.
  *
- * @package WP_MariaDB_Vector_Search
+ * @package Squirrel_Search
  */
 
 declare(strict_types=1);
 
-namespace WP_MariaDB_Vector_Search;
+namespace Squirrel_Search;
 
 /**
  * Handles registration of Abilities and Categories.
  */
 class Abilities {
 
-	const CATEGORY_SLUG      = 'wp-mariadb-vector-search';
-	const ABILITY_GET_STATUS = 'wp-mariadb-vector-search/get-status';
-	const ABILITY_REINDEX    = 'wp-mariadb-vector-search/reindex';
+	const CATEGORY_SLUG      = 'squirrel-search';
+	const ABILITY_GET_STATUS = 'squirrel-search/get-status';
+	const ABILITY_REINDEX    = 'squirrel-search/reindex';
 
 	/**
 	 * Ability that probes a model's dimensions and saves it as the embedding model.
 	 *
 	 * @since 0.2.0
 	 */
-	const ABILITY_SELECT = 'wp-mariadb-vector-search/select-model';
+	const ABILITY_SELECT = 'squirrel-search/select-model';
 
 	/**
 	 * Ability that changes any settings except the model: search thresholds,
@@ -31,14 +31,14 @@ class Abilities {
 	 *
 	 * @since 0.3.0
 	 */
-	const ABILITY_UPDATE_SETTINGS = 'wp-mariadb-vector-search/update-settings';
+	const ABILITY_UPDATE_SETTINGS = 'squirrel-search/update-settings';
 
 	/**
 	 * Ability that lists the posts nearest to a query with their distances.
 	 *
 	 * @since 0.2.0
 	 */
-	const ABILITY_PREVIEW = 'wp-mariadb-vector-search/preview-search';
+	const ABILITY_PREVIEW = 'squirrel-search/preview-search';
 
 	/**
 	 * Number of posts listed by the search preview.
@@ -66,8 +66,8 @@ class Abilities {
 		wp_register_ability_category(
 			self::CATEGORY_SLUG,
 			array(
-				'label'       => __( 'Vector Search', 'wp-mariadb-vector-search' ),
-				'description' => __( 'Abilities for MariaDB Vector Search.', 'wp-mariadb-vector-search' ),
+				'label'       => __( 'Squirrel Search', 'squirrel-search' ),
+				'description' => __( 'Abilities for Squirrel Search.', 'squirrel-search' ),
 			)
 		);
 	}
@@ -82,8 +82,8 @@ class Abilities {
 		wp_register_ability(
 			self::ABILITY_GET_STATUS,
 			array(
-				'label'               => __( 'Get Status', 'wp-mariadb-vector-search' ),
-				'description'         => __( 'Retrieves the current plugin status.', 'wp-mariadb-vector-search' ),
+				'label'               => __( 'Get Status', 'squirrel-search' ),
+				'description'         => __( 'Retrieves the current plugin status.', 'squirrel-search' ),
 				'category'            => self::CATEGORY_SLUG,
 				'meta'                => array(
 					'show_in_rest' => true,
@@ -103,8 +103,8 @@ class Abilities {
 		wp_register_ability(
 			self::ABILITY_REINDEX,
 			array(
-				'label'               => __( 'Reindex', 'wp-mariadb-vector-search' ),
-				'description'         => __( 'Triggers a full reindex of all posts.', 'wp-mariadb-vector-search' ),
+				'label'               => __( 'Reindex', 'squirrel-search' ),
+				'description'         => __( 'Triggers a full reindex of all posts.', 'squirrel-search' ),
 				'category'            => self::CATEGORY_SLUG,
 				'meta'                => array( 'show_in_rest' => true ),
 				'input_schema'        => array(
@@ -112,12 +112,12 @@ class Abilities {
 					'properties' => array(
 						'force'           => array(
 							'type'        => 'boolean',
-							'description' => __( 'Force a full rebuild.', 'wp-mariadb-vector-search' ),
+							'description' => __( 'Force a full rebuild.', 'squirrel-search' ),
 							'default'     => false,
 						),
 						'confirm_rebuild' => array(
 							'type'        => 'boolean',
-							'description' => __( 'Confirm the rebuild process.', 'wp-mariadb-vector-search' ),
+							'description' => __( 'Confirm the rebuild process.', 'squirrel-search' ),
 							'default'     => false,
 						),
 					),
@@ -133,8 +133,8 @@ class Abilities {
 		wp_register_ability(
 			self::ABILITY_SELECT,
 			array(
-				'label'               => __( 'Select Model', 'wp-mariadb-vector-search' ),
-				'description'         => __( 'Selects the embedding model, detecting its dimensions with a probe request.', 'wp-mariadb-vector-search' ),
+				'label'               => __( 'Select Model', 'squirrel-search' ),
+				'description'         => __( 'Selects the embedding model, detecting its dimensions with a probe request.', 'squirrel-search' ),
 				'category'            => self::CATEGORY_SLUG,
 				'meta'                => array( 'show_in_rest' => true ),
 				'input_schema'        => array(
@@ -143,11 +143,11 @@ class Abilities {
 					'properties' => array(
 						'provider' => array(
 							'type'        => 'string',
-							'description' => __( 'AI provider id.', 'wp-mariadb-vector-search' ),
+							'description' => __( 'AI provider id.', 'squirrel-search' ),
 						),
 						'model'    => array(
 							'type'        => 'string',
-							'description' => __( 'Embedding model id.', 'wp-mariadb-vector-search' ),
+							'description' => __( 'Embedding model id.', 'squirrel-search' ),
 						),
 					),
 				),
@@ -162,8 +162,8 @@ class Abilities {
 		wp_register_ability(
 			self::ABILITY_UPDATE_SETTINGS,
 			array(
-				'label'               => __( 'Update Settings', 'wp-mariadb-vector-search' ),
-				'description'         => __( 'Changes the given settings and keeps the others: search thresholds, hybrid search, indexed post types, embedding prefixes and whether password-protected posts are indexed. Null resets a setting to its default. Deselected post types are removed from the index. Returns the settings in effect, the added post types, and reindex_required when a Reindex is needed to apply the change.', 'wp-mariadb-vector-search' ),
+				'label'               => __( 'Update Settings', 'squirrel-search' ),
+				'description'         => __( 'Changes the given settings and keeps the others: search thresholds, hybrid search, indexed post types, embedding prefixes and whether password-protected posts are indexed. Null resets a setting to its default. Deselected post types are removed from the index. Returns the settings in effect, the added post types, and reindex_required when a Reindex is needed to apply the change.', 'squirrel-search' ),
 				'category'            => self::CATEGORY_SLUG,
 				'meta'                => array(
 					'show_in_rest' => true,
@@ -190,8 +190,8 @@ class Abilities {
 		wp_register_ability(
 			self::ABILITY_PREVIEW,
 			array(
-				'label'               => __( 'Preview Search', 'wp-mariadb-vector-search' ),
-				'description'         => __( 'Lists the posts nearest to a query with their cosine distances and whether the thresholds keep them.', 'wp-mariadb-vector-search' ),
+				'label'               => __( 'Preview Search', 'squirrel-search' ),
+				'description'         => __( 'Lists the posts nearest to a query with their cosine distances and whether the thresholds keep them.', 'squirrel-search' ),
 				'category'            => self::CATEGORY_SLUG,
 				'meta'                => array(
 					'show_in_rest' => true,
@@ -207,13 +207,13 @@ class Abilities {
 						'query'                 => array(
 							'type'        => 'string',
 							'minLength'   => 1,
-							'description' => __( 'Search query.', 'wp-mariadb-vector-search' ),
+							'description' => __( 'Search query.', 'squirrel-search' ),
 						),
 						'max_distance'          => self::distance_schema() + array(
-							'description' => __( 'Threshold to preview; defaults to the saved value.', 'wp-mariadb-vector-search' ),
+							'description' => __( 'Threshold to preview; defaults to the saved value.', 'squirrel-search' ),
 						),
 						'max_relative_distance' => self::distance_schema() + array(
-							'description' => __( 'Threshold to preview; defaults to the saved value.', 'wp-mariadb-vector-search' ),
+							'description' => __( 'Threshold to preview; defaults to the saved value.', 'squirrel-search' ),
 						),
 					),
 				),
@@ -254,32 +254,32 @@ class Abilities {
 	private static function update_settings_properties(): array {
 		return array(
 			'max_distance'               => self::distance_schema() + array(
-				'description' => __( 'Maximum cosine distance from the query.', 'wp-mariadb-vector-search' ),
+				'description' => __( 'Maximum cosine distance from the query.', 'squirrel-search' ),
 			),
 			'max_relative_distance'      => self::distance_schema() + array(
-				'description' => __( 'Maximum distance behind the best match.', 'wp-mariadb-vector-search' ),
+				'description' => __( 'Maximum distance behind the best match.', 'squirrel-search' ),
 			),
 			'hybrid'                     => array(
 				'type'        => array( 'boolean', 'null' ),
-				'description' => __( 'Fuse vector results with the LIKE search results.', 'wp-mariadb-vector-search' ),
+				'description' => __( 'Fuse vector results with the LIKE search results.', 'squirrel-search' ),
 			),
 			'post_types'                 => array(
 				'type'        => array( 'array', 'null' ),
 				'minItems'    => 1,
 				'items'       => array( 'type' => 'string' ),
-				'description' => __( 'Public, searchable post types to index. Null indexes all of them, including ones registered later.', 'wp-mariadb-vector-search' ),
+				'description' => __( 'Public, searchable post types to index. Null indexes all of them, including ones registered later.', 'squirrel-search' ),
 			),
 			'query_prefix'               => array(
 				'type'        => array( 'string', 'null' ),
-				'description' => __( 'Prepended to search terms before embedding.', 'wp-mariadb-vector-search' ),
+				'description' => __( 'Prepended to search terms before embedding.', 'squirrel-search' ),
 			),
 			'document_prefix'            => array(
 				'type'        => array( 'string', 'null' ),
-				'description' => __( 'Prepended to post chunks before embedding. Changing it requires a Reindex.', 'wp-mariadb-vector-search' ),
+				'description' => __( 'Prepended to post chunks before embedding. Changing it requires a Reindex.', 'squirrel-search' ),
 			),
 			'exclude_password_protected' => array(
 				'type'        => array( 'boolean', 'null' ),
-				'description' => __( 'Leave password-protected posts out of the index. Changing it requires a Reindex.', 'wp-mariadb-vector-search' ),
+				'description' => __( 'Leave password-protected posts out of the index. Changing it requires a Reindex.', 'squirrel-search' ),
 			),
 		);
 	}
@@ -299,7 +299,7 @@ class Abilities {
 		$installed    = Schema::is_installed();
 		$schema_ready = $is_supported && $installed;
 
-		$settings     = get_option( Admin::SETTINGS_KEY, array() );
+		$settings     = get_option( Settings::OPTION_NAME, array() );
 		$cur_provider = is_array( $settings ) ? (string) ( $settings['provider'] ?? '' ) : '';
 		$cur_model    = is_array( $settings ) ? (string) ( $settings['model'] ?? '' ) : '';
 		$cur_dims     = is_array( $settings ) && isset( $settings['dimensions'] ) ? (int) $settings['dimensions'] : null;
@@ -362,7 +362,7 @@ class Abilities {
 				return new \WP_Error(
 					'invalid_post_types',
 					/* translators: %s: Comma-separated post type names. */
-					sprintf( __( 'These post types cannot be indexed: %s', 'wp-mariadb-vector-search' ), implode( ', ', $invalid ) ),
+					sprintf( __( 'These post types cannot be indexed: %s', 'squirrel-search' ), implode( ', ', $invalid ) ),
 					array( 'status' => 400 )
 				);
 			}
@@ -399,7 +399,7 @@ class Abilities {
 	 * @return array|\WP_Error Nearest posts, or the embedding error.
 	 */
 	public static function execute_preview_search( ?array $input = null ): array|\WP_Error {
-		$result = wp_mariadb_vector_search_embedding( Settings::get_prefixes()['query_prefix'] . ( $input['query'] ?? '' ) )->generate_embeddings();
+		$result = squirrel_search_embedding( Settings::get_prefixes()['query_prefix'] . ( $input['query'] ?? '' ) )->generate_embeddings();
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
@@ -442,7 +442,7 @@ class Abilities {
 			? (bool) $input['confirm_rebuild']
 			: false;
 
-		$settings   = get_option( Admin::SETTINGS_KEY, array() );
+		$settings   = get_option( Settings::OPTION_NAME, array() );
 		$cur_dims   = is_array( $settings ) && isset( $settings['dimensions'] ) ? (int) $settings['dimensions'] : null;
 		$saved_dims = $cur_dims ?? Plugin::DEFAULT_DIMENSIONS;
 
@@ -458,7 +458,7 @@ class Abilities {
 			if ( ! $confirm_rebuild ) {
 				return new \WP_Error(
 					'confirm_required',
-					__( 'Please confirm before rebuilding.', 'wp-mariadb-vector-search' ),
+					__( 'Please confirm before rebuilding.', 'squirrel-search' ),
 					array( 'status' => 400 )
 				);
 			}

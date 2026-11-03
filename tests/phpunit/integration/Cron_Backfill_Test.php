@@ -4,17 +4,17 @@
  *
  * Requires MariaDB 11.7+ with VECTOR support.
  *
- * @package WP_MariaDB_Vector_Search
+ * @package Squirrel_Search
  */
 
 declare(strict_types=1);
 
-namespace WP_MariaDB_Vector_Search\Tests\Integration;
+namespace Squirrel_Search\Tests\Integration;
 
-use WP_MariaDB_Vector_Search\Cron_Backfill;
-use WP_MariaDB_Vector_Search\Indexer;
-use WP_MariaDB_Vector_Search\Repository;
-use WP_MariaDB_Vector_Search\Schema;
+use Squirrel_Search\Cron_Backfill;
+use Squirrel_Search\Indexer;
+use Squirrel_Search\Repository;
+use Squirrel_Search\Schema;
 
 /**
  * Class Cron_Backfill_Test
@@ -55,7 +55,7 @@ class Cron_Backfill_Test extends \WP_UnitTestCase {
 		remove_filter( 'query', array( $this, '_drop_temporary_tables' ) );
 
 		Schema::drop();
-		delete_option( 'wp_mariadb_vector_search_db_version' );
+		delete_option( Schema::DB_VERSION_OPTION );
 		Schema::install( self::DIMS );
 		Fake_Embedding_Provider::select();
 
@@ -71,7 +71,7 @@ class Cron_Backfill_Test extends \WP_UnitTestCase {
 		Fake_Embedding_Provider::reset();
 		delete_transient( Cron_Backfill::PROGRESS_KEY );
 		Schema::drop();
-		delete_option( 'wp_mariadb_vector_search_db_version' );
+		delete_option( Schema::DB_VERSION_OPTION );
 		add_filter( 'query', array( $this, '_create_temporary_tables' ) );
 		add_filter( 'query', array( $this, '_drop_temporary_tables' ) );
 		parent::tear_down();
@@ -89,7 +89,7 @@ class Cron_Backfill_Test extends \WP_UnitTestCase {
 	/** Posts are indexed after run_batch(). */
 	public function test_run_batch_indexes_posts(): void {
 		global $wpdb;
-		$table = $wpdb->prefix . 'mariadb_vector_embeddings';
+		$table = Schema::table_name();
 
 		$post_id = $this->factory->post->create(
 			array(
@@ -113,7 +113,7 @@ class Cron_Backfill_Test extends \WP_UnitTestCase {
 	/** Every post is indexed across batches even when posts share a post_date. */
 	public function test_run_batch_indexes_every_post_with_same_post_date(): void {
 		global $wpdb;
-		$table = $wpdb->prefix . 'mariadb_vector_embeddings';
+		$table = Schema::table_name();
 
 		$post_ids = $this->factory->post->create_many(
 			7,
@@ -140,7 +140,7 @@ class Cron_Backfill_Test extends \WP_UnitTestCase {
 	/** Force-reindex replaces existing rows. */
 	public function test_run_batch_with_force_reindexes(): void {
 		global $wpdb;
-		$table = $wpdb->prefix . 'mariadb_vector_embeddings';
+		$table = Schema::table_name();
 
 		$post_id = $this->factory->post->create(
 			array(

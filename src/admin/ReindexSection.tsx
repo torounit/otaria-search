@@ -39,7 +39,7 @@ export function ReindexSection( {
 
 		try {
 			const result = await apiFetch( {
-				path: '/wp-abilities/v1/abilities/wp-mariadb-vector-search/reindex/run',
+				path: '/wp-abilities/v1/abilities/squirrel-search/reindex/run',
 				method: 'POST',
 				data: {
 					input: {
@@ -56,7 +56,7 @@ export function ReindexSection( {
 			const message =
 				err instanceof Error
 					? err.message
-					: __( 'Unknown error.', 'wp-mariadb-vector-search' );
+					: __( 'Unknown error.', 'squirrel-search' );
 			setError( message );
 		} finally {
 			setIsSubmitting( false );
@@ -64,7 +64,7 @@ export function ReindexSection( {
 	}
 
 	return (
-		<Section title={ __( 'Reindex', 'wp-mariadb-vector-search' ) }>
+		<Section title={ __( 'Reindex', 'squirrel-search' ) }>
 			{ error && (
 				<Notice status="error" onRemove={ () => setError( null ) }>
 					{ error }
@@ -73,22 +73,19 @@ export function ReindexSection( {
 			{ dimChanged && (
 				<Stack direction="column" gap="md">
 					<Notice status="warning" isDismissible={ false }>
-						{ __(
-							'Selected model is',
-							'wp-mariadb-vector-search'
-						) }{ ' ' }
+						{ __( 'Selected model is', 'squirrel-search' ) }{ ' ' }
 						{ curDims }
 						{ '-dim but the table is ' }
 						{ tableDims }
 						{ __(
 							'-dim. Reindexing will recreate the table and delete all existing vectors.',
-							'wp-mariadb-vector-search'
+							'squirrel-search'
 						) }
 					</Notice>
 					<CheckboxControl
 						label={ __(
 							'I understand that all existing vectors will be deleted.',
-							'wp-mariadb-vector-search'
+							'squirrel-search'
 						) }
 						checked={ confirmRebuild }
 						onChange={ setConfirmRebuild }
@@ -99,7 +96,7 @@ export function ReindexSection( {
 				<Text render={ <p /> }>
 					{ __(
 						'The embeddings table will be created and a full reindex will be scheduled.',
-						'wp-mariadb-vector-search'
+						'squirrel-search'
 					) }
 				</Text>
 			) }
@@ -107,7 +104,7 @@ export function ReindexSection( {
 				<CheckboxControl
 					label={ __(
 						'Force reindex (re-embed even unchanged posts)',
-						'wp-mariadb-vector-search'
+						'squirrel-search'
 					) }
 					checked={ force }
 					onChange={ setForce }
@@ -125,7 +122,7 @@ export function ReindexSection( {
 					}
 					accessibleWhenDisabled
 				>
-					{ __( 'Reindex all posts', 'wp-mariadb-vector-search' ) }
+					{ __( 'Reindex all posts', 'squirrel-search' ) }
 				</Button>
 			</Stack>
 		</Section>

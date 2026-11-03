@@ -2,12 +2,12 @@
 /**
  * Unit tests for the Model_Catalog class.
  *
- * @package WP_MariaDB_Vector_Search
+ * @package Squirrel_Search
  */
 
 declare(strict_types=1);
 
-namespace WP_MariaDB_Vector_Search\Tests\Unit;
+namespace Squirrel_Search\Tests\Unit;
 
 use WordPress\AiClient\Providers\DTO\ProviderModelsMetadata;
 use WordPress\AiClient\Providers\DTO\ProviderMetadata;
@@ -15,7 +15,7 @@ use WordPress\AiClient\Providers\Enums\ProviderTypeEnum;
 use WordPress\AiClient\Providers\Models\DTO\ModelMetadata;
 use WordPress\AiClient\Providers\Models\Enums\CapabilityEnum;
 use WordPress\AiClient\Providers\ProviderRegistry;
-use WP_MariaDB_Vector_Search\Model_Catalog;
+use Squirrel_Search\Model_Catalog;
 
 /**
  * Class Model_Catalog_Test

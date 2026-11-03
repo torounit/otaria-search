@@ -2,14 +2,14 @@
 /**
  * Unit tests for content hashing.
  *
- * @package WP_MariaDB_Vector_Search
+ * @package Squirrel_Search
  */
 
 declare(strict_types=1);
 
-namespace WP_MariaDB_Vector_Search\Tests\Unit;
+namespace Squirrel_Search\Tests\Unit;
 
-use WP_MariaDB_Vector_Search\Content_Hash;
+use Squirrel_Search\Content_Hash;
 
 /**
  * Class Content_Hash_Test

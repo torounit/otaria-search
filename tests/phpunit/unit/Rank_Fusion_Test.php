@@ -2,14 +2,14 @@
 /**
  * Unit tests for reciprocal rank fusion.
  *
- * @package WP_MariaDB_Vector_Search
+ * @package Squirrel_Search
  */
 
 declare(strict_types=1);
 
-namespace WP_MariaDB_Vector_Search\Tests\Unit;
+namespace Squirrel_Search\Tests\Unit;
 
-use WP_MariaDB_Vector_Search\Rank_Fusion;
+use Squirrel_Search\Rank_Fusion;
 
 /**
  * Class Rank_Fusion_Test

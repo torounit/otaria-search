@@ -6,18 +6,18 @@
  * Embeddings come from Fake_Embedding_Provider through the core AI Client
  * (no real HTTP calls).
  *
- * @package WP_MariaDB_Vector_Search
+ * @package Squirrel_Search
  */
 
 declare(strict_types=1);
 
-namespace WP_MariaDB_Vector_Search\Tests\Integration;
+namespace Squirrel_Search\Tests\Integration;
 
-use WP_MariaDB_Vector_Search\Indexer;
-use WP_MariaDB_Vector_Search\Repository;
-use WP_MariaDB_Vector_Search\Schema;
-use WP_MariaDB_Vector_Search\Search;
-use WP_MariaDB_Vector_Search\Settings;
+use Squirrel_Search\Indexer;
+use Squirrel_Search\Repository;
+use Squirrel_Search\Schema;
+use Squirrel_Search\Search;
+use Squirrel_Search\Settings;
 
 /**
  * Class Search_Test
@@ -87,7 +87,7 @@ class Search_Test extends \WP_UnitTestCase {
 		remove_filter( 'query', array( $this, '_drop_temporary_tables' ) );
 
 		Schema::drop();
-		delete_option( 'wp_mariadb_vector_search_db_version' );
+		delete_option( Schema::DB_VERSION_OPTION );
 		Schema::install( self::DIMS );
 		Fake_Embedding_Provider::select();
 
@@ -141,7 +141,7 @@ class Search_Test extends \WP_UnitTestCase {
 		delete_option( Settings::OPTION_NAME );
 
 		Schema::drop();
-		delete_option( 'wp_mariadb_vector_search_db_version' );
+		delete_option( Schema::DB_VERSION_OPTION );
 
 		add_filter( 'query', array( $this, '_create_temporary_tables' ) );
 		add_filter( 'query', array( $this, '_drop_temporary_tables' ) );

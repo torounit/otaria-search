@@ -2,12 +2,12 @@
 /**
  * Batched cron-driven backfill for existing posts.
  *
- * @package WP_MariaDB_Vector_Search
+ * @package Squirrel_Search
  */
 
 declare(strict_types=1);
 
-namespace WP_MariaDB_Vector_Search;
+namespace Squirrel_Search;
 
 /**
  * Re-indexes posts that have not yet been embedded (or whose hash changed).
@@ -16,8 +16,8 @@ namespace WP_MariaDB_Vector_Search;
  */
 class Cron_Backfill {
 
-	const CRON_HOOK     = 'wp_mariadb_vector_search_backfill';
-	const PROGRESS_KEY  = 'wp_mariadb_vector_search_backfill_progress';
+	const CRON_HOOK     = 'squirrel_search_backfill';
+	const PROGRESS_KEY  = 'squirrel_search_backfill_progress';
 	const DEFAULT_BATCH = 10;
 
 	/**

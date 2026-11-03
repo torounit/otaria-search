@@ -13,7 +13,7 @@
 		"WP_DEBUG": true
 	},
 	"mappings": {
-		"/wp-content/plugins/wp-mariadb-vector-search": "."
+		"/wp-content/plugins/squirrel-search": "."
 	},
 	"phpVersion": "8.4",
 	"lifecycleScripts": {

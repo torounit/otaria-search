@@ -2,12 +2,12 @@
 /**
  * In-memory AI provider for tests.
  *
- * @package WP_MariaDB_Vector_Search
+ * @package Squirrel_Search
  */
 
 declare(strict_types=1);
 
-namespace WP_MariaDB_Vector_Search\Tests\Integration;
+namespace Squirrel_Search\Tests\Integration;
 
 use WordPress\AiClient\AiClient;
 use WordPress\AiClient\Providers\Contracts\ModelMetadataDirectoryInterface;
@@ -21,7 +21,7 @@ use WordPress\AiClient\Providers\Models\DTO\ModelMetadata;
 use WordPress\AiClient\Providers\Models\DTO\SupportedOption;
 use WordPress\AiClient\Providers\Models\Enums\CapabilityEnum;
 use WordPress\AiClient\Providers\Models\Enums\OptionEnum;
-use WP_MariaDB_Vector_Search\Settings;
+use Squirrel_Search\Settings;
 
 /**
  * AI provider with a single embedding model that returns a fixed vector.

@@ -1,11 +1,11 @@
 {
-	"name": "@wp-mariadb-vector-search/vector-search-route",
+	"name": "@squirrel-search/vector-search-route",
 	"version": "1.0.0",
 	"private": true,
 	"route": {
 		"path": "/",
 		"page": [
-			"wp-mariadb-vector-search"
+			"squirrel-search"
 		]
 	},
 	"dependencies": {

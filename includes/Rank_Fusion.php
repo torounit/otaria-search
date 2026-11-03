@@ -2,12 +2,12 @@
 /**
  * Reciprocal rank fusion of ranked post ID lists.
  *
- * @package WP_MariaDB_Vector_Search
+ * @package Squirrel_Search
  */
 
 declare(strict_types=1);
 
-namespace WP_MariaDB_Vector_Search;
+namespace Squirrel_Search;
 
 /**
  * Merges ranked ID lists without needing comparable scores from each source.

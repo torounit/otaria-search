@@ -2,14 +2,14 @@
 /**
  * Unit tests for vector literal serialization.
  *
- * @package WP_MariaDB_Vector_Search
+ * @package Squirrel_Search
  */
 
 declare(strict_types=1);
 
-namespace WP_MariaDB_Vector_Search\Tests\Unit;
+namespace Squirrel_Search\Tests\Unit;
 
-use WP_MariaDB_Vector_Search\Repository;
+use Squirrel_Search\Repository;
 
 /**
  * Class Vector_Serialization_Test

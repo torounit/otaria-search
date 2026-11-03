@@ -65,7 +65,7 @@ export function VectorSearchApp() {
 		setStatus( { phase: 'loading' } );
 		try {
 			const data = await apiFetch( {
-				path: '/wp-abilities/v1/abilities/wp-mariadb-vector-search/get-status/run',
+				path: '/wp-abilities/v1/abilities/squirrel-search/get-status/run',
 			} );
 			setStatus( {
 				phase: 'ready',
@@ -75,10 +75,7 @@ export function VectorSearchApp() {
 			const message =
 				err instanceof Error
 					? err.message
-					: __(
-							'Failed to load status.',
-							'wp-mariadb-vector-search'
-						);
+					: __( 'Failed to load status.', 'squirrel-search' );
 			setStatus( { phase: 'error', message } );
 		}
 	}
@@ -88,10 +85,7 @@ export function VectorSearchApp() {
 	}, [] );
 
 	return (
-		<Page
-			hasPadding
-			title={ __( 'Vector Search', 'wp-mariadb-vector-search' ) }
-		>
+		<Page hasPadding title={ __( 'Squirrel Search', 'squirrel-search' ) }>
 			<Stack direction="column" gap="xl">
 				{ successMessage && (
 					<Notice
@@ -131,11 +125,11 @@ export function VectorSearchApp() {
 									needRebuild
 										? __(
 												'Model saved. The table dimension has changed — please run Reindex all posts to recreate the table.',
-												'wp-mariadb-vector-search'
+												'squirrel-search'
 											)
 										: __(
 												'Model saved. Please run Reindex all posts to apply the new model.',
-												'wp-mariadb-vector-search'
+												'squirrel-search'
 											)
 								);
 								void loadStatus();
@@ -152,11 +146,11 @@ export function VectorSearchApp() {
 										reindexRequired
 											? __(
 													'Prefixes saved. Please run Reindex all posts to re-embed posts with the new document prefix.',
-													'wp-mariadb-vector-search'
+													'squirrel-search'
 												)
 											: __(
 													'Prefixes saved.',
-													'wp-mariadb-vector-search'
+													'squirrel-search'
 												)
 									)
 								}
@@ -176,7 +170,7 @@ export function VectorSearchApp() {
 									setSuccessMessage(
 										__(
 											'Search settings saved.',
-											'wp-mariadb-vector-search'
+											'squirrel-search'
 										)
 									)
 								}
@@ -193,11 +187,11 @@ export function VectorSearchApp() {
 									reindexRequired
 										? __(
 												'Post types saved. Please run Reindex all posts to index the added post types.',
-												'wp-mariadb-vector-search'
+												'squirrel-search'
 											)
 										: __(
 												'Post types saved.',
-												'wp-mariadb-vector-search'
+												'squirrel-search'
 											)
 								);
 								void loadStatus();
@@ -212,7 +206,7 @@ export function VectorSearchApp() {
 								setSuccessMessage(
 									__(
 										'Index settings saved. Run Reindex all posts to apply them to existing posts.',
-										'wp-mariadb-vector-search'
+										'squirrel-search'
 									)
 								)
 							}
@@ -229,11 +223,11 @@ export function VectorSearchApp() {
 									rebuilt
 										? __(
 												'Table rebuilt. Reindex has been scheduled.',
-												'wp-mariadb-vector-search'
+												'squirrel-search'
 											)
 										: __(
 												'Backfill has been scheduled.',
-												'wp-mariadb-vector-search'
+												'squirrel-search'
 											)
 								);
 								void loadStatus();
