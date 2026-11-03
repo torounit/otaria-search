@@ -54,6 +54,7 @@ class CLI {
 		if ( $post_type ) {
 			$post_types = array( $post_type );
 		} else {
+			/** This filter is documented in includes/Search.php */
 			$post_types = apply_filters(
 				'wp_mariadb_vector_search_post_types',
 				array_keys(

@@ -39,6 +39,8 @@ if ( file_exists( __DIR__ . '/build/build.php' ) ) {
  * Thin layer over wp_ai_client_embedding(). When no model is selected the
  * builder is returned without one, so generating returns a core WP_Error.
  *
+ * @since 0.2.0
+ *
  * @param string|string[] ...$input Text(s) to embed, or a single list of texts.
  * @return WP_AI_Client_Embedding_Builder
  */

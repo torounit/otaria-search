@@ -117,6 +117,8 @@ class Indexer {
 	/**
 	 * Identify the embedding model selected in settings, as "provider:model".
 	 *
+	 * @since 0.2.0
+	 *
 	 * @return string
 	 */
 	private function get_model_key(): string {
@@ -146,6 +148,7 @@ class Indexer {
 			)
 		);
 
+		/** This filter is documented in includes/Search.php */
 		return (array) apply_filters( 'wp_mariadb_vector_search_post_types', $post_types );
 	}
 }

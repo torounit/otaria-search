@@ -237,6 +237,7 @@ class Repository {
 	/**
 	 * Return post IDs whose embeddings are within a cosine distance threshold.
 	 *
+	 * @since 0.1.0
 	 * @since 0.2.0 Added the `$max_relative_distance` parameter.
 	 *
 	 * @param float[]  $query_vector          Embedding of the search query.

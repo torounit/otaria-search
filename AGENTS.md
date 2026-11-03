@@ -121,7 +121,7 @@ model switch at the same dimension is re-embedded by a normal (non-force) Reinde
 
 | File                              | Responsibility                                                                                     |
 | --------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `wp-mariadb-vector-search.php`    | Bootstrap. Defines `WP_MARIADB_VECTOR_SEARCH_VERSION`, registers activation hooks. `wp_mariadb_vector_search_embedding()` (core builder bound to the selected model). |
+| `wp-mariadb-vector-search.php`    | Bootstrap. Registers activation hooks. `wp_mariadb_vector_search_embedding()` (core builder bound to the selected model). |
 | `includes/Plugin.php`             | Composition root. Instantiates components and registers hooks.                                     |
 | `includes/Schema.php`             | Install/upgrade table. Verify MariaDB version. Admin notice on incompatibility.                    |
 | `includes/Repository.php`         | `$wpdb` wrapper. `replace_post_chunks()`, `delete_post()`, `search_similar()`. Vector text serialization. |
