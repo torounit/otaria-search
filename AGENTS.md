@@ -308,20 +308,15 @@ Test file naming convention: `*_Test.php`.
   zip from them, so it ships `build/` and the production `vendor/`, not
   `src/` or `routes/`. `.gitattributes` (`export-ignore`) only shapes the
   GitHub source archives; keep the two lists in step when adding files.
-- `bin/check-version.sh <version> [stable|prerelease]` is the one place that
-  checks a release: `package.json`, the plugin header `Version` and (for stable
-  releases) the `Stable tag` must equal the version, its changelog section
-  must have entries, and a release's pre-release flag must agree with the
-  version. With `--untagged` it also refuses a version whose tag already exists
-  (used before the tag is created). It runs on `release/*` PRs (`release-check.yml`; make
-  "Check Release Version" a required check to block the merge), when the
-  draft is created, and when a release is published (with the release's own
-  prerelease flag, before lint and tests). `bin/release-lib.sh` holds what the
-  scripts share: the semver rule, a `-` suffix meaning prerelease (drafted as
-  a GitHub pre-release), and where a changelog section ends: at the next `#` to
-  `###` heading, so `####` subheadings belong to the section
-  (`check-version.sh --notes <version>` prints it for the release notes).
-  Bumping a stable version merges its prereleases' changelog sections.
+- `bin/check-version.sh <version>` checks a release: `package.json`,
+  `package-lock.json`, the plugin header `Version` and the `Stable tag` must
+  equal the version, and its changelog section must have entries. With
+  `--untagged` it also refuses a version whose tag already exists. It runs on
+  `release/*` PRs (`release-check.yml`; make "Check Release Version" a required
+  check to block the merge), when the draft is created, and when a release is
+  published (before lint and tests). `check-version.sh --notes <version>`
+  prints the changelog section for the release notes. Only `1.2.3` versions
+  are supported, not prereleases.
 
 ## Manual verification
 
