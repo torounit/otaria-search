@@ -26,11 +26,16 @@ class Settings {
 	/**
 	 * Default thresholds, used until the admin saves model-specific values.
 	 *
+	 * The max_distance stays loose: distance scales differ a lot between models,
+	 * and a tight absolute cutoff empties the results of a model with large
+	 * distances. max_relative_distance trims the tail instead; it never drops
+	 * the best match, and hybrid search keeps the LIKE matches.
+	 *
 	 * @since 0.2.0
 	 */
 	const DEFAULT_THRESHOLDS = array(
 		'max_distance'          => 0.65,
-		'max_relative_distance' => 0.25,
+		'max_relative_distance' => 0.10,
 	);
 
 	/**

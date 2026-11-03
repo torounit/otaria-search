@@ -283,9 +283,9 @@ class Search_Test extends \WP_UnitTestCase {
 
 	/** A post far behind the best vector match is excluded by default. */
 	public function test_search_excludes_post_far_behind_best_match(): void {
-		// Cosine distance 0.5 from the query: within max_distance (0.65), but
-		// more than the default max_relative_distance (0.25) behind posts A and B.
-		$far = $this->create_indexed_post( 'Far', array( 0.5, 0.8660254038, 0.0, 0.0 ) );
+		// Cosine distance 0.2 from the query: within max_distance (0.65), but
+		// more than the default max_relative_distance (0.10) behind posts A and B.
+		$far = $this->create_indexed_post( 'Far', array( 0.8, 0.6, 0.0, 0.0 ) );
 
 		$found_ids = $this->search_ids( 'animals' );
 

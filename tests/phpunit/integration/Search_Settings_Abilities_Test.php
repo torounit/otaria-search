@@ -110,7 +110,7 @@ class Search_Settings_Abilities_Test extends \WP_UnitTestCase {
 		$this->assertSame(
 			array(
 				'max_distance'          => 0.4,
-				'max_relative_distance' => 0.25,
+				'max_relative_distance' => 0.1,
 			),
 			$status['thresholds']
 		);
@@ -201,8 +201,9 @@ class Search_Settings_Abilities_Test extends \WP_UnitTestCase {
 		$result = $this->run_ability(
 			'preview-search',
 			array(
-				'query'        => 'anything',
-				'max_distance' => 0.5,
+				'query'                 => 'anything',
+				'max_distance'          => 0.5,
+				'max_relative_distance' => 0.3,
 			)
 		);
 
@@ -216,11 +217,12 @@ class Search_Settings_Abilities_Test extends \WP_UnitTestCase {
 	public function test_preview_search_uses_saved_thresholds_by_default(): void {
 		$this->create_indexed_post( 'Best', array( 1.0, 0.0, 0.0, 0.0 ) );
 		$this->create_indexed_post( 'Near', array( 0.8, 0.6, 0.0, 0.0 ) );
-		Settings::update( array( 'max_relative_distance' => 0.1 ) );
+		// Near is 0.2 behind Best: dropped by the default (0.10), kept by the saved value.
+		Settings::update( array( 'max_relative_distance' => 0.3 ) );
 
 		$result = $this->run_ability( 'preview-search', array( 'query' => 'anything' ) );
 
-		$this->assertSame( array( true, false ), array_column( $result['results'], 'included' ) );
+		$this->assertSame( array( true, true ), array_column( $result['results'], 'included' ) );
 	}
 
 	/** An embedding failure is returned as an error. */
