@@ -110,6 +110,33 @@ class Cron_Backfill_Test extends \WP_UnitTestCase {
 		$this->assertGreaterThan( 0, $count );
 	}
 
+	/** Every post is indexed across batches even when posts share a post_date. */
+	public function test_run_batch_indexes_every_post_with_same_post_date(): void {
+		global $wpdb;
+		$table = $wpdb->prefix . 'mariadb_vector_embeddings';
+
+		$post_ids = $this->factory->post->create_many(
+			7,
+			array(
+				'post_status' => 'publish',
+				'post_date'   => '2026-01-01 00:00:00',
+			)
+		);
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->query( "DELETE FROM `{$table}`" );
+
+		$this->backfill->schedule();
+		$runs = 0;
+		do {
+			$this->backfill->run_batch();
+			++$runs;
+		} while ( $this->backfill->get_progress() && $runs < 10 );
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$indexed = array_map( 'intval', $wpdb->get_col( "SELECT DISTINCT post_id FROM `{$table}`" ) );
+		$this->assertSame( array(), array_values( array_diff( $post_ids, $indexed ) ) );
+	}
+
 	/** Force-reindex replaces existing rows. */
 	public function test_run_batch_with_force_reindexes(): void {
 		global $wpdb;

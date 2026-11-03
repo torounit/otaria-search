@@ -81,6 +81,9 @@ class CLI {
 					'post_status'    => 'publish',
 					'posts_per_page' => $batch,
 					'offset'         => $offset,
+					// Offset paging needs a unique order; post_date ties would skip posts.
+					'orderby'        => 'ID',
+					'order'          => 'ASC',
 					'fields'         => 'ids',
 					'no_found_rows'  => true,
 				)

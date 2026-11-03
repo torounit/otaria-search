@@ -96,6 +96,9 @@ class Cron_Backfill {
 				'post_status'    => 'publish',
 				'posts_per_page' => $this->batch,
 				'offset'         => $offset,
+				// Offset paging needs a unique order; post_date ties would skip posts.
+				'orderby'        => 'ID',
+				'order'          => 'ASC',
 				'fields'         => 'ids',
 				'no_found_rows'  => false,
 			)
