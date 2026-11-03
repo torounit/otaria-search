@@ -24,6 +24,24 @@ export interface StatusResponse {
 	settings: Settings;
 	available_models: AvailableModel[];
 	dim_changed: boolean;
+	thresholds: Thresholds;
+	default_thresholds: Thresholds;
+}
+
+export interface Thresholds {
+	max_distance: number;
+	max_relative_distance: number;
+}
+
+export interface PreviewResult {
+	post_id: number;
+	title: string;
+	distance: number;
+	included: boolean;
+}
+
+export interface PreviewResponse {
+	results: PreviewResult[];
 }
 
 export interface ReindexResponse {

@@ -31,7 +31,9 @@ Front-end searches embed the search term and look up the closest posts in the in
 
 Displays MariaDB VECTOR support status, indexed post count, table dimensions, and backfill progress.
 
-**Embedding Model** — Select one of the models that configured providers report as embedding-capable. Saving runs the `wp-mariadb-vector-search/select-model` ability, which embeds a short probe text with the model to detect its native vector dimension, then stores provider, model and dimensions together. If the probe fails, the error is shown and the saved settings are left unchanged. The embeddings table is not changed at this point.
+**Embedding Model** — Select one of the models that configured providers report as embedding-capable. Saving runs the `wp-mariadb-vector-search/select-model` ability, which embeds a short probe text with the model to detect its native vector dimension, then stores provider, model and dimensions together. If the probe fails, the error is shown and the saved settings are left unchanged. The embeddings table is not changed at this point. Switching to another model resets the search thresholds to their defaults.
+
+**Search Thresholds** — The maximum distance and the maximum distance behind the best match (see the filters below). Suitable values depend on the model, so they are set here per model. The preview embeds a query and lists the nearest posts with their cosine distances and whether the entered (unsaved) thresholds keep them. Posts containing the search term are still added by hybrid search, and the filters override the saved values.
 
 **Reindex** — Schedules a background cron job to embed all existing posts. Behaviour depends on the current state:
 
@@ -64,6 +66,8 @@ Stored in the `wp_mariadb_vector_search_settings` option (array). Values are wri
 | `provider`   | AI provider id (e.g. `openai`, `lm_studio`). |
 | `model`      | Embedding model id (e.g. `text-embedding-3-small`). |
 | `dimensions` | Vector dimensions — auto-detected by probing the API when a model is saved. Fixed at table creation; changing to a different dimension requires a Reindex (which recreates the table). |
+| `max_distance` | Search threshold set on the admin page. Default `0.65`. |
+| `max_relative_distance` | Search threshold set on the admin page. Default `0.25`. |
 
 Chunk settings are code-level defaults in `Chunker.php` and are not stored in the option:
 
@@ -90,8 +94,9 @@ add_filter(
 ### `wp_mariadb_vector_search_max_distance`
 
 Maximum cosine distance a post may have from the query to appear in results.
-`0` = identical, smaller = more similar, `~1` = unrelated. Default `0.65`.
-The optimal value depends on the embedding model — adjust as needed.
+`0` = identical, smaller = more similar, `~1` = unrelated. The filter receives the
+value saved on the admin page (default `0.65`); the optimal value depends on the
+embedding model.
 
 ```php
 add_filter(
@@ -106,7 +111,8 @@ add_filter(
 
 Maximum distance a post may fall behind the closest post. Excludes weak matches
 that are within `max_distance` only because they are generic (e.g. the default
-"Hello world!" post). Default `0.25`. Return `INF` to disable.
+"Hello world!" post). The filter receives the value saved on the admin page
+(default `0.25`). Return `INF` to disable.
 
 ```php
 add_filter(

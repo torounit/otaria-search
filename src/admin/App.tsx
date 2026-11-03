@@ -6,8 +6,15 @@ import { Page } from '@wordpress/admin-ui';
 import { ModelSelector } from './ModelSelector';
 import { ReindexSection } from './ReindexSection';
 import { StatusSection } from './StatusSection';
+import { ThresholdSection } from './ThresholdSection';
 import { unwrapAbilityResponse } from './ability';
-import type { StatusResponse } from './types';
+import type { StatusResponse, Thresholds } from './types';
+
+// Mirrors Settings::DEFAULT_THRESHOLDS, for responses that lack them.
+const DEFAULT_THRESHOLDS: Thresholds = {
+	max_distance: 0.65,
+	max_relative_distance: 0.25,
+};
 
 type AppStatus =
 	| { phase: 'loading' }
@@ -30,6 +37,8 @@ function normalizeStatusResponse( raw: unknown ): StatusResponse {
 		},
 		available_models: resolved?.available_models ?? [],
 		dim_changed: resolved?.dim_changed ?? false,
+		thresholds: resolved?.thresholds ?? DEFAULT_THRESHOLDS,
+		default_thresholds: resolved?.default_thresholds ?? DEFAULT_THRESHOLDS,
 	};
 }
 
@@ -121,6 +130,23 @@ export function VectorSearchApp() {
 							void loadStatus();
 						} }
 					/>
+
+					{ status.data.installed && (
+						<ThresholdSection
+							// Remount after a model change resets the thresholds.
+							key={ `${ status.data.settings.provider }:${ status.data.settings.model }` }
+							thresholds={ status.data.thresholds }
+							defaults={ status.data.default_thresholds }
+							onSaved={ () =>
+								setSuccessMessage(
+									__(
+										'Thresholds saved.',
+										'wp-mariadb-vector-search'
+									)
+								)
+							}
+						/>
+					) }
 
 					<ReindexSection
 						isSupported={ status.data.is_supported }
