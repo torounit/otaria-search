@@ -17,12 +17,32 @@ class Abilities {
 	const CATEGORY_SLUG      = 'wp-mariadb-vector-search';
 	const ABILITY_GET_STATUS = 'wp-mariadb-vector-search/get-status';
 	const ABILITY_REINDEX    = 'wp-mariadb-vector-search/reindex';
-	const ABILITY_SELECT     = 'wp-mariadb-vector-search/select-model';
+
+	/**
+	 * Ability that probes a model's dimensions and saves it as the embedding model.
+	 *
+	 * @since 0.2.0
+	 */
+	const ABILITY_SELECT = 'wp-mariadb-vector-search/select-model';
+
+	/**
+	 * Ability that saves the search distance thresholds.
+	 *
+	 * @since 0.2.0
+	 */
 	const ABILITY_THRESHOLDS = 'wp-mariadb-vector-search/save-thresholds';
-	const ABILITY_PREVIEW    = 'wp-mariadb-vector-search/preview-search';
+
+	/**
+	 * Ability that lists the posts nearest to a query with their distances.
+	 *
+	 * @since 0.2.0
+	 */
+	const ABILITY_PREVIEW = 'wp-mariadb-vector-search/preview-search';
 
 	/**
 	 * Number of posts listed by the search preview.
+	 *
+	 * @since 0.2.0
 	 */
 	const PREVIEW_LIMIT = 20;
 
@@ -253,6 +273,8 @@ class Abilities {
 	/**
 	 * Callback for save-thresholds ability.
 	 *
+	 * @since 0.2.0
+	 *
 	 * @param array|null $input Ability input with optional 'max_distance' and 'max_relative_distance'.
 	 * @return array The thresholds now in effect.
 	 */
@@ -269,6 +291,8 @@ class Abilities {
 
 	/**
 	 * Callback for preview-search ability.
+	 *
+	 * @since 0.2.0
 	 *
 	 * @param array|null $input Ability input with 'query' and optional thresholds.
 	 * @return array|\WP_Error Nearest posts, or the embedding error.
@@ -362,6 +386,8 @@ class Abilities {
 	 * Embeds a probe text with the requested model to detect its native
 	 * dimensions, then saves provider, model and dimensions together. When the
 	 * probe fails the error is returned and the saved settings are untouched.
+	 *
+	 * @since 0.2.0
 	 *
 	 * @param array|null $input Ability input with 'provider' and 'model'.
 	 * @return array|\WP_Error The stored settings, or the probe error.

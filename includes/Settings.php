@@ -18,11 +18,15 @@ class Settings {
 
 	/**
 	 * Settings keys holding cosine distance thresholds for search.
+	 *
+	 * @since 0.2.0
 	 */
 	const THRESHOLD_KEYS = array( 'max_distance', 'max_relative_distance' );
 
 	/**
 	 * Default thresholds, used until the admin saves model-specific values.
+	 *
+	 * @since 0.2.0
 	 */
 	const DEFAULT_THRESHOLDS = array(
 		'max_distance'          => 0.65,
@@ -33,6 +37,8 @@ class Settings {
 	 * Saved distance thresholds, falling back to the defaults.
 	 *
 	 * Filters are not applied here; see Search::rewrite_search_query().
+	 *
+	 * @since 0.2.0
 	 *
 	 * @return array{max_distance: float, max_relative_distance: float}
 	 */
@@ -148,6 +154,8 @@ class Settings {
 
 	/**
 	 * Whether a value is a cosine distance (0–2).
+	 *
+	 * @since 0.2.0
 	 *
 	 * @param mixed $value Value to check.
 	 * @return bool

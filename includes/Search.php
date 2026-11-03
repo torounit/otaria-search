@@ -28,6 +28,8 @@ class Search {
 
 	/**
 	 * Query var that marks a query rewritten to post__in.
+	 *
+	 * @since 0.2.0
 	 */
 	const QUERY_VAR = 'wp_mariadb_vector_search';
 
@@ -73,13 +75,63 @@ class Search {
 			return;
 		}
 
-		$thresholds   = Settings::get_thresholds();
-		$max_distance = (float) apply_filters( 'wp_mariadb_vector_search_max_distance', $thresholds['max_distance'] );
-		$max_results  = (int) apply_filters( 'wp_mariadb_vector_search_max_results', 200 );
-		$max_relative = (float) apply_filters( 'wp_mariadb_vector_search_max_relative_distance', $thresholds['max_relative_distance'] );
-		$ids          = $this->repository->search_similar( $result[0]->getValues(), $post_types, $max_distance, $max_results, $max_relative );
+		$thresholds = Settings::get_thresholds();
 
+		/**
+		 * Filters the maximum cosine distance of posts included in search results.
+		 *
+		 * 0 is identical; smaller is more similar. The best value depends on the model.
+		 *
+		 * @since 0.1.0
+		 * @since 0.2.0 Defaults to the saved setting.
+		 *
+		 * @param float $max_distance Maximum cosine distance (0–2). Default the saved setting, else 0.65.
+		 */
+		$max_distance = (float) apply_filters( 'wp_mariadb_vector_search_max_distance', $thresholds['max_distance'] );
+
+		/**
+		 * Filters the maximum number of posts returned by the vector search.
+		 *
+		 * Also the basis for the inner LIMIT, so the VECTOR INDEX is used, and
+		 * the limit of the LIKE search fused in hybrid mode.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @param int $max_results Maximum number of posts. Default 200.
+		 */
+		$max_results = (int) apply_filters( 'wp_mariadb_vector_search_max_results', 200 );
+
+		/**
+		 * Filters the maximum distance behind the best vector match.
+		 *
+		 * Posts farther than this from the closest post are excluded.
+		 *
+		 * @since 0.2.0
+		 *
+		 * @param float $max_relative Maximum distance behind the best match. INF disables.
+		 *                            Default the saved setting, else 0.25.
+		 */
+		$max_relative = (float) apply_filters( 'wp_mariadb_vector_search_max_relative_distance', $thresholds['max_relative_distance'] );
+
+		$ids = $this->repository->search_similar( $result[0]->getValues(), $post_types, $max_distance, $max_results, $max_relative );
+
+		/**
+		 * Filters whether vector results are fused with WordPress's LIKE search results.
+		 *
+		 * @since 0.2.0
+		 *
+		 * @param bool $hybrid True to fuse via Reciprocal Rank Fusion, false for vector-only. Default true.
+		 */
 		if ( apply_filters( 'wp_mariadb_vector_search_hybrid', true ) ) {
+			/**
+			 * Filters the Reciprocal Rank Fusion constant.
+			 *
+			 * Higher values flatten the weight of top ranks.
+			 *
+			 * @since 0.2.0
+			 *
+			 * @param int $rrf_k RRF constant. Negative values are treated as 0. Default 60.
+			 */
 			$rrf_k = (int) apply_filters( 'wp_mariadb_vector_search_rrf_k', 60 );
 			$ids   = Rank_Fusion::fuse( array( $ids, $this->search_like( $search_term, $post_types, $max_results ) ), $rrf_k );
 		}
@@ -101,6 +153,8 @@ class Search {
 	 * fields=ids queries return before the_posts, so a one-shot filter would
 	 * leak into later searches.
 	 *
+	 * @since 0.2.0
+	 *
 	 * @param string    $search Search SQL for the WHERE clause.
 	 * @param \WP_Query $query  The query.
 	 * @return string Empty for rewritten queries; otherwise unchanged.
@@ -113,6 +167,8 @@ class Search {
 	 * Run WordPress's default LIKE search.
 	 *
 	 * This is not the main query, so it does not re-enter rewrite_search_query().
+	 *
+	 * @since 0.2.0
 	 *
 	 * @param string   $search_term Search term.
 	 * @param string[] $post_types  Post types to include.
@@ -157,6 +213,8 @@ class Search {
 	 * All public, searchable post types, filtered by
 	 * wp_mariadb_vector_search_post_types.
 	 *
+	 * @since 0.2.0
+	 *
 	 * @return string[] Post type slugs.
 	 */
 	public static function default_post_types(): array {
@@ -169,6 +227,13 @@ class Search {
 			)
 		);
 
+		/**
+		 * Filters the post types that are indexed and searched.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @param string[] $types Post type slugs. Default public, searchable post types.
+		 */
 		return apply_filters( 'wp_mariadb_vector_search_post_types', $types );
 	}
 }

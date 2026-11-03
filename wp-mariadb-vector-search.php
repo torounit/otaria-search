@@ -3,7 +3,7 @@
  * Plugin Name:       WP MariaDB Vector Search
  * Plugin URI:        https://github.com/torounit/wp-mariadb-vector-search
  * Description:       Base scaffold for a MariaDB vector search WordPress plugin.
- * Version:           0.1.0
+ * Version:           0.2.0
  * Requires at least: 7.2
  * Requires PHP:      8.2
  * Author:            Toro_Unit
@@ -38,6 +38,8 @@ if ( file_exists( __DIR__ . '/build/build.php' ) ) {
  *
  * Thin layer over wp_ai_client_embedding(). When no model is selected the
  * builder is returned without one, so generating returns a core WP_Error.
+ *
+ * @since 0.2.0
  *
  * @param string|string[] ...$input Text(s) to embed, or a single list of texts.
  * @return WP_AI_Client_Embedding_Builder

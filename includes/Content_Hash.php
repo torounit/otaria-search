@@ -23,6 +23,9 @@ class Content_Hash {
 	 *
 	 * Length-prefixed separators are used so that ("AB", "") ≠ ("A", "B").
 	 *
+	 * @since 0.1.0
+	 * @since 0.2.0 Added the `$model` parameter.
+	 *
 	 * @param string $title Post title.
 	 * @param string $body  Raw post content (may contain HTML/blocks).
 	 * @param string $model Embedding model key, e.g. "openai:text-embedding-3-small".

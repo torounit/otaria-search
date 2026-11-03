@@ -237,6 +237,9 @@ class Repository {
 	/**
 	 * Return post IDs whose embeddings are within a cosine distance threshold.
 	 *
+	 * @since 0.1.0
+	 * @since 0.2.0 Added the `$max_relative_distance` parameter.
+	 *
 	 * @param float[]  $query_vector          Embedding of the search query.
 	 * @param string[] $post_types            Post types to include.
 	 * @param float    $max_distance          Maximum cosine distance to include (0=identical, ~1=unrelated).
@@ -268,6 +271,8 @@ class Repository {
 	 * Uses a two-step approach so the VECTOR INDEX is used by the inner query
 	 * (ORDER BY distance LIMIT limit * overscan), then PHP aggregates per post,
 	 * keeping each post's closest chunk.
+	 *
+	 * @since 0.2.0
 	 *
 	 * @param float[]  $query_vector Embedding of the search query.
 	 * @param string[] $post_types   Post types to include.
@@ -314,6 +319,8 @@ class Repository {
 
 	/**
 	 * Apply the distance thresholds to posts sorted by ascending distance.
+	 *
+	 * @since 0.2.0
 	 *
 	 * @param array<int, float> $distances             Cosine distance by post ID, closest first.
 	 * @param float             $max_distance          Maximum distance to keep. INF disables.

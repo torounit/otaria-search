@@ -76,8 +76,10 @@ class Cron_Backfill {
 			return;
 		}
 
-		$offset     = (int) $progress['offset'];
-		$force      = (bool) $progress['force'];
+		$offset = (int) $progress['offset'];
+		$force  = (bool) $progress['force'];
+
+		/** This filter is documented in includes/Search.php */
 		$post_types = apply_filters(
 			'wp_mariadb_vector_search_post_types',
 			array_keys(

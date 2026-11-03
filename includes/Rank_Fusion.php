@@ -15,6 +15,8 @@ namespace WP_MariaDB_Vector_Search;
  * Used to combine vector similarity results with WordPress's LIKE search
  * results: cosine distances and LIKE relevance are on different scales, so
  * only the ranks are fused.
+ *
+ * @since 0.2.0
  */
 class Rank_Fusion {
 
@@ -22,6 +24,8 @@ class Rank_Fusion {
 	 * Fuse ranked lists with Reciprocal Rank Fusion (RRF).
 	 *
 	 * Equal scores keep first-seen order, so earlier lists win ties.
+	 *
+	 * @since 0.2.0
 	 *
 	 * @param array<int, array<int, int|string>> $ranked_lists Ranked lists of post IDs, best first.
 	 * @param int                                $k            RRF constant. Higher values flatten the
@@ -38,6 +42,8 @@ class Rank_Fusion {
 	 * Compute each ID's RRF score: the sum of 1 / ( k + rank ) over the lists.
 	 *
 	 * A duplicate ID within one list counts once, at its best rank.
+	 *
+	 * @since 0.2.0
 	 *
 	 * @param array<int, array<int, int|string>> $ranked_lists Ranked lists of post IDs, best first.
 	 * @param int                                $k            RRF constant. Negative values are treated as 0.
