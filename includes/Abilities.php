@@ -247,14 +247,20 @@ class Abilities {
 			return $result;
 		}
 
-		update_option(
-			Settings::OPTION_NAME,
-			array(
-				'provider'   => $provider,
-				'model'      => $model,
-				'dimensions' => $result->getDimensions(),
-			)
+		$settings = array(
+			'provider'   => $provider,
+			'model'      => $model,
+			'dimensions' => $result->getDimensions(),
 		);
+
+		// Distances are model-specific: thresholds tuned for another model
+		// are cleared back to the defaults.
+		$saved = get_option( Settings::OPTION_NAME, array() );
+		if ( ! is_array( $saved ) || ( $saved['provider'] ?? '' ) !== $provider || ( $saved['model'] ?? '' ) !== $model ) {
+			$settings += array_fill_keys( Settings::THRESHOLD_KEYS, null );
+		}
+
+		update_option( Settings::OPTION_NAME, $settings );
 
 		return get_option( Settings::OPTION_NAME );
 	}
