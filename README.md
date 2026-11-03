@@ -1,4 +1,4 @@
-# WP MariaDB Vector Search
+# Squirrel Search
 
 Replaces WordPress's default `LIKE`-based search with cosine similarity search powered by MariaDB's native `VECTOR` type, fused with the `LIKE` results so exact-term matches are still found.
 
@@ -10,12 +10,12 @@ Replaces WordPress's default `LIKE`-based search with cosine similarity search p
 | PHP        | 8.2+           |
 | MariaDB    | 11.7+          |
 
-Embeddings are generated via the **WordPress 7.2 core AI Client embedding API** (`wp_ai_client_embedding()`). Install and configure (Settings > Connectors) an AI provider plugin that supports embedding generation, e.g. AI Provider for OpenAI 1.1+, then select its model on Settings > Vector Search. If no model is selected or the provider fails, indexing is skipped and search falls back to the standard WordPress LIKE search.
+Embeddings are generated via the **WordPress 7.2 core AI Client embedding API** (`wp_ai_client_embedding()`). Install and configure (Settings > Connectors) an AI provider plugin that supports embedding generation, e.g. AI Provider for OpenAI 1.1+, then select its model on Settings > Squirrel Search. If no model is selected or the provider fails, indexing is skipped and search falls back to the standard WordPress LIKE search.
 
 ## Installation
 
-1. Place the plugin in `wp-content/plugins/wp-mariadb-vector-search/`.
-2. Activate it from the WordPress admin. The `{prefix}mariadb_vector_embeddings` table is created automatically on activation.
+1. Place the plugin in `wp-content/plugins/squirrel-search/`.
+2. Activate it from the WordPress admin. The `{prefix}squirrel_search_embeddings` table is created automatically on activation.
 
 ## Usage
 
@@ -27,11 +27,11 @@ Posts are indexed (or removed from the index) automatically whenever they are pu
 
 Front-end searches embed the search term and look up the closest posts in the index. By default (*Hybrid search* on the admin page) the results are combined with WordPress's standard `LIKE` search using Reciprocal Rank Fusion (RRF): posts found by both rank first, and posts that only contain the exact term (product codes, names) still appear. If nothing matches, the search shows no results.
 
-### Admin page (Settings > Vector Search)
+### Admin page (Settings > Squirrel Search)
 
 Displays MariaDB VECTOR support status, indexed post count, table dimensions, and backfill progress.
 
-**Embedding Model** — Select one of the models that configured providers report as embedding-capable. Saving runs the `wp-mariadb-vector-search/select-model` ability, which embeds a short probe text with the model to detect its native vector dimension, then stores provider, model and dimensions together. If the probe fails, the error is shown and the saved settings are left unchanged. The embeddings table is not changed at this point. Switching to another model resets the search thresholds to their defaults and clears the prefixes.
+**Embedding Model** — Select one of the models that configured providers report as embedding-capable. Saving runs the `squirrel-search/select-model` ability, which embeds a short probe text with the model to detect its native vector dimension, then stores provider, model and dimensions together. If the probe fails, the error is shown and the saved settings are left unchanged. The embeddings table is not changed at this point. Switching to another model resets the search thresholds to their defaults and clears the prefixes.
 
 **Prefixes** — Texts prepended before embedding: the query prefix to search terms, the document prefix to post content. Some models are trained with them (e.g. `query: ` / `passage: ` for E5 and Nemotron) and lose accuracy without; their model card gives the exact strings, including trailing spaces, which are kept. Empty by default. The query prefix takes effect immediately; a changed document prefix needs a Reindex, which re-embeds every post.
 
@@ -51,21 +51,21 @@ Displays MariaDB VECTOR support status, indexed post count, table dimensions, an
 
 ```bash
 # Reindex all posts
-wp mariadb-vector reindex
+wp squirrel-search reindex
 
 # Limit to a specific post type
-wp mariadb-vector reindex --post-type=post
+wp squirrel-search reindex --post-type=post
 
 # Re-embed even posts whose content has not changed
-wp mariadb-vector reindex --force
+wp squirrel-search reindex --force
 
 # Set the batch size (default: 50)
-wp mariadb-vector reindex --batch=100
+wp squirrel-search reindex --batch=100
 ```
 
 ## Configuration
 
-Stored in the `wp_mariadb_vector_search_settings` option (array). Values are written by the admin page; missing keys fall back to their defaults.
+Stored in the `squirrel_search_settings` option (array). Values are written by the admin page; missing keys fall back to their defaults.
 
 | Key          | Description |
 |--------------|-------------|
@@ -127,7 +127,7 @@ npm run test:php
 
 ```
 includes/
-  Admin.php                  — Settings > Vector Search admin page
+  Admin.php                  — Settings > Squirrel Search admin page
   Chunker.php                — HTML-strip + paragraph/sentence chunking with overlap
   CLI.php                    — WP-CLI reindex command
   Content_Hash.php           — SHA-256 hash of post title + content

@@ -34,7 +34,7 @@ export function ModelSelector( {
 	const [ isSaving, setIsSaving ] = useState( false );
 	const [ error, setError ] = useState< string | null >( null );
 
-	const title = __( 'Embedding Model', 'wp-mariadb-vector-search' );
+	const title = __( 'Embedding Model', 'squirrel-search' );
 
 	if ( availableModels.length === 0 ) {
 		return (
@@ -42,7 +42,7 @@ export function ModelSelector( {
 				<Text render={ <p /> }>
 					{ __(
 						'No embedding models available. Configure an embedding-capable AI provider in Settings › Connectors.',
-						'wp-mariadb-vector-search'
+						'squirrel-search'
 					) }
 				</Text>
 			</Section>
@@ -60,7 +60,7 @@ export function ModelSelector( {
 	if ( currentValue === '' ) {
 		options.unshift( {
 			value: '',
-			label: __( 'Select a model…', 'wp-mariadb-vector-search' ),
+			label: __( 'Select a model…', 'squirrel-search' ),
 		} );
 	}
 
@@ -77,7 +77,7 @@ export function ModelSelector( {
 			// The ability probes the model to detect its dimensions and saves
 			// provider, model and dimensions together.
 			const raw = await apiFetch( {
-				path: '/wp-abilities/v1/abilities/wp-mariadb-vector-search/select-model/run',
+				path: '/wp-abilities/v1/abilities/squirrel-search/select-model/run',
 				method: 'POST',
 				data: {
 					input: {
@@ -95,7 +95,7 @@ export function ModelSelector( {
 		} catch ( err ) {
 			const message =
 				( err as { message?: string } )?.message ??
-				__( 'Unknown error.', 'wp-mariadb-vector-search' );
+				__( 'Unknown error.', 'squirrel-search' );
 			setError( message );
 		} finally {
 			setIsSaving( false );
@@ -110,7 +110,7 @@ export function ModelSelector( {
 				</Notice>
 			) }
 			<SelectControl
-				label={ __( 'Model', 'wp-mariadb-vector-search' ) }
+				label={ __( 'Model', 'squirrel-search' ) }
 				value={ selected }
 				options={ options }
 				onChange={ setSelected }
@@ -118,14 +118,14 @@ export function ModelSelector( {
 					currentDims
 						? `${ __(
 								'Current embedding dimensions:',
-								'wp-mariadb-vector-search'
+								'squirrel-search'
 							) } ${ currentDims }. ${ __(
 								'Saving sends a short probe request to the model to detect its dimensions.',
-								'wp-mariadb-vector-search'
+								'squirrel-search'
 							) }`
 						: __(
 								'Saving sends a short probe request to the model to detect its dimensions.',
-								'wp-mariadb-vector-search'
+								'squirrel-search'
 							)
 				}
 			/>
@@ -138,7 +138,7 @@ export function ModelSelector( {
 					disabled={ isSaving || selected === '' }
 					accessibleWhenDisabled
 				>
-					{ __( 'Save model', 'wp-mariadb-vector-search' ) }
+					{ __( 'Save model', 'squirrel-search' ) }
 				</Button>
 			</Stack>
 		</Section>

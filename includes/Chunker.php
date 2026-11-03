@@ -2,12 +2,12 @@
 /**
  * Text chunker for embedding generation.
  *
- * @package WP_MariaDB_Vector_Search
+ * @package Squirrel_Search
  */
 
 declare(strict_types=1);
 
-namespace WP_MariaDB_Vector_Search;
+namespace Squirrel_Search;
 
 /**
  * Splits post body text into overlapping chunks suitable for embedding.

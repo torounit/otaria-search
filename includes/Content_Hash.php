@@ -2,12 +2,12 @@
 /**
  * Content hash utility.
  *
- * @package WP_MariaDB_Vector_Search
+ * @package Squirrel_Search
  */
 
 declare(strict_types=1);
 
-namespace WP_MariaDB_Vector_Search;
+namespace Squirrel_Search;
 
 /**
  * Produces a stable fingerprint for a post's indexable content.

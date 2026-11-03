@@ -2,12 +2,12 @@
 /**
  * Database repository for vector embeddings.
  *
- * @package WP_MariaDB_Vector_Search
+ * @package Squirrel_Search
  */
 
 declare(strict_types=1);
 
-namespace WP_MariaDB_Vector_Search;
+namespace Squirrel_Search;
 
 /**
  * Wraps $wpdb operations for the embeddings table and provides
@@ -85,7 +85,7 @@ class Repository {
 		}
 
 		global $wpdb;
-		$table = $wpdb->prefix . 'mariadb_vector_embeddings';
+		$table = $wpdb->prefix . 'squirrel_search_embeddings';
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$col_type = $wpdb->get_var(
@@ -129,16 +129,16 @@ class Repository {
 		array $chunks
 	): void {
 		global $wpdb;
-		$table = $wpdb->prefix . 'mariadb_vector_embeddings';
+		$table = $wpdb->prefix . 'squirrel_search_embeddings';
 		$now   = current_time( 'mysql', true );
 		$dims  = count( $chunks[0]['vector'] );
 
 		$declared = $this->get_column_dimensions();
 		if ( null !== $declared && $declared !== $dims ) {
-			wp_mariadb_vector_search_log(
+			squirrel_search_log(
 				sprintf(
 					'replace_post_chunks(%d): dimension mismatch — embedding is %d-dim but table column is VECTOR(%d). ' .
-					'Save the model again on Settings > Vector Search to detect its dimensions, then run Reindex to recreate the table.',
+					'Save the model again on Settings > Squirrel Search to detect its dimensions, then run Reindex to recreate the table.',
 					$post_id,
 					$dims,
 					$declared
@@ -150,7 +150,7 @@ class Repository {
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$del = $wpdb->query( $wpdb->prepare( "DELETE FROM `{$table}` WHERE post_id = %d", $post_id ) );
 		if ( false === $del ) {
-			wp_mariadb_vector_search_log(
+			squirrel_search_log(
 				sprintf( 'replace_post_chunks(%d): DELETE failed: %s', $post_id, $wpdb->last_error )
 			);
 		}
@@ -175,7 +175,7 @@ class Repository {
 			);
 			// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 			if ( false === $ok ) {
-				wp_mariadb_vector_search_log(
+				squirrel_search_log(
 					sprintf(
 						'replace_post_chunks(%d): INSERT chunk %d failed (dims=%d): %s',
 						$post_id,
@@ -196,7 +196,7 @@ class Repository {
 	 */
 	public function delete_post( int $post_id ): void {
 		global $wpdb;
-		$table = $wpdb->prefix . 'mariadb_vector_embeddings';
+		$table = $wpdb->prefix . 'squirrel_search_embeddings';
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->query( $wpdb->prepare( "DELETE FROM `{$table}` WHERE post_id = %d", $post_id ) );
 	}
@@ -211,7 +211,7 @@ class Repository {
 	 */
 	public function delete_other_post_types( array $post_types ): void {
 		global $wpdb;
-		$table = $wpdb->prefix . 'mariadb_vector_embeddings';
+		$table = $wpdb->prefix . 'squirrel_search_embeddings';
 
 		if ( empty( $post_types ) ) {
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -232,7 +232,7 @@ class Repository {
 	 */
 	public function get_content_hash( int $post_id ): ?string {
 		global $wpdb;
-		$table = $wpdb->prefix . 'mariadb_vector_embeddings';
+		$table = $wpdb->prefix . 'squirrel_search_embeddings';
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$result = $wpdb->get_var(
 			$wpdb->prepare( "SELECT content_hash FROM `{$table}` WHERE post_id = %d LIMIT 1", $post_id )
@@ -252,7 +252,7 @@ class Repository {
 	 */
 	public function count_indexed(): int {
 		global $wpdb;
-		$table = $wpdb->prefix . 'mariadb_vector_embeddings';
+		$table = $wpdb->prefix . 'squirrel_search_embeddings';
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		return (int) $wpdb->get_var( "SELECT COUNT(DISTINCT post_id) FROM `{$table}`" );
 	}
@@ -305,7 +305,7 @@ class Repository {
 	 */
 	public function nearest_posts( array $query_vector, array $post_types, int $limit, int $overscan = 5 ): array {
 		global $wpdb;
-		$table = $wpdb->prefix . 'mariadb_vector_embeddings';
+		$table = $wpdb->prefix . 'squirrel_search_embeddings';
 
 		$vec_literal = self::format_vector_literal( $query_vector );
 		$inner_limit = $limit * $overscan;

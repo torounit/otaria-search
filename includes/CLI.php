@@ -2,17 +2,17 @@
 /**
  * WP-CLI command for manual reindexing.
  *
- * @package WP_MariaDB_Vector_Search
+ * @package Squirrel_Search
  */
 
 declare(strict_types=1);
 
-namespace WP_MariaDB_Vector_Search;
+namespace Squirrel_Search;
 
 /**
- * WP-CLI commands for WP MariaDB Vector Search.
+ * WP-CLI commands for Squirrel Search.
  *
- * @package WP_MariaDB_Vector_Search
+ * @package Squirrel_Search
  */
 class CLI {
 
@@ -39,8 +39,8 @@ class CLI {
 	 *
 	 * ## EXAMPLES
 	 *
-	 *     wp mariadb-vector reindex
-	 *     wp mariadb-vector reindex --post-type=post --force
+	 *     wp squirrel-search reindex
+	 *     wp squirrel-search reindex --post-type=post --force
 	 *
 	 * @param array $args       Positional arguments.
 	 * @param array $assoc_args Associative arguments.

@@ -4,17 +4,17 @@
  *
  * Requires MariaDB 11.7+ with VECTOR support.
  *
- * @package WP_MariaDB_Vector_Search
+ * @package Squirrel_Search
  */
 
 declare(strict_types=1);
 
-namespace WP_MariaDB_Vector_Search\Tests\Integration;
+namespace Squirrel_Search\Tests\Integration;
 
-use WP_MariaDB_Vector_Search\Indexer;
-use WP_MariaDB_Vector_Search\Repository;
-use WP_MariaDB_Vector_Search\Schema;
-use WP_MariaDB_Vector_Search\Settings;
+use Squirrel_Search\Indexer;
+use Squirrel_Search\Repository;
+use Squirrel_Search\Schema;
+use Squirrel_Search\Settings;
 
 /**
  * Class Post_Types_Abilities_Test
@@ -84,7 +84,7 @@ class Post_Types_Abilities_Test extends \WP_UnitTestCase {
 	 * @return mixed
 	 */
 	private function run_ability( string $name, array $input = array() ): mixed {
-		return wp_get_ability( "wp-mariadb-vector-search/{$name}" )->execute( empty( $input ) ? null : $input );
+		return wp_get_ability( "squirrel-search/{$name}" )->execute( empty( $input ) ? null : $input );
 	}
 
 	/** The get-status ability reports the indexed post types and the ones to choose from. */
@@ -209,7 +209,7 @@ class Post_Types_Abilities_Test extends \WP_UnitTestCase {
 
 	/** The ability is marked destructive, since it can delete index rows. */
 	public function test_update_settings_is_annotated_destructive(): void {
-		$annotations = wp_get_ability( 'wp-mariadb-vector-search/update-settings' )->get_meta_item( 'annotations' );
+		$annotations = wp_get_ability( 'squirrel-search/update-settings' )->get_meta_item( 'annotations' );
 
 		$this->assertTrue( $annotations['destructive'] );
 		$this->assertTrue( $annotations['idempotent'] );

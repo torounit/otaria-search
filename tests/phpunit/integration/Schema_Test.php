@@ -5,14 +5,14 @@
  * Requires MariaDB 11.7+ (VECTOR type). Tests are skipped on MySQL or
  * older MariaDB versions.
  *
- * @package WP_MariaDB_Vector_Search
+ * @package Squirrel_Search
  */
 
 declare(strict_types=1);
 
-namespace WP_MariaDB_Vector_Search\Tests\Integration;
+namespace Squirrel_Search\Tests\Integration;
 
-use WP_MariaDB_Vector_Search\Schema;
+use Squirrel_Search\Schema;
 
 /**
  * Class Schema_Test
@@ -32,7 +32,7 @@ class Schema_Test extends \WP_UnitTestCase {
 	public function set_up(): void {
 		parent::set_up();
 		global $wpdb;
-		$this->table = $wpdb->prefix . 'mariadb_vector_embeddings';
+		$this->table = $wpdb->prefix . 'squirrel_search_embeddings';
 
 		if ( ! Schema::is_vector_supported() ) {
 			$this->markTestSkipped( 'MariaDB 11.7+ with VECTOR support is required.' );
@@ -46,7 +46,7 @@ class Schema_Test extends \WP_UnitTestCase {
 
 		// Clean slate.
 		Schema::drop();
-		delete_option( 'wp_mariadb_vector_search_db_version' );
+		delete_option( 'squirrel_search_db_version' );
 	}
 
 	/**
@@ -54,7 +54,7 @@ class Schema_Test extends \WP_UnitTestCase {
 	 */
 	public function tear_down(): void {
 		Schema::drop();
-		delete_option( 'wp_mariadb_vector_search_db_version' );
+		delete_option( 'squirrel_search_db_version' );
 
 		// Restore WP test-framework filters.
 		add_filter( 'query', array( $this, '_create_temporary_tables' ) );
@@ -99,7 +99,7 @@ class Schema_Test extends \WP_UnitTestCase {
 	/** DB version option is set after install. */
 	public function test_install_stores_db_version(): void {
 		Schema::install( 4 );
-		$this->assertSame( Schema::DB_VERSION, get_option( 'wp_mariadb_vector_search_db_version' ) );
+		$this->assertSame( Schema::DB_VERSION, get_option( 'squirrel_search_db_version' ) );
 	}
 
 	/** Calling install twice does not error or duplicate the table. */

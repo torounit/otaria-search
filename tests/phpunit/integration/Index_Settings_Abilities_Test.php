@@ -2,14 +2,14 @@
 /**
  * Integration tests for the index settings abilities.
  *
- * @package WP_MariaDB_Vector_Search
+ * @package Squirrel_Search
  */
 
 declare(strict_types=1);
 
-namespace WP_MariaDB_Vector_Search\Tests\Integration;
+namespace Squirrel_Search\Tests\Integration;
 
-use WP_MariaDB_Vector_Search\Settings;
+use Squirrel_Search\Settings;
 
 /**
  * Class Index_Settings_Abilities_Test
@@ -33,7 +33,7 @@ class Index_Settings_Abilities_Test extends \WP_UnitTestCase {
 	 * @return mixed
 	 */
 	private function run_ability( string $name, array $input = array() ): mixed {
-		return wp_get_ability( "wp-mariadb-vector-search/{$name}" )->execute( empty( $input ) ? null : $input );
+		return wp_get_ability( "squirrel-search/{$name}" )->execute( empty( $input ) ? null : $input );
 	}
 
 	/** The get-status ability reports whether password-protected posts are excluded. */

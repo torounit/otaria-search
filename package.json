@@ -1,14 +1,14 @@
 {
-	"name": "wp-mariadb-vector-search",
+	"name": "squirrel-search",
 	"version": "0.2.0",
-	"description": "WordPress plugin for MariaDB vector search.",
+	"description": "Semantic and hybrid search for WordPress, backed by MariaDB's VECTOR type.",
 	"license": "GPL-2.0-or-later",
 	"private": true,
 	"wpPlugin": {
-		"name": "wp_mariadb_vector_search",
-		"handlePrefix": "wp_mariadb_vector_search",
+		"name": "squirrel_search",
+		"handlePrefix": "squirrel_search",
 		"pages": [
-			"wp-mariadb-vector-search"
+			"squirrel-search"
 		]
 	},
 	"scripts": {
@@ -17,16 +17,16 @@
 		"format": "wp-scripts format",
 		"lint:js:fix": "wp-scripts lint-js --fix",
 		"lint:js": "wp-scripts lint-js",
-		"lint:php:fix": "wp-env --config=.wp-env.test.json run cli --env-cwd=wp-content/plugins/wp-mariadb-vector-search composer run-script format",
-		"lint:php": "wp-env --config=.wp-env.test.json run cli --env-cwd=wp-content/plugins/wp-mariadb-vector-search composer run-script lint",
+		"lint:php:fix": "wp-env --config=.wp-env.test.json run cli --env-cwd=wp-content/plugins/squirrel-search composer run-script format",
+		"lint:php": "wp-env --config=.wp-env.test.json run cli --env-cwd=wp-content/plugins/squirrel-search composer run-script lint",
 		"start:routes": "wp-build --watch",
 		"start": "npm run start:routes",
 		"test:php": "npm-run-all test:php:setup test:php:base",
 		"test:php:setup": "wp-env --config=.wp-env.test.json start",
-		"test:php:base": "wp-env --config=.wp-env.test.json run --env-cwd='wp-content/plugins/wp-mariadb-vector-search' wordpress vendor/bin/phpunit -c phpunit.xml.dist",
+		"test:php:base": "wp-env --config=.wp-env.test.json run --env-cwd='wp-content/plugins/squirrel-search' wordpress vendor/bin/phpunit -c phpunit.xml.dist",
 		"typecheck": "tsc --noEmit",
 		"wp-env": "wp-env",
-		"wp-env:cli": "wp-env run cli --env-cwd=wp-content/plugins/wp-mariadb-vector-search",
+		"wp-env:cli": "wp-env run cli --env-cwd=wp-content/plugins/squirrel-search",
 		"wp-env:test": "wp-env --config=.wp-env.test.json"
 	},
 	"devDependencies": {

@@ -2,14 +2,14 @@
 /**
  * Integration tests for Settings API.
  *
- * @package WP_MariaDB_Vector_Search
+ * @package Squirrel_Search
  */
 
 declare(strict_types=1);
 
-namespace WP_MariaDB_Vector_Search\Tests\Integration;
+namespace Squirrel_Search\Tests\Integration;
 
-use WP_MariaDB_Vector_Search\Settings;
+use Squirrel_Search\Settings;
 use WP_UnitTestCase;
 
 /**
@@ -17,7 +17,7 @@ use WP_UnitTestCase;
  */
 class Settings_Test extends WP_UnitTestCase {
 
-	const SETTINGS_OPTION = 'wp_mariadb_vector_search_settings';
+	const SETTINGS_OPTION = 'squirrel_search_settings';
 
 	/**
 	 * Ensure each test starts with no stored settings.

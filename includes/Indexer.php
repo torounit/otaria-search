@@ -2,18 +2,18 @@
 /**
  * Post indexer — generates and stores embeddings when posts are saved.
  *
- * @package WP_MariaDB_Vector_Search
+ * @package Squirrel_Search
  */
 
 declare(strict_types=1);
 
-namespace WP_MariaDB_Vector_Search;
+namespace Squirrel_Search;
 
 /**
  * Orchestrates the embed → store pipeline for a single post.
  *
  * The actual embedding is delegated to the core AI Client via
- * wp_mariadb_vector_search_embedding(); storage to Repository. This class
+ * squirrel_search_embedding(); storage to Repository. This class
  * is also responsible for deciding WHEN to (re-)index (published posts
  * only, skip on unchanged content hash).
  */
@@ -43,41 +43,41 @@ class Indexer {
 	public function index_post( int $post_id ): void {
 		$post = get_post( $post_id );
 		if ( ! $post instanceof \WP_Post ) {
-			wp_mariadb_vector_search_log( "index_post({$post_id}): post not found, skipping." );
+			squirrel_search_log( "index_post({$post_id}): post not found, skipping." );
 			return;
 		}
 
 		if ( ! in_array( $post->post_type, Settings::get_post_types(), true ) ) {
-			wp_mariadb_vector_search_log( "index_post({$post_id}): post_type={$post->post_type}, skipping (not indexable)." );
+			squirrel_search_log( "index_post({$post_id}): post_type={$post->post_type}, skipping (not indexable)." );
 			return;
 		}
 
 		if ( 'publish' !== $post->post_status ) {
-			wp_mariadb_vector_search_log( "index_post({$post_id}): status={$post->post_status}, skipping (not published)." );
+			squirrel_search_log( "index_post({$post_id}): status={$post->post_status}, skipping (not published)." );
 			return;
 		}
 
 		if ( '' !== $post->post_password && Settings::excludes_password_protected() ) {
 			// Also drops rows indexed before the password was set.
-			wp_mariadb_vector_search_log( "index_post({$post_id}): password-protected, removing from the index." );
+			squirrel_search_log( "index_post({$post_id}): password-protected, removing from the index." );
 			$this->repository->delete_post( $post_id );
 			return;
 		}
 
 		$hash = Content_Hash::compute( $post->post_title, $post->post_content, Settings::get_embedding_key() );
 		if ( $this->repository->get_content_hash( $post_id ) === $hash ) {
-			wp_mariadb_vector_search_log( "index_post({$post_id}): content hash unchanged, skipping." );
+			squirrel_search_log( "index_post({$post_id}): content hash unchanged, skipping." );
 			return;
 		}
 
 		$texts  = $this->chunker->chunk( $post->post_content, $post->post_title );
 		$prefix = Settings::get_prefixes()['document_prefix'];
-		$result = wp_mariadb_vector_search_embedding(
+		$result = squirrel_search_embedding(
 			array_map( static fn( string $text ): string => $prefix . $text, $texts )
 		)->generate_embeddings();
 
 		if ( is_wp_error( $result ) ) {
-			wp_mariadb_vector_search_log(
+			squirrel_search_log(
 				sprintf(
 					'index_post(%d): embed failed [%s] %s',
 					$post_id,
@@ -89,7 +89,7 @@ class Indexer {
 		}
 
 		$dim_info = count( $result ) > 0 ? count( $result[0] ) : 0;
-		wp_mariadb_vector_search_log(
+		squirrel_search_log(
 			sprintf(
 				'index_post(%d): embed OK — %d chunk(s), %d dimensions.',
 				$post_id,

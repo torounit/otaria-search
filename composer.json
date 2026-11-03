@@ -1,6 +1,6 @@
 {
-	"name": "torounit/wp-mariadb-vector-search",
-	"description": "WordPress plugin for MariaDB vector search.",
+	"name": "torounit/squirrel-search",
+	"description": "Semantic and hybrid search for WordPress, backed by MariaDB's VECTOR type.",
 	"type": "wordpress-plugin",
 	"license": "GPL-2.0-or-later",
 	"require": {
@@ -17,13 +17,13 @@
 	},
 	"autoload": {
 		"psr-4": {
-			"WP_MariaDB_Vector_Search\\": "includes/"
+			"Squirrel_Search\\": "includes/"
 		}
 	},
 	"autoload-dev": {
 		"psr-4": {
-			"WP_MariaDB_Vector_Search\\Tests\\Integration\\": "tests/phpunit/integration/",
-			"WP_MariaDB_Vector_Search\\Tests\\Unit\\": "tests/phpunit/unit/"
+			"Squirrel_Search\\Tests\\Integration\\": "tests/phpunit/integration/",
+			"Squirrel_Search\\Tests\\Unit\\": "tests/phpunit/unit/"
 		}
 	},
 	"config": {

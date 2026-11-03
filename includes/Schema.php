@@ -2,12 +2,12 @@
 /**
  * Database schema management.
  *
- * @package WP_MariaDB_Vector_Search
+ * @package Squirrel_Search
  */
 
 declare(strict_types=1);
 
-namespace WP_MariaDB_Vector_Search;
+namespace Squirrel_Search;
 
 /**
  * Creates, upgrades, and drops the embeddings table.
@@ -18,7 +18,7 @@ namespace WP_MariaDB_Vector_Search;
 class Schema {
 
 	const DB_VERSION        = '2';
-	const DB_VERSION_OPTION = 'wp_mariadb_vector_search_db_version';
+	const DB_VERSION_OPTION = 'squirrel_search_db_version';
 
 	/**
 	 * Install or upgrade the embeddings table.
@@ -31,7 +31,7 @@ class Schema {
 	public static function install( int $dimensions ): void {
 		global $wpdb;
 
-		$table           = $wpdb->prefix . 'mariadb_vector_embeddings';
+		$table           = $wpdb->prefix . 'squirrel_search_embeddings';
 		$charset_collate = $wpdb->get_charset_collate();
 		$current_ver     = get_option( self::DB_VERSION_OPTION, '' );
 
@@ -81,7 +81,7 @@ class Schema {
 	 */
 	public static function drop(): void {
 		global $wpdb;
-		$table = $wpdb->prefix . 'mariadb_vector_embeddings';
+		$table = $wpdb->prefix . 'squirrel_search_embeddings';
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
 		$wpdb->query( "DROP TABLE IF EXISTS `{$table}`" );
 	}

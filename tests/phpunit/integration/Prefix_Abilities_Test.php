@@ -4,15 +4,15 @@
  *
  * Requires MariaDB 11.7+ with VECTOR support.
  *
- * @package WP_MariaDB_Vector_Search
+ * @package Squirrel_Search
  */
 
 declare(strict_types=1);
 
-namespace WP_MariaDB_Vector_Search\Tests\Integration;
+namespace Squirrel_Search\Tests\Integration;
 
-use WP_MariaDB_Vector_Search\Schema;
-use WP_MariaDB_Vector_Search\Settings;
+use Squirrel_Search\Schema;
+use Squirrel_Search\Settings;
 
 /**
  * Class Prefix_Abilities_Test
@@ -64,7 +64,7 @@ class Prefix_Abilities_Test extends \WP_UnitTestCase {
 	 * @return mixed
 	 */
 	private function run_ability( string $name, array $input = array() ): mixed {
-		return wp_get_ability( "wp-mariadb-vector-search/{$name}" )->execute( empty( $input ) ? null : $input );
+		return wp_get_ability( "squirrel-search/{$name}" )->execute( empty( $input ) ? null : $input );
 	}
 
 	/** The get-status ability reports the saved prefixes. */

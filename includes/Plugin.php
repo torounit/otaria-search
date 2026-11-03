@@ -2,12 +2,12 @@
 /**
  * Main plugin class.
  *
- * @package WP_MariaDB_Vector_Search
+ * @package Squirrel_Search
  */
 
 declare(strict_types=1);
 
-namespace WP_MariaDB_Vector_Search;
+namespace Squirrel_Search;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -36,13 +36,13 @@ class Plugin {
 	 */
 	public function register_hooks(): void {
 		if ( ! Schema::is_vector_supported() ) {
-			wp_mariadb_vector_search_log( 'register_hooks: VECTOR not supported by this database; indexing hooks NOT registered.' );
+			squirrel_search_log( 'register_hooks: VECTOR not supported by this database; indexing hooks NOT registered.' );
 			add_action( 'admin_notices', array( $this, 'notice_no_vector' ) );
 			return;
 		}
 
 		$this->maybe_install_schema();
-		wp_mariadb_vector_search_log( 'register_hooks: schema installed=' . ( Schema::is_installed() ? 'yes' : 'no' ) . '.' );
+		squirrel_search_log( 'register_hooks: schema installed=' . ( Schema::is_installed() ? 'yes' : 'no' ) . '.' );
 
 		$repository = new Repository();
 		$indexer    = new Indexer( $repository );
@@ -73,7 +73,7 @@ class Plugin {
 		$admin->register_hooks();
 
 		if ( defined( 'WP_CLI' ) && \WP_CLI ) {
-			\WP_CLI::add_command( 'mariadb-vector', new CLI( $indexer ) );
+			\WP_CLI::add_command( 'squirrel-search', new CLI( $indexer ) );
 		}
 	}
 
@@ -84,7 +84,7 @@ class Plugin {
 	 */
 	public function notice_no_vector(): void {
 		echo '<div class="notice notice-error"><p>';
-		echo esc_html__( 'WP MariaDB Vector Search requires MariaDB 11.7 or higher with VECTOR support.', 'wp-mariadb-vector-search' );
+		echo esc_html__( 'Squirrel Search requires MariaDB 11.7 or higher with VECTOR support.', 'squirrel-search' );
 		echo '</p></div>';
 	}
 
@@ -101,7 +101,7 @@ class Plugin {
 			return;
 		}
 
-		$settings   = get_option( 'wp_mariadb_vector_search_settings', array() );
+		$settings   = get_option( 'squirrel_search_settings', array() );
 		$dimensions = isset( $settings['dimensions'] ) ? (int) $settings['dimensions'] : self::DEFAULT_DIMENSIONS;
 		Schema::install( $dimensions );
 	}
@@ -116,7 +116,7 @@ class Plugin {
 			return;
 		}
 
-		$settings   = get_option( 'wp_mariadb_vector_search_settings', array() );
+		$settings   = get_option( 'squirrel_search_settings', array() );
 		$dimensions = isset( $settings['dimensions'] ) ? (int) $settings['dimensions'] : self::DEFAULT_DIMENSIONS;
 		Schema::install( $dimensions );
 	}

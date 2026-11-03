@@ -4,15 +4,15 @@
  *
  * Requires MariaDB 11.7+ with VECTOR support.
  *
- * @package WP_MariaDB_Vector_Search
+ * @package Squirrel_Search
  */
 
 declare(strict_types=1);
 
-namespace WP_MariaDB_Vector_Search\Tests\Integration;
+namespace Squirrel_Search\Tests\Integration;
 
-use WP_MariaDB_Vector_Search\Repository;
-use WP_MariaDB_Vector_Search\Schema;
+use Squirrel_Search\Repository;
+use Squirrel_Search\Schema;
 
 /**
  * Class Repository_Test
@@ -46,7 +46,7 @@ class Repository_Test extends \WP_UnitTestCase {
 		remove_filter( 'query', array( $this, '_drop_temporary_tables' ) );
 
 		Schema::drop();
-		delete_option( 'wp_mariadb_vector_search_db_version' );
+		delete_option( 'squirrel_search_db_version' );
 		Schema::install( self::DIMS );
 
 		$this->repository = new Repository();
@@ -57,7 +57,7 @@ class Repository_Test extends \WP_UnitTestCase {
 	 */
 	public function tear_down(): void {
 		Schema::drop();
-		delete_option( 'wp_mariadb_vector_search_db_version' );
+		delete_option( 'squirrel_search_db_version' );
 
 		add_filter( 'query', array( $this, '_create_temporary_tables' ) );
 		add_filter( 'query', array( $this, '_drop_temporary_tables' ) );
@@ -90,7 +90,7 @@ class Repository_Test extends \WP_UnitTestCase {
 	/** Chunks are stored after replace_post_chunks(). */
 	public function test_replace_post_chunks_inserts_rows(): void {
 		global $wpdb;
-		$table = $wpdb->prefix . 'mariadb_vector_embeddings';
+		$table = $wpdb->prefix . 'squirrel_search_embeddings';
 
 		$this->repository->replace_post_chunks(
 			1,
@@ -113,7 +113,7 @@ class Repository_Test extends \WP_UnitTestCase {
 	/** Second call replaces existing rows for the same post. */
 	public function test_replace_post_chunks_replaces_existing(): void {
 		global $wpdb;
-		$table = $wpdb->prefix . 'mariadb_vector_embeddings';
+		$table = $wpdb->prefix . 'squirrel_search_embeddings';
 
 		$chunk = array(
 			'chunk_index' => 0,
@@ -131,7 +131,7 @@ class Repository_Test extends \WP_UnitTestCase {
 	/** Content hash is stored alongside the chunk. */
 	public function test_replace_post_chunks_stores_content_hash(): void {
 		global $wpdb;
-		$table = $wpdb->prefix . 'mariadb_vector_embeddings';
+		$table = $wpdb->prefix . 'squirrel_search_embeddings';
 
 		$this->repository->replace_post_chunks(
 			42,
@@ -158,7 +158,7 @@ class Repository_Test extends \WP_UnitTestCase {
 	/** All chunks are removed by delete_post(). */
 	public function test_delete_post_removes_all_chunks(): void {
 		global $wpdb;
-		$table = $wpdb->prefix . 'mariadb_vector_embeddings';
+		$table = $wpdb->prefix . 'squirrel_search_embeddings';
 
 		$this->repository->replace_post_chunks(
 			5,

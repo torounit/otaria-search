@@ -2,7 +2,7 @@
 /**
  * PHPUnit bootstrap file.
  *
- * @package WP_MariaDB_Vector_Search
+ * @package Squirrel_Search
  */
 
 declare(strict_types=1);
@@ -45,10 +45,10 @@ require_once $_tests_dir . '/includes/functions.php';
 tests_add_filter(
 	'muplugins_loaded',
 	static function (): void {
-		require dirname( __DIR__, 2 ) . '/wp-mariadb-vector-search.php';
+		require dirname( __DIR__, 2 ) . '/squirrel-search.php';
 	}
 );
 
 require $_tests_dir . '/includes/bootstrap.php';
 
-WP_MariaDB_Vector_Search\Tests\Integration\Fake_Embedding_Provider::register();
+Squirrel_Search\Tests\Integration\Fake_Embedding_Provider::register();

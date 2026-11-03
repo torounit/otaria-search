@@ -25,7 +25,7 @@ export function IndexSettingsSection( {
 		setError( null );
 		try {
 			const raw = await apiFetch( {
-				path: '/wp-abilities/v1/abilities/wp-mariadb-vector-search/update-settings/run',
+				path: '/wp-abilities/v1/abilities/squirrel-search/update-settings/run',
 				method: 'POST',
 				data: { input: { exclude_password_protected: exclude } },
 			} );
@@ -38,7 +38,7 @@ export function IndexSettingsSection( {
 			setError(
 				err instanceof Error
 					? err.message
-					: __( 'Unknown error.', 'wp-mariadb-vector-search' )
+					: __( 'Unknown error.', 'squirrel-search' )
 			);
 		} finally {
 			setIsSaving( false );
@@ -46,7 +46,7 @@ export function IndexSettingsSection( {
 	}
 
 	return (
-		<Section title={ __( 'Indexing', 'wp-mariadb-vector-search' ) }>
+		<Section title={ __( 'Indexing', 'squirrel-search' ) }>
 			{ error && (
 				<Notice status="error" onRemove={ () => setError( null ) }>
 					{ error }
@@ -55,11 +55,11 @@ export function IndexSettingsSection( {
 			<CheckboxControl
 				label={ __(
 					'Do not index password-protected posts',
-					'wp-mariadb-vector-search'
+					'squirrel-search'
 				) }
 				help={ __(
 					'Indexed posts are sent to the embedding provider. Run Reindex all posts to apply a change to existing posts.',
-					'wp-mariadb-vector-search'
+					'squirrel-search'
 				) }
 				checked={ exclude }
 				onChange={ setExclude }
@@ -73,7 +73,7 @@ export function IndexSettingsSection( {
 					disabled={ isSaving }
 					accessibleWhenDisabled
 				>
-					{ __( 'Save', 'wp-mariadb-vector-search' ) }
+					{ __( 'Save', 'squirrel-search' ) }
 				</Button>
 			</Stack>
 		</Section>

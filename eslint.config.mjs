@@ -1,5 +1,5 @@
 /**
- * ESLint flat config for WP MariaDB Vector Search.
+ * ESLint flat config for Squirrel Search.
  *
  * @see https://eslint.org/docs/latest/use/configure/configuration-files
  */
@@ -20,20 +20,20 @@ export default [
 	...wordpress.configs.recommended,
 
 	{
-		name: 'wp-mariadb-vector-search/custom-rules',
+		name: 'squirrel-search/custom-rules',
 
 		rules: {
 			'@wordpress/i18n-text-domain': [
 				'error',
 				{
-					allowedTextDomain: 'wp-mariadb-vector-search',
+					allowedTextDomain: 'squirrel-search',
 				},
 			],
 		},
 	},
 
 	{
-		name: 'wp-mariadb-vector-search/typescript-overrides',
+		name: 'squirrel-search/typescript-overrides',
 		files: [ '**/*.ts?(x)' ],
 
 		rules: {

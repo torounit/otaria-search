@@ -18,65 +18,47 @@ export function StatusSection( {
 	progress,
 }: Props ) {
 	return (
-		<Section title={ __( 'Status', 'wp-mariadb-vector-search' ) }>
+		<Section title={ __( 'Status', 'squirrel-search' ) }>
 			<table className="widefat striped">
 				<tbody>
 					<tr>
 						<td>
 							{ __(
 								'MariaDB VECTOR support',
-								'wp-mariadb-vector-search'
+								'squirrel-search'
 							) }
 						</td>
 						<td>
 							{ isSupported ? (
 								<span style={ { color: 'green' } }>
 									{ '✓ ' }
-									{ __(
-										'Available',
-										'wp-mariadb-vector-search'
-									) }
+									{ __( 'Available', 'squirrel-search' ) }
 								</span>
 							) : (
 								<span style={ { color: 'red' } }>
 									{ '✗ ' }
 									{ __(
 										'Not available (MariaDB 11.7+ required)',
-										'wp-mariadb-vector-search'
+										'squirrel-search'
 									) }
 								</span>
 							) }
 						</td>
 					</tr>
 					<tr>
-						<td>
-							{ __(
-								'Indexed posts',
-								'wp-mariadb-vector-search'
-							) }
-						</td>
+						<td>{ __( 'Indexed posts', 'squirrel-search' ) }</td>
 						<td>{ installed ? indexed : '—' }</td>
 					</tr>
 					<tr>
-						<td>
-							{ __(
-								'Table dimensions',
-								'wp-mariadb-vector-search'
-							) }
-						</td>
+						<td>{ __( 'Table dimensions', 'squirrel-search' ) }</td>
 						<td>{ tableDims ?? '—' }</td>
 					</tr>
 					<tr>
-						<td>
-							{ __(
-								'Backfill status',
-								'wp-mariadb-vector-search'
-							) }
-						</td>
+						<td>{ __( 'Backfill status', 'squirrel-search' ) }</td>
 						<td>
 							{ progress
 								? `${ progress.done } / ${ progress.total } posts`
-								: __( 'Idle', 'wp-mariadb-vector-search' ) }
+								: __( 'Idle', 'squirrel-search' ) }
 						</td>
 					</tr>
 				</tbody>

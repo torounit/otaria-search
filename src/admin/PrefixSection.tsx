@@ -26,7 +26,7 @@ export function PrefixSection( { prefixes, onSaved }: Props ) {
 		setError( null );
 		try {
 			const raw = await apiFetch( {
-				path: '/wp-abilities/v1/abilities/wp-mariadb-vector-search/update-settings/run',
+				path: '/wp-abilities/v1/abilities/squirrel-search/update-settings/run',
 				method: 'POST',
 				data: {
 					input: {
@@ -43,7 +43,7 @@ export function PrefixSection( { prefixes, onSaved }: Props ) {
 		} catch ( err ) {
 			setError(
 				( err as { message?: string } )?.message ??
-					__( 'Unknown error.', 'wp-mariadb-vector-search' )
+					__( 'Unknown error.', 'squirrel-search' )
 			);
 		} finally {
 			setIsSaving( false );
@@ -51,11 +51,11 @@ export function PrefixSection( { prefixes, onSaved }: Props ) {
 	}
 
 	return (
-		<Section title={ __( 'Prefixes', 'wp-mariadb-vector-search' ) }>
+		<Section title={ __( 'Prefixes', 'squirrel-search' ) }>
 			<Text render={ <p /> }>
 				{ __(
 					'Some embedding models expect a text before search terms and documents, such as "query: " and "passage: ". Check the model card and enter them exactly, including trailing spaces. Leave them empty for models that don\'t need them. They are cleared when the model changes.',
-					'wp-mariadb-vector-search'
+					'squirrel-search'
 				) }
 			</Text>
 
@@ -66,19 +66,19 @@ export function PrefixSection( { prefixes, onSaved }: Props ) {
 			) }
 
 			<TextControl
-				label={ __( 'Query prefix', 'wp-mariadb-vector-search' ) }
+				label={ __( 'Query prefix', 'squirrel-search' ) }
 				help={ __(
 					'Prepended to search terms. Takes effect immediately, including in the search preview.',
-					'wp-mariadb-vector-search'
+					'squirrel-search'
 				) }
 				value={ queryPrefix }
 				onChange={ setQueryPrefix }
 			/>
 			<TextControl
-				label={ __( 'Document prefix', 'wp-mariadb-vector-search' ) }
+				label={ __( 'Document prefix', 'squirrel-search' ) }
 				help={ __(
 					'Prepended to post content. Changing it requires a Reindex.',
-					'wp-mariadb-vector-search'
+					'squirrel-search'
 				) }
 				value={ documentPrefix }
 				onChange={ setDocumentPrefix }
@@ -93,7 +93,7 @@ export function PrefixSection( { prefixes, onSaved }: Props ) {
 					disabled={ isSaving }
 					accessibleWhenDisabled
 				>
-					{ __( 'Save prefixes', 'wp-mariadb-vector-search' ) }
+					{ __( 'Save prefixes', 'squirrel-search' ) }
 				</Button>
 			</Stack>
 		</Section>

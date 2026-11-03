@@ -1,8 +1,8 @@
 <?php
 /**
- * Uninstall WP MariaDB Vector Search.
+ * Uninstall Squirrel Search.
  *
- * @package WP_MariaDB_Vector_Search
+ * @package Squirrel_Search
  */
 
 declare(strict_types=1);
@@ -13,13 +13,13 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 
 require_once __DIR__ . '/vendor/autoload.php';
 
-WP_MariaDB_Vector_Search\Schema::drop();
+Squirrel_Search\Schema::drop();
 
-delete_option( 'wp_mariadb_vector_search_db_version' );
-delete_option( 'wp_mariadb_vector_search_settings' );
-delete_transient( WP_MariaDB_Vector_Search\Cron_Backfill::PROGRESS_KEY );
+delete_option( 'squirrel_search_db_version' );
+delete_option( 'squirrel_search_settings' );
+delete_transient( Squirrel_Search\Cron_Backfill::PROGRESS_KEY );
 
-$timestamp = wp_next_scheduled( WP_MariaDB_Vector_Search\Cron_Backfill::CRON_HOOK );
+$timestamp = wp_next_scheduled( Squirrel_Search\Cron_Backfill::CRON_HOOK );
 if ( $timestamp ) {
-	wp_unschedule_event( $timestamp, WP_MariaDB_Vector_Search\Cron_Backfill::CRON_HOOK );
+	wp_unschedule_event( $timestamp, Squirrel_Search\Cron_Backfill::CRON_HOOK );
 }
