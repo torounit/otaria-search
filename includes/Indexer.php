@@ -34,6 +34,8 @@ class Indexer {
 	 * Index a single post: chunk → embed → store.
 	 *
 	 * Skips non-published posts and posts whose content hash has not changed.
+	 * Password-protected posts are removed from the index unless the setting
+	 * allows them.
 	 *
 	 * @param int $post_id Post ID.
 	 * @return void
@@ -53,6 +55,13 @@ class Indexer {
 
 		if ( 'publish' !== $post->post_status ) {
 			wp_mariadb_vector_search_log( "index_post({$post_id}): status={$post->post_status}, skipping (not published)." );
+			return;
+		}
+
+		if ( '' !== $post->post_password && Settings::excludes_password_protected() ) {
+			// Also drops rows indexed before the password was set.
+			wp_mariadb_vector_search_log( "index_post({$post_id}): password-protected, removing from the index." );
+			$this->repository->delete_post( $post_id );
 			return;
 		}
 
