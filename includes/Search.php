@@ -138,8 +138,7 @@ class Search {
 	 * Determine the post types to search.
 	 *
 	 * Uses the query's post_type parameter when set; otherwise falls back to
-	 * all public, searchable post types filtered by
-	 * wp_mariadb_vector_search_post_types.
+	 * default_post_types().
 	 *
 	 * @param \WP_Query $query The query.
 	 * @return string[] Post type slugs.
@@ -151,6 +150,16 @@ class Search {
 			return (array) $from_query;
 		}
 
+		return self::default_post_types();
+	}
+
+	/**
+	 * All public, searchable post types, filtered by
+	 * wp_mariadb_vector_search_post_types.
+	 *
+	 * @return string[] Post type slugs.
+	 */
+	public static function default_post_types(): array {
 		$types = array_keys(
 			get_post_types(
 				array(
@@ -160,7 +169,6 @@ class Search {
 			)
 		);
 
-		$types = apply_filters( 'wp_mariadb_vector_search_post_types', $types );
-		return $types;
+		return apply_filters( 'wp_mariadb_vector_search_post_types', $types );
 	}
 }

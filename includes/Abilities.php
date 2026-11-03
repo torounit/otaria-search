@@ -18,6 +18,13 @@ class Abilities {
 	const ABILITY_GET_STATUS = 'wp-mariadb-vector-search/get-status';
 	const ABILITY_REINDEX    = 'wp-mariadb-vector-search/reindex';
 	const ABILITY_SELECT     = 'wp-mariadb-vector-search/select-model';
+	const ABILITY_THRESHOLDS = 'wp-mariadb-vector-search/save-thresholds';
+	const ABILITY_PREVIEW    = 'wp-mariadb-vector-search/preview-search';
+
+	/**
+	 * Number of posts listed by the search preview.
+	 */
+	const PREVIEW_LIMIT = 20;
 
 	/**
 	 * Register abilities and categories.
@@ -129,6 +136,76 @@ class Abilities {
 				},
 			)
 		);
+
+		$distance_schema = array(
+			'type'    => array( 'number', 'null' ),
+			'minimum' => 0,
+			'maximum' => 2,
+		);
+
+		// Register save-thresholds ability.
+		wp_register_ability(
+			self::ABILITY_THRESHOLDS,
+			array(
+				'label'               => __( 'Save Thresholds', 'wp-mariadb-vector-search' ),
+				'description'         => __( 'Saves the cosine distance thresholds for search results. Null resets a threshold to its default.', 'wp-mariadb-vector-search' ),
+				'category'            => self::CATEGORY_SLUG,
+				'meta'                => array( 'show_in_rest' => true ),
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(
+						'max_distance'          => $distance_schema + array(
+							'description' => __( 'Maximum cosine distance from the query.', 'wp-mariadb-vector-search' ),
+						),
+						'max_relative_distance' => $distance_schema + array(
+							'description' => __( 'Maximum distance behind the best match.', 'wp-mariadb-vector-search' ),
+						),
+					),
+				),
+				'execute_callback'    => array( __CLASS__, 'execute_save_thresholds' ),
+				'permission_callback' => function () {
+					return current_user_can( 'manage_options' );
+				},
+			)
+		);
+
+		// Register preview-search ability.
+		wp_register_ability(
+			self::ABILITY_PREVIEW,
+			array(
+				'label'               => __( 'Preview Search', 'wp-mariadb-vector-search' ),
+				'description'         => __( 'Lists the posts nearest to a query with their cosine distances and whether the thresholds keep them.', 'wp-mariadb-vector-search' ),
+				'category'            => self::CATEGORY_SLUG,
+				'meta'                => array(
+					'show_in_rest' => true,
+					'annotations'  => array(
+						'readonly'    => true,
+						'destructive' => false,
+					),
+				),
+				'input_schema'        => array(
+					'type'       => 'object',
+					'required'   => array( 'query' ),
+					'properties' => array(
+						'query'                 => array(
+							'type'        => 'string',
+							'minLength'   => 1,
+							'description' => __( 'Search query.', 'wp-mariadb-vector-search' ),
+						),
+						'max_distance'          => $distance_schema + array(
+							'description' => __( 'Threshold to preview; defaults to the saved value.', 'wp-mariadb-vector-search' ),
+						),
+						'max_relative_distance' => $distance_schema + array(
+							'description' => __( 'Threshold to preview; defaults to the saved value.', 'wp-mariadb-vector-search' ),
+						),
+					),
+				),
+				'execute_callback'    => array( __CLASS__, 'execute_preview_search' ),
+				'permission_callback' => function () {
+					return current_user_can( 'manage_options' );
+				},
+			)
+		);
 	}
 
 	/**
@@ -156,19 +233,73 @@ class Abilities {
 		$progress    = get_transient( Cron_Backfill::PROGRESS_KEY );
 
 		return array(
-			'is_supported'     => $is_supported,
-			'installed'        => $installed,
-			'indexed'          => $schema_ready ? $repository->count_indexed() : 0,
-			'table_dims'       => $table_dims,
-			'progress'         => $progress ? $progress : null,
-			'settings'         => array(
+			'is_supported'       => $is_supported,
+			'installed'          => $installed,
+			'indexed'            => $schema_ready ? $repository->count_indexed() : 0,
+			'table_dims'         => $table_dims,
+			'progress'           => $progress ? $progress : null,
+			'settings'           => array(
 				'provider'   => $cur_provider,
 				'model'      => $cur_model,
 				'dimensions' => $cur_dims,
 			),
-			'available_models' => $catalog->get_available_models(),
-			'dim_changed'      => $dim_changed,
+			'available_models'   => $catalog->get_available_models(),
+			'dim_changed'        => $dim_changed,
+			'thresholds'         => Settings::get_thresholds(),
+			'default_thresholds' => Settings::DEFAULT_THRESHOLDS,
 		);
+	}
+
+	/**
+	 * Callback for save-thresholds ability.
+	 *
+	 * @param array|null $input Ability input with optional 'max_distance' and 'max_relative_distance'.
+	 * @return array The thresholds now in effect.
+	 */
+	public static function execute_save_thresholds( ?array $input = null ): array {
+		// Settings::sanitize_settings() keeps the model settings and any
+		// threshold omitted from the input.
+		update_option(
+			Settings::OPTION_NAME,
+			array_intersect_key( (array) $input, array_flip( Settings::THRESHOLD_KEYS ) )
+		);
+
+		return Settings::get_thresholds();
+	}
+
+	/**
+	 * Callback for preview-search ability.
+	 *
+	 * @param array|null $input Ability input with 'query' and optional thresholds.
+	 * @return array|\WP_Error Nearest posts, or the embedding error.
+	 */
+	public static function execute_preview_search( ?array $input = null ): array|\WP_Error {
+		$result = wp_mariadb_vector_search_embedding( (string) ( $input['query'] ?? '' ) )->generate_embeddings();
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		$thresholds = Settings::get_thresholds();
+		foreach ( Settings::THRESHOLD_KEYS as $key ) {
+			if ( isset( $input[ $key ] ) ) {
+				$thresholds[ $key ] = (float) $input[ $key ];
+			}
+		}
+
+		$distances = ( new Repository() )->nearest_posts( $result[0]->getValues(), Search::default_post_types(), self::PREVIEW_LIMIT );
+		$kept      = Repository::filter_by_distance( $distances, $thresholds['max_distance'], $thresholds['max_relative_distance'] );
+
+		$results = array();
+		foreach ( $distances as $post_id => $distance ) {
+			$results[] = array(
+				'post_id'  => $post_id,
+				'title'    => get_the_title( $post_id ),
+				'distance' => $distance,
+				'included' => isset( $kept[ $post_id ] ),
+			);
+		}
+
+		return array( 'results' => $results );
 	}
 
 	/**
