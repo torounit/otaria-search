@@ -26,3 +26,4 @@ CLAUDE.md export-ignore
 /src export-ignore
 /tests export-ignore
 /.vscode export-ignore
+/.husky export-ignore
