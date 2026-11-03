@@ -38,8 +38,8 @@ export function SearchSection( { settings, defaults, onSaved }: Props ) {
 	const [ maxDistance, setMaxDistance ] = useState(
 		String( settings.max_distance )
 	);
-	const [ maxRelative, setMaxRelative ] = useState(
-		String( settings.max_relative_distance )
+	const [ maxRatio, setMaxRatio ] = useState(
+		String( settings.max_distance_ratio )
 	);
 	const [ isSaving, setIsSaving ] = useState( false );
 	const [ error, setError ] = useState< string | null >( null );
@@ -50,11 +50,11 @@ export function SearchSection( { settings, defaults, onSaved }: Props ) {
 
 	const values = {
 		max_distance: Number( maxDistance ),
-		max_relative_distance: Number( maxRelative ),
+		max_distance_ratio: Number( maxRatio ),
 	};
-	const isValid = [ maxDistance, maxRelative ].every(
-		( v ) => v !== '' && Number( v ) >= 0 && Number( v ) <= 2
-	);
+	const inRange = ( v: string, min: number, max: number ) =>
+		v !== '' && Number( v ) >= min && Number( v ) <= max;
+	const isValid = inRange( maxDistance, 0, 2 ) && inRange( maxRatio, 1, 10 );
 
 	async function save( input: Record< string, number | boolean | null > ) {
 		setIsSaving( true );
@@ -69,7 +69,7 @@ export function SearchSection( { settings, defaults, onSaved }: Props ) {
 				unwrapAbilityResponse< UpdateSettingsResponse >( raw );
 			setHybrid( saved.hybrid );
 			setMaxDistance( String( saved.max_distance ) );
-			setMaxRelative( String( saved.max_relative_distance ) );
+			setMaxRatio( String( saved.max_distance_ratio ) );
 			onSaved();
 		} catch ( err ) {
 			setError( errorMessage( err ) );
@@ -147,19 +147,19 @@ export function SearchSection( { settings, defaults, onSaved }: Props ) {
 			/>
 			<TextControl
 				type="number"
-				min={ 0 }
-				max={ 2 }
-				step={ 0.01 }
+				min={ 1 }
+				max={ 10 }
+				step={ 0.1 }
 				label={ __(
-					'Maximum distance behind the best match',
+					'Maximum distance relative to the best match',
 					'otaria-search'
 				) }
 				help={ `${ __(
-					'Posts more than this behind the closest post are excluded. 2 disables it. Default:',
+					'Posts farther than this many times the distance of the closest post are excluded: 1.3 keeps posts up to 1.3 times as far. Default:',
 					'otaria-search'
-				) } ${ defaults.max_relative_distance }` }
-				value={ maxRelative }
-				onChange={ setMaxRelative }
+				) } ${ defaults.max_distance_ratio }` }
+				value={ maxRatio }
+				onChange={ setMaxRatio }
 			/>
 			<Stack direction="row" gap="sm" wrap="wrap">
 				<Button
@@ -178,7 +178,7 @@ export function SearchSection( { settings, defaults, onSaved }: Props ) {
 					onClick={ () =>
 						void save( {
 							max_distance: null,
-							max_relative_distance: null,
+							max_distance_ratio: null,
 						} )
 					}
 					disabled={ isSaving }

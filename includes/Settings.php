@@ -21,21 +21,32 @@ class Settings {
 	 *
 	 * @since 0.2.0
 	 */
-	const THRESHOLD_KEYS = array( 'max_distance', 'max_relative_distance' );
+	const THRESHOLD_KEYS = array( 'max_distance', 'max_distance_ratio' );
 
 	/**
 	 * Default thresholds, used until the admin saves model-specific values.
 	 *
 	 * The max_distance stays loose: distance scales differ a lot between models,
 	 * and a tight absolute cutoff empties the results of a model with large
-	 * distances. max_relative_distance trims the tail instead; it never drops
-	 * the best match, and hybrid search keeps the LIKE matches.
+	 * distances. max_distance_ratio trims the tail instead, as a multiple of
+	 * the best match's distance, so one value suits models of different
+	 * scales. It never drops the best match, and hybrid search keeps the LIKE
+	 * matches.
 	 *
 	 * @since 0.2.0
 	 */
 	const DEFAULT_THRESHOLDS = array(
-		'max_distance'          => 0.65,
-		'max_relative_distance' => 0.10,
+		'max_distance'       => 0.65,
+		'max_distance_ratio' => 1.3,
+	);
+
+	/**
+	 * Valid range of each threshold. A ratio below 1 would drop the best
+	 * match itself.
+	 */
+	private const THRESHOLD_RANGES = array(
+		'max_distance'       => array( 0.0, 2.0 ),
+		'max_distance_ratio' => array( 1.0, 10.0 ),
 	);
 
 	/**
@@ -51,7 +62,7 @@ class Settings {
 	 *
 	 * @since 0.2.0
 	 *
-	 * @return array{max_distance: float, max_relative_distance: float}
+	 * @return array{max_distance: float, max_distance_ratio: float}
 	 */
 	public static function get_thresholds(): array {
 		$settings = get_option( self::OPTION_NAME, array() );
@@ -61,7 +72,7 @@ class Settings {
 
 		$thresholds = array();
 		foreach ( self::DEFAULT_THRESHOLDS as $key => $default ) {
-			$thresholds[ $key ] = isset( $settings[ $key ] ) && self::is_valid_distance( $settings[ $key ] )
+			$thresholds[ $key ] = isset( $settings[ $key ] ) && self::is_valid_threshold( $key, $settings[ $key ] )
 				? (float) $settings[ $key ]
 				: $default;
 		}
@@ -260,7 +271,7 @@ class Settings {
 		}
 
 		foreach ( self::THRESHOLD_KEYS as $key ) {
-			if ( isset( $input[ $key ] ) && self::is_valid_distance( $input[ $key ] ) ) {
+			if ( isset( $input[ $key ] ) && self::is_valid_threshold( $key, $input[ $key ] ) ) {
 				$sanitized[ $key ] = (float) $input[ $key ];
 			}
 		}
@@ -305,14 +316,16 @@ class Settings {
 	}
 
 	/**
-	 * Whether a value is a cosine distance (0–2).
+	 * Whether a value is within the range of a threshold.
 	 *
 	 * @since 0.2.0
 	 *
-	 * @param mixed $value Value to check.
+	 * @param string $key   Threshold key, one of THRESHOLD_KEYS.
+	 * @param mixed  $value Value to check.
 	 * @return bool
 	 */
-	private static function is_valid_distance( mixed $value ): bool {
-		return is_numeric( $value ) && (float) $value >= 0.0 && (float) $value <= 2.0;
+	private static function is_valid_threshold( string $key, mixed $value ): bool {
+		[ $min, $max ] = self::THRESHOLD_RANGES[ $key ];
+		return is_numeric( $value ) && (float) $value >= $min && (float) $value <= $max;
 	}
 }

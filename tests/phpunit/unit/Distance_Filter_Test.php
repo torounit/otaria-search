@@ -40,19 +40,25 @@ class Distance_Filter_Test extends \WP_UnitTestCase {
 		);
 	}
 
-	/** Posts more than max_relative_distance behind the best are dropped. */
-	public function test_max_relative_distance_drops_posts_behind_best(): void {
+	/** Posts farther than max_distance_ratio times the best distance are dropped. */
+	public function test_max_distance_ratio_drops_posts_beyond_multiple_of_best(): void {
+		// The best is 0.2, so a ratio of 2 keeps distances up to 0.4.
 		$this->assertSame(
 			array(
 				7 => 0.2,
 				3 => 0.35,
 			),
-			Repository::filter_by_distance( self::DISTANCES, INF, 0.3 )
+			Repository::filter_by_distance( self::DISTANCES, INF, 2.0 )
 		);
 	}
 
-	/** Nothing within max_distance leaves nothing for the relative filter. */
+	/** The ratio applies to the best post kept by max_distance. */
+	public function test_max_distance_ratio_applies_after_max_distance(): void {
+		$this->assertSame( array( 7 => 0.2 ), Repository::filter_by_distance( self::DISTANCES, 0.3, 4.0 ) );
+	}
+
+	/** Nothing within max_distance leaves nothing for the ratio filter. */
 	public function test_no_post_within_max_distance_returns_empty(): void {
-		$this->assertSame( array(), Repository::filter_by_distance( self::DISTANCES, 0.1, 0.3 ) );
+		$this->assertSame( array(), Repository::filter_by_distance( self::DISTANCES, 0.1, 2.0 ) );
 	}
 }

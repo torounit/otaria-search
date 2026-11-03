@@ -22,6 +22,13 @@ use Otaria_Search\Settings;
 class Search_Settings_Abilities_Test extends \WP_UnitTestCase {
 
 	/**
+	 * Query vector at cosine distance 0.1 from (1, 0, 0, 0) and 0.28 from
+	 * (0.8, 0.6, 0, 0), so a ratio to the best distance has something to
+	 * multiply.
+	 */
+	private const QUERY_VECTOR = array( 0.9, 0.0, 0.4358898944, 0.0 );
+
+	/**
 	 * IDs of posts created by the test.
 	 *
 	 * @var int[]
@@ -109,8 +116,8 @@ class Search_Settings_Abilities_Test extends \WP_UnitTestCase {
 
 		$this->assertSame(
 			array(
-				'max_distance'          => 0.4,
-				'max_relative_distance' => 0.1,
+				'max_distance'       => 0.4,
+				'max_distance_ratio' => 1.3,
 			),
 			$status['thresholds']
 		);
@@ -131,14 +138,14 @@ class Search_Settings_Abilities_Test extends \WP_UnitTestCase {
 		$result = $this->run_ability(
 			'update-settings',
 			array(
-				'max_distance'          => 0.4,
-				'max_relative_distance' => 0.1,
+				'max_distance'       => 0.4,
+				'max_distance_ratio' => 2.0,
 			)
 		);
 
 		$expected = array(
-			'max_distance'          => 0.4,
-			'max_relative_distance' => 0.1,
+			'max_distance'       => 0.4,
+			'max_distance_ratio' => 2.0,
 		);
 		$this->assertSame( $expected, array_intersect_key( $result, $expected ) );
 		$this->assertTrue( $result['hybrid'] );
@@ -179,6 +186,11 @@ class Search_Settings_Abilities_Test extends \WP_UnitTestCase {
 		$this->assertWPError( $this->run_ability( 'update-settings', array( 'max_distance' => 3 ) ) );
 	}
 
+	/** A ratio below 1 is rejected by the input schema. */
+	public function test_save_thresholds_rejects_ratio_below_one(): void {
+		$this->assertWPError( $this->run_ability( 'update-settings', array( 'max_distance_ratio' => 0.5 ) ) );
+	}
+
 	/** The model cannot be changed here: select-model probes it first. */
 	public function test_update_settings_rejects_model(): void {
 		$this->assertWPError( $this->run_ability( 'update-settings', array( 'model' => 'another-model' ) ) );
@@ -194,31 +206,34 @@ class Search_Settings_Abilities_Test extends \WP_UnitTestCase {
 
 	/** The search preview lists the nearest posts with distances and whether the thresholds keep them. */
 	public function test_preview_search_marks_posts_kept_by_thresholds(): void {
-		$best = $this->create_indexed_post( 'Best', array( 1.0, 0.0, 0.0, 0.0 ) );    // Distance 0.
-		$near = $this->create_indexed_post( 'Near', array( 0.8, 0.6, 0.0, 0.0 ) );    // Distance 0.2.
+		$best = $this->create_indexed_post( 'Best', array( 1.0, 0.0, 0.0, 0.0 ) );    // Distance 0.1.
+		$near = $this->create_indexed_post( 'Near', array( 0.8, 0.6, 0.0, 0.0 ) );    // Distance 0.28.
 		$far  = $this->create_indexed_post( 'Far', array( 0.0, 1.0, 0.0, 0.0 ) );     // Distance 1.
+
+		Fake_Embedding_Provider::$vector = self::QUERY_VECTOR;
 
 		$result = $this->run_ability(
 			'preview-search',
 			array(
-				'query'                 => 'anything',
-				'max_distance'          => 0.5,
-				'max_relative_distance' => 0.3,
+				'query'              => 'anything',
+				'max_distance'       => 0.5,
+				'max_distance_ratio' => 10,
 			)
 		);
 
 		$this->assertSame( array( $best, $near, $far ), array_column( $result['results'], 'post_id' ) );
 		$this->assertSame( array( true, true, false ), array_column( $result['results'], 'included' ) );
 		$this->assertSame( 'Near', $result['results'][1]['title'] );
-		$this->assertEqualsWithDelta( 0.2, $result['results'][1]['distance'], 1e-6 );
+		$this->assertEqualsWithDelta( 0.28, $result['results'][1]['distance'], 1e-6 );
 	}
 
 	/** Thresholds omitted from the preview input fall back to the saved values. */
 	public function test_preview_search_uses_saved_thresholds_by_default(): void {
 		$this->create_indexed_post( 'Best', array( 1.0, 0.0, 0.0, 0.0 ) );
 		$this->create_indexed_post( 'Near', array( 0.8, 0.6, 0.0, 0.0 ) );
-		// Near is 0.2 behind Best: dropped by the default (0.10), kept by the saved value.
-		Settings::update( array( 'max_relative_distance' => 0.3 ) );
+		Fake_Embedding_Provider::$vector = self::QUERY_VECTOR;
+		// Near (0.28) is 2.8 times Best (0.1): dropped by the default (1.3), kept by the saved value.
+		Settings::update( array( 'max_distance_ratio' => 3.0 ) );
 
 		$result = $this->run_ability( 'preview-search', array( 'query' => 'anything' ) );
 

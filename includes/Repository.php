@@ -269,8 +269,8 @@ class Repository {
 	 *                                        Default INF means no threshold filtering.
 	 * @param int      $max_results           Safety cap on the number of posts returned and the basis for
 	 *                                        the inner LIMIT (ensures the VECTOR INDEX is used). Default 200.
-	 * @param float    $max_relative_distance Maximum distance behind the best match to include.
-	 *                                        Default INF means no relative filtering.
+	 * @param float    $max_distance_ratio    Maximum distance as a multiple of the best match's
+	 *                                        distance. Default INF means no relative filtering.
 	 * @param int      $overscan              Inner LIMIT multiplier (default 5).
 	 * @return int[]  Post IDs ordered by ascending cosine distance.
 	 */
@@ -279,11 +279,11 @@ class Repository {
 		array $post_types,
 		float $max_distance = INF,
 		int $max_results = 200,
-		float $max_relative_distance = INF,
+		float $max_distance_ratio = INF,
 		int $overscan = 5
 	): array {
 		$distances = $this->nearest_posts( $query_vector, $post_types, $max_results, $overscan );
-		$distances = self::filter_by_distance( $distances, $max_distance, $max_relative_distance );
+		$distances = self::filter_by_distance( $distances, $max_distance, $max_distance_ratio );
 
 		return array_keys( $distances );
 	}
@@ -345,12 +345,13 @@ class Repository {
 	 *
 	 * @since 0.2.0
 	 *
-	 * @param array<int, float> $distances             Cosine distance by post ID, closest first.
-	 * @param float             $max_distance          Maximum distance to keep. INF disables.
-	 * @param float             $max_relative_distance Maximum distance behind the closest kept post. INF disables.
+	 * @param array<int, float> $distances          Cosine distance by post ID, closest first.
+	 * @param float             $max_distance       Maximum distance to keep. INF disables.
+	 * @param float             $max_distance_ratio Maximum distance as a multiple of the closest kept
+	 *                                              post's distance. INF disables.
 	 * @return array<int, float> The kept posts, in the same order.
 	 */
-	public static function filter_by_distance( array $distances, float $max_distance, float $max_relative_distance ): array {
+	public static function filter_by_distance( array $distances, float $max_distance, float $max_distance_ratio ): array {
 		// Exclude posts that are too dissimilar.
 		if ( is_finite( $max_distance ) ) {
 			$distances = array_filter(
@@ -359,9 +360,10 @@ class Repository {
 			);
 		}
 
-		// Exclude posts far behind the best match.
-		if ( is_finite( $max_relative_distance ) && ! empty( $distances ) ) {
-			$cutoff    = reset( $distances ) + $max_relative_distance;
+		// Exclude posts far behind the best match. A ratio, not a difference,
+		// so one value suits models whose distances run on different scales.
+		if ( is_finite( $max_distance_ratio ) && ! empty( $distances ) ) {
+			$cutoff    = reset( $distances ) * $max_distance_ratio;
 			$distances = array_filter(
 				$distances,
 				static fn( float $d ): bool => $d <= $cutoff

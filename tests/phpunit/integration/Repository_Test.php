@@ -406,10 +406,10 @@ class Repository_Test extends \WP_UnitTestCase {
 		$this->assertEqualsWithDelta( 0.2, $distances[1], 1e-6 );
 	}
 
-	/** A post far behind the best match is excluded by the relative distance threshold. */
-	public function test_search_similar_filters_by_max_relative_distance(): void {
+	/** A post farther than the ratio times the best distance is excluded. */
+	public function test_search_similar_filters_by_max_distance_ratio(): void {
 		$vectors = array(
-			1 => array( 1.0, 0.0, 0.0, 0.0 ),          // Distance 0 (the best match).
+			1 => array( 0.9, 0.0, 0.4358898944, 0.0 ), // Distance 0.1 (the best match).
 			2 => array( 0.8, 0.6, 0.0, 0.0 ),          // Distance 0.2.
 			3 => array( 0.5, 0.8660254038, 0.0, 0.0 ), // Distance 0.5.
 		);
@@ -428,8 +428,8 @@ class Repository_Test extends \WP_UnitTestCase {
 			);
 		}
 
-		// Only the relative threshold applies: keep posts within 0.3 of the best match.
-		$ids = $this->repository->search_similar( array( 1.0, 0.0, 0.0, 0.0 ), array( 'post' ), INF, 200, 0.3 );
+		// Only the ratio applies: keep posts within 2.5 times the best distance (0.25).
+		$ids = $this->repository->search_similar( array( 1.0, 0.0, 0.0, 0.0 ), array( 'post' ), INF, 200, 2.5 );
 
 		$this->assertSame( array( 1, 2 ), $ids );
 	}

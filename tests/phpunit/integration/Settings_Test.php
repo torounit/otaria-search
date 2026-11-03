@@ -71,33 +71,36 @@ class Settings_Test extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Distance thresholds are stored as floats within the cosine distance range.
+	 * Thresholds are stored as floats: a cosine distance (0–2) and a ratio (1–10).
 	 */
 	public function test_settings_sanitize_accepts_distance_thresholds(): void {
 		$result = Settings::sanitize_settings(
 			array(
-				'max_distance'          => '0.4',
-				'max_relative_distance' => 0.1,
+				'max_distance'       => '0.4',
+				'max_distance_ratio' => '1.5',
 			)
 		);
 
 		$this->assertSame( 0.4, $result['max_distance'] );
-		$this->assertSame( 0.1, $result['max_relative_distance'] );
+		$this->assertSame( 1.5, $result['max_distance_ratio'] );
 	}
 
 	/**
-	 * Thresholds outside 0–2 or non-numeric are rejected.
+	 * Thresholds out of range or non-numeric are rejected.
 	 */
 	public function test_settings_sanitize_rejects_invalid_distance_thresholds(): void {
-		$result = Settings::sanitize_settings(
-			array(
-				'max_distance'          => 2.5,
-				'max_relative_distance' => 'wide',
-			)
-		);
+		$this->assertSame( array(), Settings::sanitize_settings( array( 'max_distance' => 2.5 ) ) );
+		$this->assertSame( array(), Settings::sanitize_settings( array( 'max_distance_ratio' => 'wide' ) ) );
+		// Below 1 the cutoff would drop the best match itself.
+		$this->assertSame( array(), Settings::sanitize_settings( array( 'max_distance_ratio' => 0.9 ) ) );
+		$this->assertSame( array(), Settings::sanitize_settings( array( 'max_distance_ratio' => 11 ) ) );
+	}
 
-		$this->assertArrayNotHasKey( 'max_distance', $result );
-		$this->assertArrayNotHasKey( 'max_relative_distance', $result );
+	/**
+	 * The former max_relative_distance (a difference, not a ratio) is dropped.
+	 */
+	public function test_settings_sanitize_drops_max_relative_distance(): void {
+		$this->assertSame( array(), Settings::sanitize_settings( array( 'max_relative_distance' => 0.25 ) ) );
 	}
 
 	/**
@@ -259,12 +262,12 @@ class Settings_Test extends WP_UnitTestCase {
 	public function test_update_null_removes_key(): void {
 		Settings::update(
 			array(
-				'max_distance'          => 0.4,
-				'max_relative_distance' => 0.1,
+				'max_distance'       => 0.4,
+				'max_distance_ratio' => 2.0,
 			)
 		);
 
-		Settings::update( array( 'max_relative_distance' => null ) );
+		Settings::update( array( 'max_distance_ratio' => null ) );
 
 		$this->assertSame( array( 'max_distance' => 0.4 ), get_option( self::SETTINGS_OPTION ) );
 	}

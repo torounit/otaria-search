@@ -204,15 +204,15 @@ class Abilities {
 					'type'       => 'object',
 					'required'   => array( 'query' ),
 					'properties' => array(
-						'query'                 => array(
+						'query'              => array(
 							'type'        => 'string',
 							'minLength'   => 1,
 							'description' => __( 'Search query.', 'otaria-search' ),
 						),
-						'max_distance'          => self::distance_schema() + array(
+						'max_distance'       => self::distance_schema() + array(
 							'description' => __( 'Threshold to preview; defaults to the saved value.', 'otaria-search' ),
 						),
-						'max_relative_distance' => self::distance_schema() + array(
+						'max_distance_ratio' => self::ratio_schema() + array(
 							'description' => __( 'Threshold to preview; defaults to the saved value.', 'otaria-search' ),
 						),
 					),
@@ -241,6 +241,20 @@ class Abilities {
 	}
 
 	/**
+	 * Input schema of a distance ratio to the best match: 1–10, or null for
+	 * the default.
+	 *
+	 * @return array
+	 */
+	private static function ratio_schema(): array {
+		return array(
+			'type'    => array( 'number', 'null' ),
+			'minimum' => 1,
+			'maximum' => 10,
+		);
+	}
+
+	/**
 	 * Input schema properties of update-settings: every setting but the
 	 * model, which select-model changes after probing it.
 	 *
@@ -256,8 +270,8 @@ class Abilities {
 			'max_distance'               => self::distance_schema() + array(
 				'description' => __( 'Maximum cosine distance from the query.', 'otaria-search' ),
 			),
-			'max_relative_distance'      => self::distance_schema() + array(
-				'description' => __( 'Maximum distance behind the best match.', 'otaria-search' ),
+			'max_distance_ratio'         => self::ratio_schema() + array(
+				'description' => __( 'Maximum distance as a multiple of the best match\'s distance.', 'otaria-search' ),
 			),
 			'hybrid'                     => array(
 				'type'        => array( 'boolean', 'null' ),
@@ -412,7 +426,7 @@ class Abilities {
 		}
 
 		$distances = ( new Repository() )->nearest_posts( $result[0]->getValues(), Settings::get_post_types(), self::PREVIEW_LIMIT );
-		$kept      = Repository::filter_by_distance( $distances, $thresholds['max_distance'], $thresholds['max_relative_distance'] );
+		$kept      = Repository::filter_by_distance( $distances, $thresholds['max_distance'], $thresholds['max_distance_ratio'] );
 
 		$results = array();
 		foreach ( $distances as $post_id => $distance ) {
