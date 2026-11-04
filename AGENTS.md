@@ -28,7 +28,7 @@ admin page. Without one, search falls through to default WordPress search.
 save_post ──► Indexer::enqueue (wp_schedule_single_event)
                 │
                 ▼
-        Indexer::run_job ── Chunker → string[]
+        Indexer::run_job ── Content_Text → Chunker → string[]
                 │           otaria_search_embedding(texts)->generate_embeddings()
                 ▼
         Repository::replace_post_chunks(post_id, chunks)
@@ -105,7 +105,8 @@ One row per chunk: `post_id`, `chunk_index`, `post_type`, `dimensions`,
 | `includes/Model_Catalog.php` | Lists models the AI Client registry reports as embedding-capable.             |
 | `includes/Abilities.php`     | Abilities used by the admin UI: `get-status`, `reindex`, `select-model`, `update-settings`, `preview-search`. |
 | `includes/Content_Hash.php`  | `content_hash` computation.                                                    |
-| `includes/Chunker.php`       | Keep image alt text, strip HTML, split with overlap, prepend title.            |
+| `includes/Content_Text.php`  | Post HTML to plain text: keep image alt text, strip tags.                      |
+| `includes/Chunker.php`       | Split plain text with overlap, prepend title.                                  |
 | `includes/Indexer.php`       | Post hooks, cron worker, password-protected exclusion, `remove_deselected_post_types()`. |
 | `includes/Search.php`        | `pre_get_posts` rewrite, hybrid fusion, fallback.                              |
 | `includes/Rank_Fusion.php`   | Reciprocal Rank Fusion. Pure PHP.                                              |
@@ -131,12 +132,13 @@ by both rank first; ties keep vector order.
 
 ## Chunking
 
-- Replace each `<img>` that has alt text with that text, in place, then
-  `wp_strip_all_tags()`. Block comments go with the tags. Don't use
-  `excerpt_remove_blocks()`: it drops every block outside its excerpt list,
-  including `core/image` with its alt text and caption.
-- `content_hash` doesn't cover the Chunker, so a change here reaches existing
-  posts only on their next update or a forced Reindex.
+- `Content_Text::from_html()` runs first: it replaces each `<img>` that has
+  alt text with that text, in place, then calls `wp_strip_all_tags()`. Block
+  comments go with the tags. Don't use `excerpt_remove_blocks()`: it drops every
+  block outside its excerpt list, including `core/image` with its alt text and
+  caption.
+- `content_hash` covers neither `Content_Text` nor the Chunker, so a change in
+  either reaches existing posts only on their next update or a forced Reindex.
 - Split on paragraph → sentence → character boundaries; defaults
   `chunk_size_chars` 2000, `chunk_overlap_chars` 300 (code constants in
   `Chunker.php`, not settings).

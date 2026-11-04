@@ -66,6 +66,25 @@ class Indexer_Test extends \WP_UnitTestCase {
 	}
 
 	/**
+	 * The provider receives the post as text, with its image alt text.
+	 */
+	public function test_index_post_embeds_text_of_html_content(): void {
+		Fake_Embedding_Provider::$inputs = array();
+
+		// Saving the post may already index it.
+		$post_id = $this->factory->post->create(
+			array(
+				'post_title'   => 'Title',
+				'post_content' => '<p>Body</p><img src="cat.jpg" alt="Sleeping cat">',
+				'post_status'  => 'publish',
+			)
+		);
+		$this->indexer->index_post( $post_id );
+
+		$this->assertSame( array( "Title\n\nBody Sleeping cat" ), Fake_Embedding_Provider::$inputs );
+	}
+
+	/**
 	 * Tear down test fixtures.
 	 */
 	public function tear_down(): void {
