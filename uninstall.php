@@ -19,7 +19,7 @@ delete_option( Otaria_Search\Schema::DB_VERSION_OPTION );
 delete_option( Otaria_Search\Settings::OPTION_NAME );
 delete_transient( Otaria_Search\Cron_Backfill::PROGRESS_KEY );
 
-$timestamp = wp_next_scheduled( Otaria_Search\Cron_Backfill::CRON_HOOK );
-if ( $timestamp ) {
-	wp_unschedule_event( $timestamp, Otaria_Search\Cron_Backfill::CRON_HOOK );
+$otaria_search_timestamp = wp_next_scheduled( Otaria_Search\Cron_Backfill::CRON_HOOK );
+if ( $otaria_search_timestamp ) {
+	wp_unschedule_event( $otaria_search_timestamp, Otaria_Search\Cron_Backfill::CRON_HOOK );
 }

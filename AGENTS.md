@@ -225,9 +225,9 @@ npm run plugin-check   # Plugin Check (requires the default wp-env)
 - Releases: follow the `bump-version` skill (`.claude/skills/bump-version`).
   `bin/check-version.sh` validates version consistency; WordPress.org deploy
   runs only when the `WPORG_DEPLOY` variable is `true`.
-- `.distignore` decides what ships (`build/` and production `vendor/`, not
-  `src/` or `routes/`); `.gitattributes` `export-ignore` shapes GitHub source
-  archives. Keep the two in step when adding files.
+- `.distignore` decides what ships (`build/`, production `vendor/` and
+  `composer.json`, not `src/` or `routes/`); `.gitattributes` `export-ignore`
+  shapes GitHub source archives. Keep the two in step when adding files.
 
 ## Manual verification
 
