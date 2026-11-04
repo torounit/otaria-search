@@ -93,7 +93,7 @@ The embeddings table and all of the plugin's settings.
 
 ### Unreleased
 
-* Image alt text in the post body is now searchable. Existing posts pick it up when they are next updated, or all at once with a forced Reindex.
+* Image alt text in the post body is now searchable.
 
 ### 0.4.0
 

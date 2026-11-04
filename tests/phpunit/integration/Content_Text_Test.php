@@ -67,8 +67,8 @@ class Content_Text_Test extends \WP_UnitTestCase {
 		$html = '<img src="a.jpg" alt="1 > 0"><img src="b.jpg" alt="a &lt;b"><p>After</p>';
 		$text = Content_Text::from_html( $html );
 
-		$this->assertStringContainsString( '1 &gt; 0', $text );
-		$this->assertStringContainsString( 'a &lt;b', $text );
+		$this->assertStringContainsString( '1 > 0', $text );
+		$this->assertStringContainsString( 'a <b', $text );
 		$this->assertStringContainsString( 'After', $text );
 		$this->assertStringNotContainsString( 'b.jpg', $text );
 	}
@@ -90,5 +90,35 @@ class Content_Text_Test extends \WP_UnitTestCase {
 		$text = Content_Text::from_html( '<!-- <img src="a.jpg" alt="hidden"> --><p>Body</p>' );
 
 		$this->assertSame( 'Body', $text );
+	}
+
+	/**
+	 * Entities are decoded, in the body as well as in alt text.
+	 */
+	public function test_entities_are_decoded(): void {
+		$text = Content_Text::from_html( '<img src="a.jpg" alt="Q&amp;A session"><p>R&amp;D &lt;b&gt;</p>' );
+
+		$this->assertSame( 'Q&A session R&D <b>', $text );
+	}
+
+	/**
+	 * A fallback image in NOSCRIPT repeats the lazy-loaded image before it.
+	 */
+	public function test_image_in_noscript_is_ignored(): void {
+		$html = '<img data-src="a.jpg" alt="cat"><noscript><img src="a.jpg" alt="cat"></noscript><img src="b.jpg" alt="dog">';
+
+		$text = Content_Text::from_html( $html );
+
+		$this->assertSame( 1, substr_count( $text, 'cat' ) );
+		$this->assertStringContainsString( 'dog', $text );
+	}
+
+	/**
+	 * Non-ASCII whitespace counts as empty, in alt text and around the body.
+	 */
+	public function test_non_ascii_whitespace_is_trimmed(): void {
+		$this->assertSame( '', Content_Text::from_html( "<img src=\"a.jpg\" alt=\"\u{3000}\">" ) );
+		$this->assertSame( '', Content_Text::from_html( '<p>&nbsp;</p>' ) );
+		$this->assertSame( 'Body', Content_Text::from_html( "<p>\u{3000}Body&nbsp;</p>" ) );
 	}
 }
