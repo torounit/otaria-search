@@ -54,20 +54,23 @@ class Schema {
 
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
 		$result = $wpdb->query(
-			"CREATE TABLE IF NOT EXISTS `{$table}` (
-				`id`           BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-				`post_id`      BIGINT UNSIGNED NOT NULL,
-				`chunk_index`  SMALLINT UNSIGNED NOT NULL,
-				`post_type`    VARCHAR(20) NOT NULL,
-				`dimensions`   SMALLINT UNSIGNED NOT NULL,
-				`embedding`    VECTOR({$dimensions}) NOT NULL,
-				`chunk_text`   TEXT NOT NULL,
-				`content_hash` CHAR(64) NOT NULL,
-				`updated_at`   DATETIME NOT NULL,
-				UNIQUE KEY `post_chunk` (`post_id`, `chunk_index`),
-				KEY `post_type_idx` (`post_type`),
-				VECTOR INDEX (`embedding`) DISTANCE=cosine
-			) ENGINE=InnoDB {$charset_collate}"
+			$wpdb->prepare(
+				"CREATE TABLE IF NOT EXISTS `{$table}` (
+					`id`           BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+					`post_id`      BIGINT UNSIGNED NOT NULL,
+					`chunk_index`  SMALLINT UNSIGNED NOT NULL,
+					`post_type`    VARCHAR(20) NOT NULL,
+					`dimensions`   SMALLINT UNSIGNED NOT NULL,
+					`embedding`    VECTOR(%d) NOT NULL,
+					`chunk_text`   TEXT NOT NULL,
+					`content_hash` CHAR(64) NOT NULL,
+					`updated_at`   DATETIME NOT NULL,
+					UNIQUE KEY `post_chunk` (`post_id`, `chunk_index`),
+					KEY `post_type_idx` (`post_type`),
+					VECTOR INDEX (`embedding`) DISTANCE=cosine
+				) ENGINE=InnoDB {$charset_collate}",
+				$dimensions
+			)
 		);
 		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
 
