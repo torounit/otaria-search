@@ -3,7 +3,7 @@
  * Plugin Name:       Otaria Search
  * Plugin URI:        https://github.com/torounit/otaria-search
  * Description:       Semantic and hybrid search for WordPress, backed by MariaDB's VECTOR type.
- * Version:           0.3.0
+ * Version:           0.4.0
  * Requires at least: 7.2
  * Requires PHP:      8.2
  * Author:            Toro_Unit
