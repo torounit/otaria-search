@@ -60,6 +60,7 @@
 		"lint:pkg-json": "wp-scripts lint-pkg-json ./package.json",
 		"lint:php:fix": "wp-env --config=.wp-env.test.json run cli --env-cwd=wp-content/plugins/otaria-search composer run-script format",
 		"lint:php": "wp-env --config=.wp-env.test.json run cli --env-cwd=wp-content/plugins/otaria-search composer run-script lint",
+		"plugin-check": "bin/plugin-check.sh",
 		"start:routes": "wp-build --watch",
 		"start": "npm run start:routes",
 		"test:php": "npm-run-all test:php:setup test:php:base",

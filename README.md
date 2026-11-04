@@ -14,31 +14,25 @@ Semantic and hybrid search for WordPress: finds posts by meaning, with embedding
 
 ## Description
 
-Otaria Search replaces the default WordPress search, which only finds posts containing the exact search term, with semantic search. A search for "cat" also finds posts that only say "kitten" or "feline", because posts and search terms are compared by meaning.
+Otaria Search replaces the default WordPress search with semantic search: a search for "cat" also finds posts that only say "kitten" or "feline". By default, the results are combined with the standard keyword search (hybrid search), so exact terms such as product codes and names are still found.
 
-Meaning is captured by embeddings, created through the AI Client embedding API introduced in WordPress 7.2. It works with any AI provider plugin that supports embeddings, such as AI Provider for OpenAI or AI Provider for LM Studio. The embeddings are stored in a `VECTOR` column of your site's own MariaDB database, so no external vector database is needed.
-
-By default, the results are combined with WordPress's standard keyword search (hybrid search), so exact terms such as product codes and names are still found.
+Embeddings are created through the AI Client embedding API of WordPress 7.2, with any AI provider plugin that supports them, such as AI Provider for OpenAI or AI Provider for LM Studio. They are stored in your site's own MariaDB database, so no external vector database is needed.
 
 GitHub: [https://github.com/torounit/otaria-search](https://github.com/torounit/otaria-search)
 
 ### Features
 
-* Finds posts by meaning, not only by matching words
-* Hybrid search: fuses semantic results with keyword matches (Reciprocal Rank Fusion)
-* Provider-agnostic: uses the embedding model of any AI provider configured in WordPress
-* Stores embeddings in MariaDB's native `VECTOR` type, with a vector index for fast lookups
 * Indexes posts automatically when they are published, updated or deleted
 * Search thresholds per model, with a preview of the nearest posts and their distances
 * Choose which post types are indexed
-* Query and document prefixes for models that need them (e.g. `query: ` / `passage: `)
+* Query and document prefixes for models that need them
 * WP-CLI command to reindex all posts
 
 ### Requirements
 
-* **MariaDB 11.7 or later** (11.8 LTS recommended). MySQL is not supported, since it has no `VECTOR` type.
-* WordPress 7.2 or later, for the AI Client embedding API.
-* An AI provider plugin that supports embedding generation, configured under **Settings > Connectors**.
+* **MariaDB 11.7 or later** (11.8 LTS recommended). MySQL has no `VECTOR` type and is not supported: the plugin shows a notice and WordPress keeps using its standard search.
+* WordPress 7.2 or later.
+* An AI provider plugin that supports embedding generation.
 
 ### External services
 
@@ -51,39 +45,34 @@ Password-protected posts are not sent by default. Which service receives the dat
 
 ## Installation
 
-1. Upload the plugin files to the `/wp-content/plugins/otaria-search` directory, or install the plugin through the WordPress plugins screen directly.
-2. Activate the plugin through the **Plugins** screen in WordPress. The embeddings table is created on activation.
-3. Configure an AI provider plugin that supports embeddings under **Settings > Connectors**.
-4. On **Settings > Otaria Search**, select an embedding model and save it.
-5. Click **Reindex all posts** to index the existing posts. New and updated posts are indexed automatically.
+1. Install and activate the plugin. The embeddings table is created on activation.
+2. Configure an AI provider plugin that supports embeddings under **Settings > Connectors**.
+3. On **Settings > Otaria Search**, select an embedding model and save it.
+4. Click **Reindex all posts** to index the existing posts. New and updated posts are indexed automatically.
 
 ## Frequently Asked Questions
 
-### Does it work with MySQL?
-
-No. The plugin needs the `VECTOR` type of MariaDB 11.7 or later. On other databases it shows a notice and WordPress keeps using its standard search.
-
 ### What happens when the AI provider is unavailable?
 
-Search falls back to the standard WordPress search, and indexing is retried on the next save or Reindex. Search never returns an error page because of the provider.
+Search falls back to the standard WordPress search, and indexing is retried on the next save or Reindex.
 
 ### How do I tune the search results?
 
-On **Settings > Otaria Search**, the **Search** section sets two thresholds: the maximum distance of a post from the search term, and the maximum distance behind the best match. Suitable values depend on the model, so enter a search term in the preview to see the nearest posts with their distances before saving. Switching to another model resets the thresholds.
+In the **Search** section of **Settings > Otaria Search**, set the maximum distance from the search term and the maximum distance behind the best match. Suitable values depend on the model, so use the preview to see the nearest posts and their distances before saving.
 
 ### What happens when I switch to another embedding model?
 
-Embeddings from different models cannot be compared, so every post has to be embedded again: run **Reindex all posts** right after saving the new model. This sends all indexed posts to the AI provider again. The search thresholds and prefixes are reset, since they depend on the model.
+Embeddings from different models cannot be compared, so run **Reindex all posts** right after saving the new model. This sends all indexed posts to the AI provider again. The search thresholds and prefixes are reset, since they depend on the model.
 
 If the new model has a different number of dimensions, Reindex recreates the embeddings table after you confirm it, which deletes all existing embeddings. Search results are unreliable until the reindex has finished.
 
 ### What are the query and document prefixes?
 
-Some embedding models are trained with a text in front of search terms and documents, such as `query: ` and `passage: ` for E5 and Nemotron models, and are less accurate without it. Check your model's documentation and enter them exactly, including trailing spaces. Most models, including OpenAI's, need none. A changed document prefix requires a Reindex.
+Some embedding models, such as E5 and Nemotron, expect a text in front of search terms and documents (`query: ` and `passage: `) and are less accurate without it. Enter them exactly as your model's documentation says, including trailing spaces. Most models, including OpenAI's, need none. A changed document prefix requires a Reindex.
 
 ### Which posts are indexed?
 
-Published posts of the post types selected on the settings page (all public, searchable post types by default). Password-protected posts are left out by default; this can be changed in the **Indexing** section.
+Published posts of the post types selected on the settings page (by default, all public, searchable post types). Password-protected posts are left out unless you change this in the **Indexing** section.
 
 ### Can I reindex from the command line?
 
@@ -94,21 +83,6 @@ wp otaria-search reindex
 wp otaria-search reindex --post-type=post
 wp otaria-search reindex --force      # re-embed unchanged posts too
 wp otaria-search reindex --batch=100  # posts per batch (default: 50)
-```
-
-### Embedding requests to my local model time out. What can I do?
-
-Requests use the WordPress AI Client's timeout (30 seconds by default). Local models that load on the first request may need longer. Raise it for embeddings only:
-
-```php
-add_filter(
-    'wp_ai_client_default_request_timeout',
-    function ( float $timeout, string $builder_type ): float {
-        return 'WP_AI_Client_Embedding_Builder' === $builder_type ? 120.0 : $timeout;
-    },
-    10,
-    2
-);
 ```
 
 ### What is removed when I delete the plugin?

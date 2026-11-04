@@ -307,23 +307,25 @@ class Repository {
 		global $wpdb;
 		$table = Schema::table_name();
 
-		$vec_literal = self::format_vector_literal( $query_vector );
-		$inner_limit = $limit * $overscan;
-		$type_list   = implode( ',', array_map( static fn( $t ) => "'" . esc_sql( $t ) . "'", $post_types ) );
+		$placeholders = implode( ',', array_fill( 0, count( $post_types ), '%s' ) );
+		$query_args   = array_merge(
+			array( self::format_vector_literal( $query_vector ) ),
+			$post_types,
+			array( $limit * $overscan )
+		);
 
-		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT post_id, VEC_DISTANCE_COSINE(embedding, VEC_FromText(%s)) AS d
 				FROM `{$table}`
-				WHERE post_type IN ({$type_list})
+				WHERE post_type IN ({$placeholders})
 				ORDER BY d ASC
 				LIMIT %d",
-				$vec_literal,
-				$inner_limit
+				...$query_args
 			)
 		);
-		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 
 		// Aggregate by post_id keeping the minimum distance (best chunk wins).
 		$min_by_post = array();

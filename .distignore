@@ -24,7 +24,6 @@
 .wp-env.test.json
 AGENTS.md
 CLAUDE.md
-composer.json
 composer.lock
 eslint.config.mjs
 package-lock.json
