@@ -105,7 +105,7 @@ One row per chunk: `post_id`, `chunk_index`, `post_type`, `dimensions`,
 | `includes/Model_Catalog.php` | Lists models the AI Client registry reports as embedding-capable.             |
 | `includes/Abilities.php`     | Abilities used by the admin UI: `get-status`, `reindex`, `select-model`, `update-settings`, `preview-search`. |
 | `includes/Content_Hash.php`  | `content_hash` computation.                                                    |
-| `includes/Chunker.php`       | Strip blocks/HTML, split with overlap, prepend title.                          |
+| `includes/Chunker.php`       | Keep image alt text, strip HTML, split with overlap, prepend title.            |
 | `includes/Indexer.php`       | Post hooks, cron worker, password-protected exclusion, `remove_deselected_post_types()`. |
 | `includes/Search.php`        | `pre_get_posts` rewrite, hybrid fusion, fallback.                              |
 | `includes/Rank_Fusion.php`   | Reciprocal Rank Fusion. Pure PHP.                                              |
@@ -131,7 +131,12 @@ by both rank first; ties keep vector order.
 
 ## Chunking
 
-- `excerpt_remove_blocks()` then `wp_strip_all_tags()`.
+- Replace each `<img>` that has alt text with that text, in place, then
+  `wp_strip_all_tags()`. Block comments go with the tags. Don't use
+  `excerpt_remove_blocks()`: it drops every block outside its excerpt list,
+  including `core/image` with its alt text and caption.
+- `content_hash` doesn't cover the Chunker, so a change here reaches existing
+  posts only on their next update or a forced Reindex.
 - Split on paragraph → sentence → character boundaries; defaults
   `chunk_size_chars` 2000, `chunk_overlap_chars` 300 (code constants in
   `Chunker.php`, not settings).
