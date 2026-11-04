@@ -32,12 +32,11 @@ class Chunker {
 	/**
 	 * Split $body into overlapping chunks, each prefixed with $title.
 	 *
-	 * @param string $body  Raw post body (may contain HTML / block markup).
+	 * @param string $body  Post body as plain text.
 	 * @param string $title Post title prepended to every chunk.
 	 * @return string[] Non-empty array of chunk strings.
 	 */
 	public function chunk( string $body, string $title ): array {
-		$body = wp_strip_all_tags( $body );
 		$body = trim( $body );
 
 		if ( '' === $body ) {

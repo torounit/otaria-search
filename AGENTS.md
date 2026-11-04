@@ -28,7 +28,7 @@ admin page. Without one, search falls through to default WordPress search.
 save_post ──► Indexer::enqueue (wp_schedule_single_event)
                 │
                 ▼
-        Indexer::run_job ── Chunker → string[]
+        Indexer::run_job ── Content_Text → Chunker → string[]
                 │           otaria_search_embedding(texts)->generate_embeddings()
                 ▼
         Repository::replace_post_chunks(post_id, chunks)
@@ -105,7 +105,8 @@ One row per chunk: `post_id`, `chunk_index`, `post_type`, `dimensions`,
 | `includes/Model_Catalog.php` | Lists models the AI Client registry reports as embedding-capable.             |
 | `includes/Abilities.php`     | Abilities used by the admin UI: `get-status`, `reindex`, `select-model`, `update-settings`, `preview-search`. |
 | `includes/Content_Hash.php`  | `content_hash` computation.                                                    |
-| `includes/Chunker.php`       | Strip blocks/HTML, split with overlap, prepend title.                          |
+| `includes/Content_Text.php`  | Post HTML to plain text: keep image alt text, strip tags, decode entities.     |
+| `includes/Chunker.php`       | Split plain text with overlap, prepend title.                                  |
 | `includes/Indexer.php`       | Post hooks, cron worker, password-protected exclusion, `remove_deselected_post_types()`. |
 | `includes/Search.php`        | `pre_get_posts` rewrite, hybrid fusion, fallback.                              |
 | `includes/Rank_Fusion.php`   | Reciprocal Rank Fusion. Pure PHP.                                              |
@@ -131,7 +132,15 @@ by both rank first; ties keep vector order.
 
 ## Chunking
 
-- `excerpt_remove_blocks()` then `wp_strip_all_tags()`.
+- `Content_Text::from_html()` runs first: it replaces each `<img>` that has
+  alt text with that text, in place (except in `<noscript>`, where images repeat
+  a lazy-loaded one), calls `wp_strip_all_tags()`, then decodes entities. Block
+  comments go with the tags. Don't use `excerpt_remove_blocks()`: it drops every
+  block outside its excerpt list, including `core/image` with its alt text and
+  caption.
+- `content_hash` covers neither `Content_Text` nor the Chunker, so a change in
+  either reaches existing posts only when their title or content changes, or on
+  a forced Reindex.
 - Split on paragraph → sentence → character boundaries; defaults
   `chunk_size_chars` 2000, `chunk_overlap_chars` 300 (code constants in
   `Chunker.php`, not settings).

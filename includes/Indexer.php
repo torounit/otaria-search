@@ -70,7 +70,7 @@ class Indexer {
 			return;
 		}
 
-		$texts  = $this->chunker->chunk( $post->post_content, $post->post_title );
+		$texts  = $this->chunker->chunk( Content_Text::from_html( $post->post_content ), $post->post_title );
 		$prefix = Settings::get_prefixes()['document_prefix'];
 		$result = otaria_search_embedding(
 			array_map( static fn( string $text ): string => $prefix . $text, $texts )

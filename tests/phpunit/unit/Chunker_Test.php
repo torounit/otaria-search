@@ -115,15 +115,12 @@ class Chunker_Test extends \WP_UnitTestCase {
 	}
 
 	/**
-	 * HTML and block markup are stripped from the body.
+	 * The body is treated as plain text: anything that looks like markup stays.
 	 */
-	public function test_html_is_stripped(): void {
-		$html   = '<p>Hello <strong>world</strong></p>';
-		$chunks = $this->chunker->chunk( $html, 'T' );
+	public function test_body_is_not_parsed_as_html(): void {
+		$chunks = $this->chunker->chunk( 'Use <strong> for emphasis', 'T' );
 
-		$this->assertStringNotContainsString( '<p>', implode( '', $chunks ) );
-		$this->assertStringNotContainsString( '<strong>', implode( '', $chunks ) );
-		$this->assertStringContainsString( 'Hello world', implode( '', $chunks ) );
+		$this->assertSame( array( "T\n\nUse <strong> for emphasis" ), $chunks );
 	}
 
 	// -----------------------------------------------------------------------
