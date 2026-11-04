@@ -5,7 +5,7 @@ Donate link: https://www.paypal.me/torounit
 Tags: search, semantic search, vector search, ai, mariadb  
 Requires at least: 7.2  
 Tested up to: 7.2  
-Stable tag: 0.3.0  
+Stable tag: 0.4.0  
 Requires PHP: 8.2  
 License: GPLv2 or later  
 License URI: https://www.gnu.org/licenses/gpl-2.0.html  
@@ -91,7 +91,7 @@ The embeddings table and all of the plugin's settings.
 
 ## Changelog
 
-### Unreleased
+### 0.4.0
 
 * The default maximum distance behind the best match is now 0.10 (was 0.25), so fewer unrelated posts trail the results. Saved values are unchanged; hybrid search still adds the posts that contain the search term.
 
