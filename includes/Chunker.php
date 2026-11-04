@@ -37,7 +37,7 @@ class Chunker {
 	 * @return string[] Non-empty array of chunk strings.
 	 */
 	public function chunk( string $body, string $title ): array {
-		$body = wp_strip_all_tags( $body );
+		$body = wp_strip_all_tags( $this->inline_image_alt( $body ) );
 		$body = trim( $body );
 
 		if ( '' === $body ) {
@@ -50,6 +50,48 @@ class Chunker {
 			static fn( string $c ): string => $title . "\n\n" . $c,
 			$body_chunks
 		);
+	}
+
+	/**
+	 * Replace each image that has alt text with that text, where the image was.
+	 *
+	 * Stripping tags would otherwise discard it. The text is escaped again so
+	 * that a `<` in it is not read as the start of a tag.
+	 *
+	 * @param string $html Raw post body.
+	 * @return string
+	 */
+	private function inline_image_alt( string $html ): string {
+		$processor = new class( $html ) extends \WP_HTML_Tag_Processor {
+			/**
+			 * Return the input span of the current tag.
+			 *
+			 * @return \WP_HTML_Span
+			 */
+			public function get_tag_span(): \WP_HTML_Span {
+				$this->set_bookmark( 'tag' );
+				return $this->bookmarks['tag'];
+			}
+		};
+
+		$output = '';
+		$cursor = 0;
+
+		while ( $processor->next_tag( 'IMG' ) ) {
+			$alt = $processor->get_attribute( 'alt' );
+			$alt = is_string( $alt ) ? trim( $alt ) : '';
+
+			if ( '' === $alt ) {
+				continue;
+			}
+
+			$span    = $processor->get_tag_span();
+			$output .= substr( $html, $cursor, $span->start - $cursor );
+			$output .= ' ' . htmlspecialchars( $alt, ENT_NOQUOTES | ENT_SUBSTITUTE, 'UTF-8' ) . ' ';
+			$cursor  = $span->start + $span->length;
+		}
+
+		return $output . substr( $html, $cursor );
 	}
 
 	/**

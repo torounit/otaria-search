@@ -126,6 +126,70 @@ class Chunker_Test extends \WP_UnitTestCase {
 		$this->assertStringContainsString( 'Hello world', implode( '', $chunks ) );
 	}
 
+	/**
+	 * Image alt text stays in the body, where the image was.
+	 */
+	public function test_image_alt_is_kept_in_place(): void {
+		$html   = '<p>Before</p><img src="cat.jpg" alt="ねこの写真"><p>After</p>';
+		$chunks = $this->chunker->chunk( $html, 'T' );
+
+		$this->assertMatchesRegularExpression( '/Before\s+ねこの写真\s+After/u', $chunks[0] );
+	}
+
+	/**
+	 * An Image block keeps both its alt text and its caption, and loses its markup.
+	 */
+	public function test_image_block_keeps_alt_and_caption(): void {
+		$html   = '<!-- wp:image {"id":1} --><figure class="wp-block-image"><img src="cat.jpg" alt="ねこの写真" class="wp-image-1"/><figcaption class="wp-element-caption">うちの猫</figcaption></figure><!-- /wp:image -->';
+		$chunks = $this->chunker->chunk( $html, 'T' );
+
+		$this->assertStringContainsString( 'ねこの写真', $chunks[0] );
+		$this->assertStringContainsString( 'うちの猫', $chunks[0] );
+		$this->assertStringNotContainsString( 'wp:image', $chunks[0] );
+		$this->assertStringNotContainsString( 'cat.jpg', $chunks[0] );
+	}
+
+	/**
+	 * Alt text does not run into the words around an inline image.
+	 */
+	public function test_inline_image_alt_is_separated_from_surrounding_text(): void {
+		$chunks = $this->chunker->chunk( 'foo<img src="a.jpg" alt="bar">baz', 'T' );
+
+		$this->assertStringContainsString( 'foo bar baz', $chunks[0] );
+	}
+
+	/**
+	 * Characters that look like markup in alt text do not swallow what follows.
+	 */
+	public function test_markup_characters_in_alt_do_not_swallow_body(): void {
+		$html   = '<img src="a.jpg" alt="1 > 0"><img src="b.jpg" alt="a &lt;b"><p>After</p>';
+		$chunks = $this->chunker->chunk( $html, 'T' );
+
+		$this->assertStringContainsString( '1 &gt; 0', $chunks[0] );
+		$this->assertStringContainsString( 'a &lt;b', $chunks[0] );
+		$this->assertStringContainsString( 'After', $chunks[0] );
+		$this->assertStringNotContainsString( 'b.jpg', $chunks[0] );
+	}
+
+	/**
+	 * Images without alt text add nothing to the body.
+	 */
+	public function test_image_without_alt_adds_nothing(): void {
+		$html   = '<img src="a.jpg"><img src="b.jpg" alt=""><img src="c.jpg" alt="  "><img src="d.jpg" alt><p>Body</p>';
+		$chunks = $this->chunker->chunk( $html, 'T' );
+
+		$this->assertSame( array( "T\n\nBody" ), $chunks );
+	}
+
+	/**
+	 * Images inside HTML comments are not content.
+	 */
+	public function test_image_in_comment_is_ignored(): void {
+		$chunks = $this->chunker->chunk( '<!-- <img src="a.jpg" alt="hidden"> --><p>Body</p>', 'T' );
+
+		$this->assertSame( array( "T\n\nBody" ), $chunks );
+	}
+
 	// -----------------------------------------------------------------------
 
 	/**
