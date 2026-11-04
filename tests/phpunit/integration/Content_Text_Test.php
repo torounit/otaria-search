@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace Otaria_Search\Tests\Unit;
+namespace Otaria_Search\Tests\Integration;
 
 use Otaria_Search\Content_Text;
 
