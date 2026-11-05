@@ -3,17 +3,9 @@
 	"core": "https://wordpress.org/wordpress-7.2-beta3.zip",
 	"testsEnvironment": false,
 	"autoPort": true,
-	"plugins": [
-		".",
-		"https://downloads.wordpress.org/plugin/ai-provider-for-google.zip",
-		"https://downloads.wordpress.org/plugin/ai-provider-for-openai.zip",
-		"torounit/ai-provider-for-lm-studio"
-	],
+	"plugins": [ "." ],
 	"config": {
 		"WP_DEBUG": true
-	},
-	"mappings": {
-		"/wp-content/plugins/otaria-search": "."
 	},
 	"phpVersion": "8.4",
 	"lifecycleScripts": {
