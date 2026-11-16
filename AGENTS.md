@@ -236,7 +236,11 @@ npm run plugin-check   # Plugin Check (requires the default wp-env)
   runs only when the `WPORG_DEPLOY` variable is `true`.
 - `.distignore` decides what ships (`build/`, production `vendor/` and
   `composer.json`, not `src/` or `routes/`); `.gitattributes` `export-ignore`
-  shapes GitHub source archives. Keep the two in step when adding files.
+  shapes GitHub source archives. `.pcpignore` mirrors `.distignore` for
+  local Plugin Check (`npm run plugin-check`, or the admin page's "Use
+  .pcpignore custom exclusions"), so it scans what ships, `build/` included;
+  its paths are root-anchored and directories end in `/`. Keep the three in
+  step when adding files.
 
 ## Manual verification
 
