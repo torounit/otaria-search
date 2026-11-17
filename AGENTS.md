@@ -229,9 +229,10 @@ npm run plugin-check   # Plugin Check (requires the default wp-env)
 - `lint.yml` and `test.yml` run on PRs and pushes to `main` (Markdown-only
   changes skipped). `plugin-check.yml` runs Plugin Check on the same events,
   plus changes to `README.md`, which it validates: on the plugin as
-  `.distignore` ships it, `build/` included. It fails on errors only, and
-  the PHP `@wordpress/build` generates in `build/` has some until it is fixed
-  upstream. All three also gate releases.
+  `.distignore` ships it, `build/` included. Its errors show as annotations
+  and in a PR comment but do not fail the job (`continue-on-error`): the PHP
+  `@wordpress/build` generates in `build/` has some until it is fixed
+  upstream. Lint and tests also gate releases.
 - Releases: follow the `bump-version` skill (`.claude/skills/bump-version`).
   `bin/check-version.sh` validates version consistency; WordPress.org deploy
   runs only when the `WPORG_DEPLOY` variable is `true`.
