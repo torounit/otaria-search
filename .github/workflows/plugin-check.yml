@@ -56,8 +56,8 @@ jobs:
 
             # trunk, as the action offers no other choice that meets Requires at least: 7.2 until
             # it is released: its "latest" is the latest stable version.
-            # Errors do not fail the job: the PHP @wordpress/build generates in build/ has some
-            # until it is fixed upstream. They still show as annotations and in the PR comment.
+            # Advisory: errors show as annotations and in the PR comment but do not fail the job.
+            # The PHP @wordpress/build generates in build/ has some, to be fixed upstream.
             - name: Run Plugin Check
               continue-on-error: true
               uses: WordPress/plugin-check-action@v1
