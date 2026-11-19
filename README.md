@@ -5,7 +5,7 @@ Donate link: https://www.paypal.me/torounit
 Tags: search, semantic search, vector search, ai, mariadb  
 Requires at least: 7.2  
 Tested up to: 7.2  
-Stable tag: 0.4.0  
+Stable tag: 0.5.0  
 Requires PHP: 8.2  
 License: GPLv2 or later  
 License URI: https://www.gnu.org/licenses/gpl-2.0.html  
@@ -91,9 +91,10 @@ The embeddings table and all of the plugin's settings.
 
 ## Changelog
 
-### Unreleased
+### 0.5.0
 
 * Image alt text in the post body is now searchable.
+* The PHP files that build the settings page now exit when accessed directly.
 
 ### 0.4.0
 
