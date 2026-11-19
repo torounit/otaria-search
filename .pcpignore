@@ -1,0 +1,40 @@
+# Exclusions for Plugin Check, applied with --use-pcpignore (CLI) or
+# "Use .pcpignore custom exclusions" (admin page). Paths are anchored to the
+# plugin root; a trailing slash marks a directory.
+#
+# Mirrors .distignore, so a scan of the repository sees exactly what ships.
+
+.claude/
+.git/
+.github/
+.husky/
+.idea/
+.vscode/
+.wordpress-org/
+bin/
+node_modules/
+routes/
+src/
+tests/
+
+.coderabbit.yaml
+.distignore
+.DS_Store
+.editorconfig
+.gitattributes
+.gitignore
+.node-version
+.phpunit.result.cache
+.prettierignore
+.prettierrc.js
+.wp-env.json
+.wp-env.test.json
+AGENTS.md
+CLAUDE.md
+composer.lock
+eslint.config.mjs
+package-lock.json
+package.json
+phpcs.xml.dist
+phpunit.xml.dist
+tsconfig.json

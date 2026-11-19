@@ -12,6 +12,7 @@
 /tests
 .coderabbit.yaml
 .distignore
+.pcpignore
 .DS_Store
 .editorconfig
 .gitattributes

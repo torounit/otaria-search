@@ -2,6 +2,7 @@
 
 .gitattributes export-ignore
 .distignore export-ignore
+.pcpignore export-ignore
 .gitignore export-ignore
 .editorconfig export-ignore
 .prettierignore export-ignore
