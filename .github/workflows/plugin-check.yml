@@ -54,8 +54,8 @@ jobs:
             - name: Remove the wp-env config
               run: rm .wp-env.json
 
-            # trunk, as the action offers no other choice that meets Requires at least: 7.2 until
-            # it is released: its "latest" is the latest stable version.
+            # trunk, as the plugin needs WordPress 7.2 (the AI Client embedding API) to load fully
+            # until it is released: the action's "latest" is the latest stable version.
             - name: Run Plugin Check
               uses: WordPress/plugin-check-action@v1
               with:

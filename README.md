@@ -3,7 +3,7 @@
 Contributors: Toro_Unit  
 Donate link: https://www.paypal.me/torounit  
 Tags: search, semantic search, vector search, ai, mariadb  
-Requires at least: 7.2  
+Requires at least: 7.1  
 Tested up to: 7.2  
 Stable tag: 0.5.0  
 Requires PHP: 8.2  
@@ -31,7 +31,7 @@ GitHub: [https://github.com/torounit/otaria-search](https://github.com/torounit/
 ### Requirements
 
 * **MariaDB 11.7 or later** (11.8 LTS recommended). MySQL has no `VECTOR` type and is not supported: the plugin shows a notice and WordPress keeps using its standard search.
-* WordPress 7.2 or later.
+* WordPress 7.2 or later. On earlier versions the plugin can be activated, but it only shows a notice until WordPress is updated.
 * An AI provider plugin that supports embedding generation.
 
 ### External services
@@ -90,6 +90,10 @@ wp otaria-search reindex --batch=100  # posts per batch (default: 50)
 The embeddings table and all of the plugin's settings.
 
 ## Changelog
+
+### Unreleased
+
+* On WordPress versions earlier than 7.2, the plugin now activates and shows a notice instead of refusing to activate.
 
 ### 0.5.0
 

@@ -35,6 +35,12 @@ class Plugin {
 	 * @return void
 	 */
 	public function register_hooks(): void {
+		if ( ! self::is_embedding_api_available() ) {
+			otaria_search_log( 'register_hooks: wp_ai_client_embedding() not available (WordPress 7.2+ required); hooks NOT registered.' );
+			add_action( 'admin_notices', array( $this, 'notice_requires_embedding_api' ) );
+			return;
+		}
+
 		if ( ! Schema::is_vector_supported() ) {
 			otaria_search_log( 'register_hooks: VECTOR not supported by this database; indexing hooks NOT registered.' );
 			add_action( 'admin_notices', array( $this, 'notice_no_vector' ) );
@@ -75,6 +81,26 @@ class Plugin {
 		if ( defined( 'WP_CLI' ) && \WP_CLI ) {
 			\WP_CLI::add_command( 'otaria-search', new CLI( $indexer ) );
 		}
+	}
+
+	/**
+	 * Whether core's AI Client embedding API (WordPress 7.2+) is available.
+	 *
+	 * @return bool
+	 */
+	public static function is_embedding_api_available(): bool {
+		return function_exists( 'wp_ai_client_embedding' );
+	}
+
+	/**
+	 * Show an admin notice when core's AI Client embedding API is not available.
+	 *
+	 * @return void
+	 */
+	public function notice_requires_embedding_api(): void {
+		echo '<div class="notice notice-error"><p>';
+		echo esc_html__( 'Otaria Search requires WordPress 7.2 or higher, which provides the AI Client embedding API.', 'otaria-search' );
+		echo '</p></div>';
 	}
 
 	/**

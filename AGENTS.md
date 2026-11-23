@@ -13,7 +13,7 @@ not tied to one vendor.
 
 | Requirement | Version                                                         |
 | ----------- | --------------------------------------------------------------- |
-| WordPress   | **7.2+** (core AI Client embedding API)                         |
+| WordPress   | **7.2+** (core AI Client embedding API). Activates on 7.1 with an admin notice. |
 | PHP         | 8.2+                                                            |
 | MariaDB     | **11.7+** (11.8 LTS recommended) for `VECTOR`                   |
 | MySQL       | Not supported (no `VECTOR`). Fail fast with an admin notice.    |
