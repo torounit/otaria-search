@@ -33,6 +33,13 @@ class Search {
 	const QUERY_VAR = 'otaria_search';
 
 	/**
+	 * Query var that marks the plugin's own LIKE search, fused in hybrid mode.
+	 *
+	 * @since 0.6.0
+	 */
+	const LIKE_QUERY_VAR = 'otaria_search_like';
+
+	/**
 	 * Safety cap on the posts returned by the vector search.
 	 *
 	 * Also the basis for the inner LIMIT, so the VECTOR INDEX is used, and
@@ -65,6 +72,7 @@ class Search {
 	 */
 	public function register_hooks(): void {
 		add_action( 'pre_get_posts', array( $this, 'rewrite_search_query' ) );
+		add_filter( 'posts_search', array( $this, 'match_term_names' ), 10, 2 );
 		add_filter( 'posts_search', array( $this, 'remove_like_clause' ), 99, 2 );
 	}
 
@@ -131,6 +139,79 @@ class Search {
 	}
 
 	/**
+	 * Let each search word of the plugin's LIKE search also match a term name.
+	 *
+	 * Core's clause is kept and extended, so its exclusion words, search
+	 * columns and password check stay as they are. Per word, the term name
+	 * match is added as an alternative to core's post_title condition; if core
+	 * ever words that condition differently, term names simply stop matching.
+	 *
+	 * @since 0.6.0
+	 *
+	 * @param string    $search Search SQL for the WHERE clause.
+	 * @param \WP_Query $query  The query.
+	 * @return string Search SQL that also matches term names.
+	 */
+	public function match_term_names( string $search, \WP_Query $query ): string {
+		global $wpdb;
+
+		if ( '' === $search || ! $query->get( self::LIKE_QUERY_VAR ) ) {
+			return $search;
+		}
+
+		$taxonomies = $this->get_taxonomies( (array) $query->get( 'post_type' ) );
+		if ( empty( $taxonomies ) ) {
+			return $search;
+		}
+
+		foreach ( array_unique( (array) $query->get( 'search_terms' ) ) as $word ) {
+			// Resolved here rather than joined in SQL: usually no term matches,
+			// and the clause stays as core wrote it.
+			$tt_ids = get_terms(
+				array(
+					'taxonomy'   => $taxonomies,
+					'name__like' => $word,
+					'fields'     => 'tt_ids',
+					'hide_empty' => true,
+				)
+			);
+			if ( is_wp_error( $tt_ids ) || empty( $tt_ids ) ) {
+				continue;
+			}
+
+			$title_match = $wpdb->prepare( "({$wpdb->posts}.post_title LIKE %s)", '%' . $wpdb->esc_like( $word ) . '%' );
+			$term_match  = sprintf(
+				"(EXISTS (SELECT 1 FROM {$wpdb->term_relationships} WHERE object_id = {$wpdb->posts}.ID AND term_taxonomy_id IN (%s)))",
+				implode( ',', array_map( 'intval', $tt_ids ) )
+			);
+
+			$search = str_replace( $title_match, "{$title_match} OR {$term_match}", $search );
+		}
+
+		return $search;
+	}
+
+	/**
+	 * Taxonomies whose term names are searched.
+	 *
+	 * Public taxonomies with an admin UI: their terms are named by the site's
+	 * authors. That leaves out post formats, whose names are internal slugs.
+	 *
+	 * @since 0.6.0
+	 *
+	 * @param string[] $post_types Post types being searched.
+	 * @return string[] Taxonomy names.
+	 */
+	private function get_taxonomies( array $post_types ): array {
+		$taxonomies = array_filter(
+			get_object_taxonomies( $post_types, 'objects' ),
+			static fn( \WP_Taxonomy $taxonomy ): bool => $taxonomy->public && $taxonomy->show_ui
+		);
+
+		return array_keys( $taxonomies );
+	}
+
+	/**
 	 * Run WordPress's default LIKE search.
 	 *
 	 * This is not the main query, so it does not re-enter rewrite_search_query().
@@ -145,12 +226,13 @@ class Search {
 	private function search_like( string $search_term, array $post_types, int $limit ): array {
 		$like_query = new \WP_Query(
 			array(
-				's'              => $search_term,
-				'post_type'      => $post_types,
-				'posts_per_page' => $limit,
-				'fields'         => 'ids',
-				'orderby'        => 'relevance',
-				'no_found_rows'  => true,
+				's'                  => $search_term,
+				'post_type'          => $post_types,
+				'posts_per_page'     => $limit,
+				'fields'             => 'ids',
+				'orderby'            => 'relevance',
+				'no_found_rows'      => true,
+				self::LIKE_QUERY_VAR => true,
 			)
 		);
 

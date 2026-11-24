@@ -14,7 +14,7 @@ Semantic and hybrid search for WordPress: finds posts by meaning, with embedding
 
 ## Description
 
-Otaria Search replaces the default WordPress search with semantic search: a search for "cat" also finds posts that only say "kitten" or "feline". By default, the results are combined with the standard keyword search (hybrid search), so exact terms such as product codes and names are still found.
+Otaria Search replaces the default WordPress search with semantic search: a search for "cat" also finds posts that only say "kitten" or "feline". By default, the results are combined with the standard keyword search (hybrid search), so exact terms such as product codes and names are still found. The keyword side also matches the names of a post's categories, tags and other public taxonomy terms.
 
 Embeddings are created through the AI Client embedding API of WordPress 7.2, with any AI provider plugin that supports them, such as AI Provider for OpenAI or AI Provider for LM Studio. They are stored in your site's own MariaDB database, so no external vector database is needed.
 
@@ -90,6 +90,10 @@ wp otaria-search reindex --batch=100  # posts per batch (default: 50)
 The embeddings table and all of the plugin's settings.
 
 ## Changelog
+
+### Unreleased
+
+* Hybrid search now also finds posts by the names of their categories, tags and other public taxonomy terms.
 
 ### 0.5.0
 

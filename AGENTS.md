@@ -36,7 +36,7 @@ save_post ──► Indexer::enqueue (wp_schedule_single_event)
 is_search() ──► Search::pre_get_posts
                 │  query → otaria_search_embedding(s)->generate_embeddings()
                 ▼
-        Repository::search_similar(...)        WP_Query (LIKE, orderby=relevance)
+        Repository::search_similar(...)        WP_Query (LIKE + term names, orderby=relevance)
                 │  vector ranking                 │  lexical ranking
                 ▼                                 ▼
         Rank_Fusion::fuse([vector, lexical], k)
@@ -108,7 +108,7 @@ One row per chunk: `post_id`, `chunk_index`, `post_type`, `dimensions`,
 | `includes/Content_Text.php`  | Post HTML to plain text: keep image alt text, strip tags, decode entities.     |
 | `includes/Chunker.php`       | Split plain text with overlap, prepend title.                                  |
 | `includes/Indexer.php`       | Post hooks, cron worker, password-protected exclusion, `remove_deselected_post_types()`. |
-| `includes/Search.php`        | `pre_get_posts` rewrite, hybrid fusion, fallback.                              |
+| `includes/Search.php`        | `pre_get_posts` rewrite, hybrid fusion, term name matching, fallback.          |
 | `includes/Rank_Fusion.php`   | Reciprocal Rank Fusion. Pure PHP.                                              |
 | `includes/CLI.php`           | `wp otaria-search reindex [--post-type=] [--force] [--batch=]` (only under WP-CLI). |
 | `includes/Cron_Backfill.php` | Batched cron reindex of all posts; progress in a transient.                    |
@@ -129,6 +129,22 @@ One row per chunk: `post_id`, `chunk_index`, `post_type`, `dimensions`,
 With hybrid on, the vector ranking and the LIKE ranking (up to `max_results`)
 are fused: score = `Σ 1 / (k + rank)`, `k` = `Search::RRF_K` (60). Posts found
 by both rank first; ties keep vector order.
+
+The plugin's LIKE query (marked with the `otaria_search_like` query var) also
+matches term names: `Search::match_term_names()` extends core's clause on
+`posts_search`, so per search word a post matches by title, excerpt, content
+**or** the name of one of its terms; words are still ANDed.
+
+- Taxonomies: `public && show_ui`, attached to the searched post types
+  (`show_ui` leaves out post formats, whose names are internal slugs). Not a
+  setting. Only directly assigned terms match, not their ancestors.
+- Matching `term_taxonomy_id`s are resolved per word with `get_terms()`
+  (`name__like`), then added as an `EXISTS` on `term_relationships` next to
+  core's `post_title` condition by string replacement. Usually no term matches
+  and the clause is untouched. If core rewords that condition, term names stop
+  matching (the tests catch it); exclusion words (`-word`) are never extended.
+- Lexical only: term names are not embedded, so they do not match with hybrid
+  off, by meaning, or in the default search used on an embedding error.
 
 ## Chunking
 

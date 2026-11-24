@@ -60,6 +60,13 @@ class Search_Test extends \WP_UnitTestCase {
 	private array $extra_posts = array();
 
 	/**
+	 * Term taxonomy IDs created by individual tests, by taxonomy.
+	 *
+	 * @var array<string, int[]>
+	 */
+	private array $extra_terms = array();
+
+	/**
 	 * Number of vector dimensions used in this test suite.
 	 */
 	private const DIMS = 4;
@@ -136,6 +143,17 @@ class Search_Test extends \WP_UnitTestCase {
 			wp_delete_post( $post_id, true );
 		}
 
+		foreach ( $this->extra_terms as $taxonomy => $tt_ids ) {
+			foreach ( array_unique( $tt_ids ) as $tt_id ) {
+				$term = get_term_by( 'term_taxonomy_id', $tt_id );
+				if ( $term ) {
+					wp_delete_term( $term->term_id, $taxonomy );
+				}
+			}
+		}
+
+		unregister_taxonomy( 'otaria_internal' );
+
 		// Schema::drop() commits the test transaction (DDL), so saved thresholds
 		// would leak into later tests unless removed before it.
 		delete_option( Settings::OPTION_NAME );
@@ -204,6 +222,25 @@ class Search_Test extends \WP_UnitTestCase {
 		Fake_Embedding_Provider::reset();
 
 		$this->extra_posts[] = $post_id;
+		return $post_id;
+	}
+
+	/**
+	 * Create an indexed post that vector search never finds, in the named term.
+	 *
+	 * @param string $title     Post title.
+	 * @param string $term_name Name of the term to assign, created when missing.
+	 * @param string $taxonomy  Taxonomy of the term.
+	 * @return int Post ID.
+	 */
+	private function create_post_in_term( string $title, string $term_name, string $taxonomy ): int {
+		// Orthogonal to the query vector.
+		$post_id = $this->create_indexed_post( $title, array( 0.0, 0.0, 0.0, 1.0 ) );
+		$term    = wp_set_object_terms( $post_id, $term_name, $taxonomy );
+
+		// Schema::drop() commits the test transaction (DDL), so terms outlive the test.
+		$this->extra_terms[ $taxonomy ][] = (int) $term[0];
+
 		return $post_id;
 	}
 
@@ -338,6 +375,71 @@ class Search_Test extends \WP_UnitTestCase {
 		$found_ids = $this->search_ids( 'Hounds' );
 
 		$this->assertSame( $both, $found_ids[0] );
+	}
+
+	/** Hybrid search finds posts by the name of a category they are in. */
+	public function test_hybrid_finds_post_by_category_name(): void {
+		$in_category = $this->create_post_in_term( 'Soup', 'Gizmology', 'category' );
+
+		$this->assertContains( $in_category, $this->search_ids( 'Gizmology' ) );
+	}
+
+	/** Hybrid search finds posts by the name of a tag they have. */
+	public function test_hybrid_finds_post_by_tag_name(): void {
+		$tagged = $this->create_post_in_term( 'Soup', 'Gizmology', 'post_tag' );
+
+		$this->assertContains( $tagged, $this->search_ids( 'gizmo' ) );
+	}
+
+	/** Each search word may match the text or a term name, but all words must match. */
+	public function test_hybrid_matches_term_name_per_search_word(): void {
+		$both_words = $this->create_post_in_term( 'Soup', 'Gizmology', 'category' );
+		$one_word   = $this->create_post_in_term( 'Salad', 'Gizmology', 'category' );
+
+		$found_ids = $this->search_ids( 'Gizmology Soup' );
+
+		$this->assertContains( $both_words, $found_ids );
+		$this->assertNotContains( $one_word, $found_ids );
+	}
+
+	/** Terms of taxonomies that are not public do not match. */
+	public function test_hybrid_ignores_term_names_of_non_public_taxonomy(): void {
+		register_taxonomy( 'otaria_internal', 'post', array( 'public' => false ) );
+		$internal = $this->create_post_in_term( 'Soup', 'Gizmology', 'otaria_internal' );
+
+		$this->assertNotContains( $internal, $this->search_ids( 'Gizmology' ) );
+	}
+
+	/** Post formats are public, but their term names are internal slugs. */
+	public function test_hybrid_ignores_post_format_names(): void {
+		$aside = $this->create_indexed_post( 'Soup', array( 0.0, 0.0, 0.0, 1.0 ) );
+		set_post_format( $aside, 'aside' );
+
+		$this->assertNotContains( $aside, $this->search_ids( 'aside' ) );
+	}
+
+	/** Term names match in the LIKE search, so not when hybrid search is off. */
+	public function test_hybrid_off_does_not_match_term_names(): void {
+		$in_category = $this->create_post_in_term( 'Soup', 'Gizmology', 'category' );
+		Settings::update( array( 'hybrid' => false ) );
+
+		$this->assertNotContains( $in_category, $this->search_ids( 'Gizmology' ) );
+	}
+
+	/** Term name matching affects only the plugin's own LIKE search. */
+	public function test_term_name_matching_does_not_leak_into_other_queries(): void {
+		$this->create_post_in_term( 'Soup', 'Gizmology', 'category' );
+		$this->search_ids( 'Gizmology' );
+
+		$other = new \WP_Query(
+			array(
+				's'         => 'Gizmology',
+				'post_type' => 'post',
+				'fields'    => 'ids',
+			)
+		);
+
+		$this->assertSame( array(), $other->posts );
 	}
 
 	/** The query prefix is added to the search term before embedding it. */
