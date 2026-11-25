@@ -91,6 +91,10 @@ The embeddings table and all of the plugin's settings.
 
 ## Changelog
 
+### Unreleased
+
+* Debug messages now follow `WP_DEBUG_LOG`. They were written to `wp-content/debug.log` even when it was off.
+
 ### 0.5.0
 
 * Image alt text in the post body is now searchable.

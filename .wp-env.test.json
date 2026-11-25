@@ -5,7 +5,8 @@
 	"autoPort": true,
 	"plugins": [ "." ],
 	"config": {
-		"WP_DEBUG": true
+		"WP_DEBUG": true,
+		"WP_DEBUG_LOG": true
 	},
 	"phpVersion": "8.4",
 	"lifecycleScripts": {
