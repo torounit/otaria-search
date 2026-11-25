@@ -60,7 +60,7 @@ function otaria_search_embedding( ...$input ): WP_AI_Client_Embedding_Builder {
  * Write a diagnostic message to the PHP error log when WP_DEBUG is enabled.
  *
  * All messages are prefixed with "[otaria-search]" so they can be
- * grepped from wp-content/debug.log to diagnose indexing failures.
+ * grepped from the debug log to diagnose indexing failures.
  *
  * @param string $message Human-readable description of the event.
  * @return void
@@ -70,23 +70,9 @@ function otaria_search_log( string $message ): void {
 		return;
 	}
 
-	$log_path = ( defined( 'WP_DEBUG_LOG' ) && is_string( WP_DEBUG_LOG ) )
-		? WP_DEBUG_LOG
-		: ( defined( 'WP_CONTENT_DIR' ) ? WP_CONTENT_DIR . '/debug.log' : '' );
-
-	$line = '[otaria-search] ' . $message . PHP_EOL;
-
-	if ( '' !== $log_path ) {
-		$dir = dirname( $log_path );
-		if ( ! is_dir( $dir ) ) {
-			wp_mkdir_p( $dir );
-		}
-		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-		error_log( $line, 3, $log_path );
-	} else {
-		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-		error_log( $line );
-	}
+	// Core points PHP's error log at the file WP_DEBUG_LOG asks for.
+	// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+	error_log( '[otaria-search] ' . $message );
 }
 
 
