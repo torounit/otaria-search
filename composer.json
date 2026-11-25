@@ -8,9 +8,12 @@
 	},
 	"require-dev": {
 		"dealerdirect/phpcodesniffer-composer-installer": "*",
+		"php-stubs/wordpress-stubs": "^7.1",
 		"phpcompatibility/php-compatibility": "*",
 		"phpcompatibility/phpcompatibility-wp": "*",
+		"phpstan/phpstan": "^2.3",
 		"phpunit/phpunit": "^9.6",
+		"szepeviktor/phpstan-wordpress": "^2.0",
 		"wp-coding-standards/wpcs": "^3.0",
 		"wp-phpunit/wp-phpunit": "^6.9",
 		"yoast/phpunit-polyfills": "^2.0"
@@ -34,6 +37,7 @@
 	"scripts": {
 		"format": "phpcbf",
 		"lint": "phpcs",
+		"phpstan": "phpstan analyse --memory-limit=1G",
 		"test": "phpunit"
 	}
 }

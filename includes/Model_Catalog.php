@@ -35,10 +35,10 @@ class Model_Catalog {
 	/**
 	 * Factory: create using the default AI Client registry.
 	 *
-	 * @return static
+	 * @return self
 	 */
-	public static function create(): static {
-		return new static( AiClient::defaultRegistry() );
+	public static function create(): self {
+		return new self( AiClient::defaultRegistry() );
 	}
 
 	/**

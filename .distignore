@@ -30,5 +30,6 @@ eslint.config.mjs
 package-lock.json
 package.json
 phpcs.xml.dist
+phpstan.neon.dist
 phpunit.xml.dist
 tsconfig.json

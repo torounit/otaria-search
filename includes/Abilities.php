@@ -230,7 +230,7 @@ class Abilities {
 	 *
 	 * @since 0.3.0
 	 *
-	 * @return array
+	 * @return array<string, mixed>
 	 */
 	private static function distance_schema(): array {
 		return array(
@@ -249,7 +249,7 @@ class Abilities {
 	 *
 	 * @since 0.3.0
 	 *
-	 * @return array<string, array>
+	 * @return array<string, array<string, mixed>>
 	 */
 	private static function update_settings_properties(): array {
 		return array(
@@ -287,8 +287,8 @@ class Abilities {
 	/**
 	 * Callback for get-status ability.
 	 *
-	 * @param array|null $input Ability input (unused).
-	 * @return array
+	 * @param array<string, mixed>|null $input Ability input (unused).
+	 * @return array<string, mixed>
 	 */
 	public static function execute_get_status( ?array $input = null ): array {
 		unset( $input );
@@ -348,9 +348,9 @@ class Abilities {
 	 *
 	 * @since 0.3.0
 	 *
-	 * @param array|null $input Settings to change; see update_settings_properties().
-	 * @return array|\WP_Error The settings now in effect plus added_post_types and
-	 *                         reindex_required, or an error for unavailable post types.
+	 * @param array<string, mixed>|null $input Settings to change; see update_settings_properties().
+	 * @return array<string, mixed>|\WP_Error The settings now in effect plus added_post_types and
+	 *                                        reindex_required, or an error for unavailable post types.
 	 */
 	public static function execute_update_settings( ?array $input = null ): array|\WP_Error {
 		$changes = array_intersect_key( (array) $input, self::update_settings_properties() );
@@ -395,8 +395,8 @@ class Abilities {
 	 *
 	 * @since 0.2.0
 	 *
-	 * @param array|null $input Ability input with 'query' and optional thresholds.
-	 * @return array|\WP_Error Nearest posts, or the embedding error.
+	 * @param array<string, mixed>|null $input Ability input with 'query' and optional thresholds.
+	 * @return array<string, mixed>|\WP_Error Nearest posts, or the embedding error.
 	 */
 	public static function execute_preview_search( ?array $input = null ): array|\WP_Error {
 		$result = otaria_search_embedding( Settings::get_prefixes()['query_prefix'] . ( $input['query'] ?? '' ) )->generate_embeddings();
@@ -430,8 +430,8 @@ class Abilities {
 	/**
 	 * Callback for reindex ability.
 	 *
-	 * @param array|null $input Ability input.
-	 * @return array|\WP_Error
+	 * @param array<string, mixed>|null $input Ability input.
+	 * @return array<string, mixed>|\WP_Error
 	 */
 	public static function execute_reindex( ?array $input = null ): array|\WP_Error {
 		$force = is_array( $input ) && isset( $input['force'] )
@@ -490,8 +490,8 @@ class Abilities {
 	 *
 	 * @since 0.2.0
 	 *
-	 * @param array|null $input Ability input with 'provider' and 'model'.
-	 * @return array|\WP_Error The stored settings, or the probe error.
+	 * @param array<string, mixed>|null $input Ability input with 'provider' and 'model'.
+	 * @return array<string, mixed>|\WP_Error The stored settings, or the probe error.
 	 */
 	public static function execute_select_model( ?array $input = null ): array|\WP_Error {
 		$provider = sanitize_text_field( (string) ( $input['provider'] ?? '' ) );
