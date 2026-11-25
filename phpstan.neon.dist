@@ -1,0 +1,15 @@
+includes:
+	- vendor/szepeviktor/phpstan-wordpress/extension.neon
+
+parameters:
+	level: 7
+	paths:
+		- otaria-search.php
+		- uninstall.php
+		- includes
+	scanFiles:
+		- tests/phpstan/stubs/wp-ai-client.php
+		- tests/phpstan/stubs/wp-cli.php
+	dynamicConstantNames:
+		# A log path is valid too; the extension only knows a bool.
+		WP_DEBUG_LOG: bool|string

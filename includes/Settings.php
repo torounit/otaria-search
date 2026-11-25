@@ -170,7 +170,7 @@ class Settings {
 	 *
 	 * @since 0.3.0
 	 *
-	 * @param array|null $settings Settings to read; the saved ones by default.
+	 * @param array<string, mixed>|null $settings Settings to read; the saved ones by default.
 	 * @return string[] The saved post types that are still available; without a
 	 *                  saved list, all available post types.
 	 */
@@ -210,7 +210,7 @@ class Settings {
 	 *
 	 * @since 0.3.0
 	 *
-	 * @param array $changes Settings to change. Null removes a key, restoring its default.
+	 * @param array<string, mixed> $changes Settings to change. Null removes a key, restoring its default.
 	 * @return void
 	 */
 	public static function update( array $changes ): void {
@@ -240,7 +240,7 @@ class Settings {
 	 * change some keys and keep the others.
 	 *
 	 * @param mixed $input Settings to sanitize.
-	 * @return array Sanitized settings.
+	 * @return array<string, mixed> Sanitized settings.
 	 */
 	public static function sanitize_settings( mixed $input ): array {
 		if ( ! is_array( $input ) ) {
@@ -266,6 +266,7 @@ class Settings {
 		}
 
 		if ( isset( $input['exclude_password_protected'] ) ) {
+			// @phpstan-ignore argument.templateType ($input is mixed, so T cannot be inferred.)
 			$sanitized['exclude_password_protected'] = rest_sanitize_boolean( $input['exclude_password_protected'] );
 		}
 

@@ -42,8 +42,8 @@ class CLI {
 	 *     wp otaria-search reindex
 	 *     wp otaria-search reindex --post-type=post --force
 	 *
-	 * @param array $args       Positional arguments.
-	 * @param array $assoc_args Associative arguments.
+	 * @param string[]             $args       Positional arguments.
+	 * @param array<string, mixed> $assoc_args Associative arguments.
 	 * @return void
 	 */
 	public function reindex( array $args, array $assoc_args ): void {

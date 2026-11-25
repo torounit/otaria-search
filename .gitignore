@@ -17,6 +17,9 @@ Thumbs.db
 /wp-tests-config.php
 
 *.cache
+
+# Local PHPStan overrides
+/phpstan.neon
 *.log
 
 # Claude Code local settings

@@ -125,6 +125,11 @@ class Cron_Backfill {
 	 * @return array{offset:int,total:int,done:int,force:bool}|null
 	 */
 	public function get_progress(): ?array {
+		/**
+		 * Written only by this class.
+		 *
+		 * @var array{offset:int,total:int,done:int,force:bool}|false $progress
+		 */
 		$progress = get_transient( self::PROGRESS_KEY );
 		return is_array( $progress ) ? $progress : null;
 	}
@@ -136,8 +141,7 @@ class Cron_Backfill {
 	 * @return int
 	 */
 	private function count_posts( array $post_types ): int {
-		$counts = wp_count_posts( reset( $post_types ) );
-		$total  = 0;
+		$total = 0;
 		foreach ( $post_types as $type ) {
 			$c      = wp_count_posts( $type );
 			$total += isset( $c->publish ) ? (int) $c->publish : 0;

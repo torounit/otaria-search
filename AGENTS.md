@@ -206,6 +206,7 @@ test that demands it. Commit after each green-and-clean cycle.
 npm run test:php:base  # fast (recommended; requires wp-env)
 npm run test:php       # full suite
 npm run lint:php       # PHPCS (lint:php:fix = PHPCBF; requires wp-env)
+npm run lint:phpstan   # PHPStan level 7 (requires wp-env; `composer phpstan` on the host)
 npm run lint:js        # ESLint + Prettier (lint:js:fix)
 npm run typecheck      # tsc --noEmit
 npm run plugin-check   # Plugin Check (requires the default wp-env)
@@ -218,16 +219,21 @@ npm run plugin-check   # Plugin Check (requires the default wp-env)
   and set output via `Fake_Embedding_Provider::$vector`. Simulate provider
   failure with `wp_ai_client_prevent_embedding`. Never call a real LLM.
 - Test files are named `*_Test.php`.
-- The husky pre-commit hook runs lint-staged (PHPCBF/PHPCS on the host via
-  `vendor/bin`, Prettier, ESLint, `tsc`, `lint:pkg-json`), so it needs local
-  PHP and `composer install`.
+- **PHPStan** (`phpstan.neon.dist`) covers the shipped PHP, not the tests.
+  `tests/phpstan/stubs/` declares only the APIs the plugin calls that
+  wordpress-stubs lacks: WP-CLI, and core's embedding API (delete that stub once
+  wordpress-stubs covers 7.2). Fix errors rather than adding a baseline; a
+  `@phpstan-ignore` names the identifier and the reason.
+- The husky pre-commit hook runs lint-staged (PHPCBF/PHPCS and PHPStan on the
+  host, Prettier, ESLint, `tsc`, `lint:pkg-json`), so it needs local PHP,
+  Composer and `composer install`.
 
 ## README, CI and releases
 
 - `README.md` is the WordPress.org readme, for site owners. Developer docs go
   here. Record user-visible changes under `### Unreleased` in its Changelog.
-- `lint.yml` and `test.yml` run on PRs and pushes to `main` (Markdown-only
-  changes skipped). `plugin-check.yml` runs Plugin Check on the same events,
+- `lint.yml` (PHPStan included) and `test.yml` run on PRs and pushes to `main`
+  (Markdown-only changes skipped). `plugin-check.yml` runs Plugin Check on the same events,
   plus changes to `README.md`, which it validates: on the plugin as
   `.distignore` ships it, `build/` included. It fails on errors only. All
   three also gate releases.

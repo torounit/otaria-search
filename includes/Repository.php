@@ -117,9 +117,9 @@ class Repository {
 	 * @param int    $post_id   Post ID.
 	 * @param string $post_type Post type slug.
 	 * @param string $hash      Content hash (sha256 of title+body).
-	 * @param array  $chunks    Array of chunk data. Each element must have:
-	 *                          'chunk_index' (int), 'chunk_text' (string),
-	 *                          'vector' (float[]).
+	 * @param array  $chunks    Chunks of the post; at least one.
+	 *
+	 * @phpstan-param list<array{chunk_index: int, chunk_text: string, vector: array<float|int>}> $chunks
 	 * @return void
 	 */
 	public function replace_post_chunks(

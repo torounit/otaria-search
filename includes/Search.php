@@ -154,7 +154,10 @@ class Search {
 			)
 		);
 
-		return array_map( 'intval', $like_query->posts );
+		return array_map(
+			static fn( $post ): int => $post instanceof \WP_Post ? $post->ID : (int) $post,
+			$like_query->posts
+		);
 	}
 
 	/**
